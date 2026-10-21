@@ -1,0 +1,16 @@
+.native-controls { max-height: calc(100% - 30px); overflow-y: auto; box-sizing: border-box; scrollbar-width: thin; }
+.native-controls select { display: block; width: 100%; margin-top: 6px; border: 1px solid #667265; background: #263329; color: #e5e8dd; padding: 5px; border-radius: 3px; }
+.native-controls > small { margin-top: 10px; }
+.native-controls-toggle { margin-top: 8px; }
+.native-controls .native-navigation-actions { display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:4px; margin-top:12px; }
+.native-navigation-actions button { min-height:30px; }
+.native-controls .native-flight-speed { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0; }
+.native-controls .native-flight-speed select { width:80px; margin:0; }
+.native-flight-telemetry { display:block; margin:7px 0; font-size:10px; color:#e3d7ab; line-height:1.6; }
+.native-flight-telemetry.blocked { color:#f1bc83; }
+.native-controls .native-flight-help { display:block; font-size:10px; line-height:1.6; margin:8px 0; color:#bfccb8; }
+.native-touch-controls { margin:8px 0; color:#bccaad; font-size:10px; }
+.native-touch-controls summary { cursor:pointer; }
+.native-touch-controls > div { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:8px; }
+.native-touch-controls button { touch-action:none; user-select:none; min-height:33px; }
+.native-controls .native-vegetation-quality { display:block; margin:8px 0; padding:6px 0; border-top:1px solid #43523d; color:#b8c6ab; font-size:10px; line-height:1.6; }

@@ -1,0 +1,15 @@
+node_modules/
+work/
+dist/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.env*
+!.env.example
+
+# Player content and local release evidence
+outputs/
+worlds/
+*.emw
+*.emw-world.json
+.codex-remote-attachments/

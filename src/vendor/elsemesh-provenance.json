@@ -1,0 +1,433 @@
+{
+  "source": "rebroad/ElseMesh",
+  "commit": "95719848d5ffa4428b57c75c272483e1c2113a72",
+  "license": "MIT",
+  "note": "Pristine copies. Builder adaptation is src/native and src/ui/NativePreview.tsx. No game checkout is edited.",
+  "files": [
+    {
+      "path": "src/vendor/elsemesh/CREDITS.md",
+      "sha256": "b7119d156af7c60bc7a868765f63274ff81b50ac9faccb828a99678d8c55a1b0",
+      "bytes": 9881
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/constants.js",
+      "sha256": "ac2c24210365781e672f808a3872f05305c65b29d24dee6125dc6a37ebf636cc",
+      "bytes": 529
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/core/EventDispatcher.js",
+      "sha256": "445ba9daeb1a86651bc8b1fe97ffa385db6461121899edfa626074dceb683517",
+      "bytes": 1006
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/Engine.js",
+      "sha256": "2b5ee99e8dcc7e537c244c22328dcece0805ba3266cb2a785a7c73e6effc6a55",
+      "bytes": 4062
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/FrameTiming.js",
+      "sha256": "c1d62581e45a8928fef161c4192732190652adb4a5f3e7d06cf0187d560716c1",
+      "bytes": 1489
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/BufferAttribute.js",
+      "sha256": "1627eaf856bd89940679427a725d7c295ee781be0c40973296f67a8989928483",
+      "bytes": 9113
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/BufferGeometry.js",
+      "sha256": "ca70896ececa7627adc0636dff14542459397eb77a48367326560c88fffecec7",
+      "bytes": 12113
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/BufferGeometryUtils.js",
+      "sha256": "80f94c1ffa046710e6e1ba74fc573474d5eaed65374c03ce739107fb33ac66ab",
+      "bytes": 4984
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/index.js",
+      "sha256": "17fb2fe64d48517c2921728e924f191c17b47ae7ee0d735c3cbe862999a8c2ec",
+      "bytes": 978
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/PolyhedronGeometry.js",
+      "sha256": "028b38294cf843172485131362d324e0e3278a8e76b7df4a8b1142350a9aaa63",
+      "bytes": 4403
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/PrimitiveGeometries.js",
+      "sha256": "d9ea566242f4d312ce2630229e52dec5ecb0e828d81ae4a88864aab9c45f9ad2",
+      "bytes": 14494
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/RoundedBoxGeometry.js",
+      "sha256": "e3a3c93e3b54986f205623fe6ef1bd07eb51e64ea5eef84acef6ef85fae4bedf",
+      "bytes": 4025
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/geometry/TubeGeometry.js",
+      "sha256": "b944f4d3053fc543b43f9694cc14012b8ec5535f52b86ac2738936c58b4c3e17",
+      "bytes": 2202
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/Compute.js",
+      "sha256": "d5b8361a589c8ba5736d5c0244054ed72a369b2b2b5cca5b7c450f1c1d6b305f",
+      "bytes": 2897
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/GPU.js",
+      "sha256": "905ee816e5b680d22f3682ff8b8c48728b2ebf9cfdaa2b84d39ef3dfbac826ae",
+      "bytes": 9633
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/Mipmaps.js",
+      "sha256": "bee2181fe2ceaa7cb5215e62e7e1bb6cde09cfc3c1ab63b1ac4f0d48b5d8e0e5",
+      "bytes": 3189
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/Readback.js",
+      "sha256": "d3fdba0897cbda770b2e541973f975e0b14be8dd249912d57e9d658469275e97",
+      "bytes": 3803
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/Shader.js",
+      "sha256": "89058ec1bab46639f82367c87d6408ca0dba7a7b6c0e4b19e9db6375ed58313e",
+      "bytes": 22258
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/Texture.js",
+      "sha256": "3cf8ce0c83f4fa4d2ed20fa02b4caebc8f45b18f2402c449ce6df9339720579e",
+      "bytes": 8947
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/gpu/Uniforms.js",
+      "sha256": "1c16c5db741ebe7c9e491dab6eb0ea11773ab27a8b45359b21d4d8932b17403e",
+      "bytes": 8605
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/index.js",
+      "sha256": "ed3b6c3aa7ef879135e2c31664620eff216e014066c15b2d4f2e0fb5fbf0b72c",
+      "bytes": 465
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/loaders/GLTF.js",
+      "sha256": "be807e1a6b05002f67e5cfec1f19222a98e1fd323855cc1df5a771b5a046d350",
+      "bytes": 8959
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Box3.js",
+      "sha256": "7476d8d4c4d7cbec8a93474189f0e26ad9a0b21955529d740a2c09e9577c155f",
+      "bytes": 5566
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/CatmullRomCurve3.js",
+      "sha256": "5e5179186da069c2dd41cb97255969c224770cdb4d7129235afe0f0784b2fdf8",
+      "bytes": 7788
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Color.js",
+      "sha256": "f397f0573f11e8c846203745585e3f581ccf0e1012943b05073951bd3a2a0121",
+      "bytes": 7322
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/DataUtils.js",
+      "sha256": "a80b7402823e029b6ded871f4481caa40bec1bef720732f219f797bbf4fbcaf2",
+      "bytes": 1277
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Euler.js",
+      "sha256": "1909234e60a39e861cfeef78e3cf7f2b55e9a81ca7ac6cbc12891da567c1f397",
+      "bytes": 4152
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Frustum.js",
+      "sha256": "c60e30168e4e8076745c8c1e2f302d974f9e69ecae19070055d8481b6998b1e9",
+      "bytes": 3491
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/index.js",
+      "sha256": "b1ba8b8e43cd878b7e57f66f6ac5c29d0ad37ad55ca33f05c6ed34ec7727a0af",
+      "bytes": 1004
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/MathUtils.js",
+      "sha256": "46d8694e2d10a7140aee49331c11e2721a0080b7bddfc9a61c481e4a3483a043",
+      "bytes": 4187
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Matrix3.js",
+      "sha256": "901aa818ba7b5371d08893b06b085317ca3a8df04675fb5c6da467053e974930",
+      "bytes": 4580
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Matrix4.js",
+      "sha256": "386986ed0c14ca1bc9fe813af61b25c330f2da071ae0c8760777af19242d9ea8",
+      "bytes": 14558
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Plane.js",
+      "sha256": "90dc9b76671860598288bdbbd248319e07680779583ff1573585987e341eac79",
+      "bytes": 2297
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Quaternion.js",
+      "sha256": "2efa7bf5a202b01b82ff50fdf96d0d6add6211ac6ef851bda3a9eaa1d162ba85",
+      "bytes": 8398
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Ray.js",
+      "sha256": "4ebb193580feaa5a2ccbaaaff3530ebf6071465e5878c215dd743deaf023cb0c",
+      "bytes": 4195
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/ShapeUtils.js",
+      "sha256": "338492381d3f2d3f338731bd9c84c044258469d2e11be8ce1b6451c31a1f022a",
+      "bytes": 6154
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Sphere.js",
+      "sha256": "b606dd8ea556d1f9a597cb84372ac7ed4fd2404b1844d32a1e55d0d32b2f88da",
+      "bytes": 3012
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Spherical.js",
+      "sha256": "d8085dd578924862e9ba870a6fb2eb6cd39a33547993046bb3d40567f7fb7611",
+      "bytes": 979
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Timer.js",
+      "sha256": "5e5a82a35cd53db7a8400f1d2ec6adc80ffaf8426d9b7878148c430b42b316d7",
+      "bytes": 1876
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Vector2.js",
+      "sha256": "d39a0c7cda56324cb59fb2ed86176b58852900b07b7bd19093f0e000df5d2724",
+      "bytes": 4588
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Vector3.js",
+      "sha256": "722a14999ef3d104536bc5b68229d9449b353d7239b4c8e789308a337f2ab4b7",
+      "bytes": 9000
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/math/Vector4.js",
+      "sha256": "9f4b35fa073fa145d5dc70a8792fc66ea3f3d7046215da2ceb99ebeb70fea4be",
+      "bytes": 5450
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/DrawListPool.js",
+      "sha256": "64edf97f098743b55ef5a56fbb79a8eecde9906e9db7e161e406360da00bdd57",
+      "bytes": 769
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/Frame.js",
+      "sha256": "025d280465dc8a67a48de11067b754e9f1261859616fe595ff085e61c730109f",
+      "bytes": 6212
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/FullscreenPass.js",
+      "sha256": "99d96c753d8d409b9d9528aca027694d69873673d7b2f6620b559ae21aafeb8f",
+      "bytes": 4135
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/Material.js",
+      "sha256": "6f2e2b1dfedb16505ce116fcdeb5601763eef97f85aa85bb430a66d91e121e91",
+      "bytes": 10905
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/MeshRenderer.js",
+      "sha256": "86306883b32c64ada9699ba11aabc98d5422edc17aa56d7a53e2057b4ef09895",
+      "bytes": 33144
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/MeshShader.js",
+      "sha256": "3ce0fcc5484bef5e603c6a893a43589285a4031d3dc55162c81e9cabd7ec7df7",
+      "bytes": 13780
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/SceneRenderer.js",
+      "sha256": "27a9686f9b7100c3dc7fde6b01dacf4549a5245eb1640a2468da23a9242c571a",
+      "bytes": 7068
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/Shadows.js",
+      "sha256": "6d484d3bfaa93c5fba0b77215b31ba84d77fd099ebd7c0c4edf1c833a2c510cd",
+      "bytes": 6999
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/SkinBounds.js",
+      "sha256": "d0fe2db018cb65a1272c2f2261809e77e276725bedf38ee04fc6244c02775b6d",
+      "bytes": 2090
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/Skinning.js",
+      "sha256": "291565d29eea04387630f1fc666a06bf1547e4544381375e933f6b2028e36aa9",
+      "bytes": 19249
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/wgsl/common.js",
+      "sha256": "77eafb3c943019038170b592b9bc7347c66bea60c053c5135bc952aa96e1d458",
+      "bytes": 12116
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/render/wgsl/lighting.js",
+      "sha256": "a23d0b0739e0b550836e97fa4daf4d48a5fe25e2a46cca1dc074613973e0986c",
+      "bytes": 21998
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/Camera.js",
+      "sha256": "329d5af76cea14ffd0dd61598827496e85374b907d4767b695747ef39d4a7f2d",
+      "bytes": 7703
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/Group.js",
+      "sha256": "04d99b85e3590b2fcca3c19c39517b6c48de55179e385f9bb6b1b1321b76cd70",
+      "bytes": 225
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/index.js",
+      "sha256": "551e01c9c1e0eced2adfb862cbbdf4e02f5951d59b55324e8bb43574198a28eb",
+      "bytes": 329
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/Layers.js",
+      "sha256": "15fdaf6265c50f21654acdfc5195fbf121a4434ab30104e8743aaa2ff9694821",
+      "bytes": 543
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/Mesh.js",
+      "sha256": "f04f443319911edd1eca97fb2c166c496ff3d4ca2ca179185f6b1ee64bfb94f9",
+      "bytes": 3662
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/Object3D.js",
+      "sha256": "78c79744e61a7ec84d49c883cdff677621a288ea5cbef115641d83e1f107c9a4",
+      "bytes": 11598
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/scene/Scene.js",
+      "sha256": "7b9fc67174331fbf18d1c76826ae866cfcf287ea487e338db34e9c0f11a14831",
+      "bytes": 1256
+    },
+    {
+      "path": "src/vendor/elsemesh/engine/webgpu.js",
+      "sha256": "b4cd25cd49b36bb1130051b38e8a5acdc77d44300124a6dae0404ebcd2591731",
+      "bytes": 1331
+    },
+    {
+      "path": "src/vendor/elsemesh/LICENSE",
+      "sha256": "bf7d406711a4cbf9af0b9eb5f2cf464ae88053e999e0e64a92b3423494dd8699",
+      "bytes": 1104
+    },
+    {
+      "path": "src/vendor/elsemesh/LICENSES/GPL-2.0-or-later.txt",
+      "sha256": "498d32907f132c2cd7d3ae269f304aed87156293f63e724b83d9f62ed787d55a",
+      "bytes": 18322
+    },
+    {
+      "path": "src/vendor/elsemesh/materials/LocalLights.js",
+      "sha256": "4f8030f2f711b5dcad1910e5f333dd61df5a58d5765b3da59cd2e197f3214949",
+      "bytes": 13438
+    },
+    {
+      "path": "src/vendor/elsemesh/materials/SceneLighting.js",
+      "sha256": "4ba10190a765b0769aaeaa40a5e942274d017e655dda130b69eea4431a0fa40d",
+      "bytes": 998
+    },
+    {
+      "path": "src/vendor/elsemesh/ocean/ComputeMips.js",
+      "sha256": "e0e56f7a48deb587b60f4c9888ffc4054c2678261cecf8859d1af7a07ccad743",
+      "bytes": 4360
+    },
+    {
+      "path": "src/vendor/elsemesh/post/AirHaze.js",
+      "sha256": "e5114ab9a69e46ec6e1c4e44c60491d256ca90f171ff7501042cb4a9e64affd9",
+      "bytes": 26115
+    },
+    {
+      "path": "src/vendor/elsemesh/post/AntiAlias.js",
+      "sha256": "3dcef77b4deb786620b4141dc2efe4b6f0661fb05e692d4b70473a4f6b3f241e",
+      "bytes": 13475
+    },
+    {
+      "path": "src/vendor/elsemesh/post/CameraVelocity.js",
+      "sha256": "4b351b68d0b1bf7730596a538ab45c09c6a7696106db65c184338e9a8964ba85",
+      "bytes": 2093
+    },
+    {
+      "path": "src/vendor/elsemesh/post/GTAO.js",
+      "sha256": "9ed56bba32ad13d35cdd0d2bf99141790d43a4db835186b3b9e84b7738fea944",
+      "bytes": 15157
+    },
+    {
+      "path": "src/vendor/elsemesh/post/LensDroplets.js",
+      "sha256": "4a8b1a938755a582de01f453dabb075a60f99f5e6fcc830357f08f775861a2a6",
+      "bytes": 5857
+    },
+    {
+      "path": "src/vendor/elsemesh/post/LensFlare.js",
+      "sha256": "ae6055e99e5b7f322bb4c366acabec7b83e9d498d342c94e259a8d0758718c97",
+      "bytes": 10332
+    },
+    {
+      "path": "src/vendor/elsemesh/post/MotionBlur.js",
+      "sha256": "832c22fd68b9d44b72a5237c8fb6d3133ac2dd85426f39a6e3d2100bec7797c1",
+      "bytes": 13344
+    },
+    {
+      "path": "src/vendor/elsemesh/post/PostFX.js",
+      "sha256": "27356f8bc7bf877c326a4a625dee83088d0693a10047add74bd8c741b18fc762",
+      "bytes": 32956
+    },
+    {
+      "path": "src/vendor/elsemesh/post/TemporalUpscale.js",
+      "sha256": "59a7f4b85830f3e029350dca3688a2fbbde9e77ec853f699bc7d1f0dee8082a8",
+      "bytes": 31322
+    },
+    {
+      "path": "src/vendor/elsemesh/post/Underwater.js",
+      "sha256": "0b026474742c560588edef84d7aa72522c0e27c42883ba8914ff00a8bd5c2c3a",
+      "bytes": 18721
+    },
+    {
+      "path": "src/vendor/elsemesh/sky/Atmosphere.js",
+      "sha256": "0d73bd433d6fbd7e2fd9bab6bd8fa218a5c9138d39d396cb3c0ef6fd2f2023b4",
+      "bytes": 19673
+    },
+    {
+      "path": "src/vendor/elsemesh/sky/Clouds.js",
+      "sha256": "58dbcf23135a3e938a388c2f6a8d3af123b0ca2f0d65437fe00f527e4e8b3a9e",
+      "bytes": 82797
+    },
+    {
+      "path": "src/vendor/elsemesh/sky/Environment.js",
+      "sha256": "949ef220c57cbd69e85a0e4ac73ef9b7692b3c22fcf51391f91e08f60a67828d",
+      "bytes": 12753
+    },
+    {
+      "path": "src/vendor/elsemesh/sky/Sky.js",
+      "sha256": "9200b2d277e1c135d123fd4982393d5f2ae359769a7b0a79f70177fedfdf524a",
+      "bytes": 11653
+    },
+    {
+      "path": "src/vendor/elsemesh/sky/SkyProClouds.js",
+      "sha256": "dab3986e02b02beae2251d61ee133b3226c2423ae991ab34cc88034401c0e9f8",
+      "bytes": 51818
+    },
+    {
+      "path": "public/clouds/baseShape64.bin",
+      "sha256": "1e11118d70768aaeb0050ff3dd19d0c9f4321e5dc02eda8c6805e838f89c35c4",
+      "bytes": 908287
+    },
+    {
+      "path": "public/clouds/blueNoise.bin",
+      "sha256": "982b0312f19ed4a737f55be30d965d85ec05d63bee679ea28c488cc8db323cc0",
+      "bytes": 4096
+    },
+    {
+      "path": "public/clouds/LICENSING.md",
+      "sha256": "ed78de3f26231dbeb73a780b31f3b95b2196bbe2c85ee5fce9f3a609968ccff8",
+      "bytes": 1146
+    }
+  ]
+}

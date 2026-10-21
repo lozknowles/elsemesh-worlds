@@ -1,0 +1,32 @@
+# ElseMesh object and prefab inventory
+
+Audited against the local `Burning-Horizons` checkout. The standalone editor retains React Three Fiber / Three.js and also converts admitted static meshes into its ElseMesh native graphics preview. It does not change the game checkout or claim player integration.
+
+## Assets available in the Worlds library
+
+| Library item | Game source / dependencies | Format and licence | Reuse readiness |
+|---|---|---|---|
+| Dead quiver trunk | `public/models/debris/dead_quiver_trunk.glb`; source albedo, normal and ARM maps; atlas pipeline in `src/world/debris/ScannedDebris.js` | Binary GLB; Poly Haven CC0 1.0, provenance in `public/models/debris/CREDITS.md` | Prepared catalogue GLB embeds albedo and normal maps, retains metre dimensions and origin, and keeps only LOD0 to avoid overlap. |
+| Dead quiver branch 01 | `public/models/debris/dead_quiver_branch_01.glb`; source texture maps as above | Binary GLB; Poly Haven CC0 1.0 | Prepared as single LOD0 with embedded albedo and normal maps; original dimensions and origin retained. |
+| Dead quiver branch 02 | `public/models/debris/dead_quiver_branch_02.glb`; source texture maps as above | Binary GLB; Poly Haven CC0 1.0 | Prepared as single LOD0 with embedded albedo and normal maps; original dimensions and origin retained. |
+| Lambis shell | `public/models/debris/lambis_shell.glb`; source texture maps as above | Binary GLB; Poly Haven CC0 1.0 | Prepared as single LOD0 with embedded albedo and normal maps; original dimensions and origin retained. |
+| Crate prop family | `public/models/props/props.bin`, `props.json`, individual albedo/normal/roughness maps; built by `tools/props/build.mjs`, emitted through `src/game/StallKit.js` | Packed custom vertex/index buffer and shared texture atlas; Poly Haven CC0 1.0 per `public/models/props/CREDITS.md` | Not standalone GLB. Current library card is an editor-native box blockout, not the detailed source crate. |
+| Village / stall structures and interior props | `src/world/Village.js`, `src/game/StallKit.js`, `src/world/village/GeoBuilder.js`, `src/world/village/VillageMaterials.js`; custom batched geometry, texture atlases and shader materials | Runtime-generated geometry and custom WebGPU material pipeline; project code MIT, vendors separately credited | Not directly portable. Extract emitters with conversion and visual checks before claiming prefab readiness. |
+| Trees, shrubs and understory plants | `src/world/Vegetation.js` and vegetation geometry/impostor modules; procedural meshes, variants, impostor atlas, alpha-tested material and per-instance data | Runtime-generated; project code MIT | Documented, not imported. Direct use requires seed/material/LOD pipeline or a GLB conversion path. |
+| Rocks, coastal debris, reef forms and sponges | `src/world/Rocks.js`, `src/world/Debris.js`, `src/world/debris/DebrisShapes.js`, `src/world/reef/ReefGeometry.js`; `GeoBuilder`, per-instance parameters and custom materials | Runtime procedural emitters; scanned debris separately CC0 | Standalone custom preview equivalents are explicitly marked blockouts; game emitter geometry is not silently represented as imported. |
+| Joe and Marta characters | `public/models/characters/joe.glb`, `marta.glb`; `public/models/characters/LICENSE-Rocketbox.md`; rig/animation use `src/engine/loaders/GLTF.js` and game skinning renderer | Binary GLB; MIT license, copyright Microsoft 2020 | Not in placeable library: ~4.7–5.5 MiB each, together exceed this editor's 15 MiB asset cap only when combined with enough world assets; animation/skinning preview not qualified. |
+
+## Editor interchange and limits
+
+The editor imports GLB into project-owned base64 bytes and validates/places it through the existing Three.js `GLTFLoader`. Project export/open preserves those bytes, mesh materials, sparse per-instance overrides addressed by stable source glTF material index and object transforms. Common glTF PBR features work through Three.js. The inspector exposes every material slot used by the scene, with source color, roughness and metalness defaults, plus per-slot and full reset. Scene mesh groups and shared material assignments remain intact. Both renderers apply the same source-index overrides; the native preview currently converts base-color textures and PBR factors, while Three.js retains the admitted normal maps. GLTF JSON `.gltf` with external resources, `.blend`, and custom runtime shader materials are not currently accepted. Morph targets are rejected with an explicit error. Compressed meshes, unsupported extensions, external resources, animation, skinning and morph targets are rejected before project admission; import errors are surfaced to the user. Blender can export selected objects as GLB; no `blender` executable was found during this audit, so no native `.blend` conversion is claimed.
+
+Bundled library GLBs were prepared by the reviewed donor working copy's `tools/prepare-elsemesh-assets.mjs` and copied into `public/assets/elsemesh/debris/`. These are derived single-LOD0 GLBs: the converter embeds albedo and normal JPEGs, omits the ARM map, and uses generic PBR factors (`metallicFactor: 0`, `roughnessFactor: 0.85`) rather than reproducing the game’s custom packed material pipeline. The geometry and source metre dimensions are retained. The adjacent `PREPARATION.md` records these differences; the copied game `CREDITS.md` supplies the original asset attribution. Catalogue SVGs are schematic icons, not screenshots or rendered thumbnails of the scanned meshes. When placed, GLB bytes are embedded in the project, so a downloaded `.emw` can reopen without the game checkout. Source and licence metadata are retained on each asset record.
+
+## Provenance
+
+- Game project: `Burning-Horizons`, repository licence MIT (`LICENSE`).
+- Scanned debris source and processing notes: Poly Haven CC0 1.0, with exact asset links and Blender processing recorded in the game-side `public/models/debris/CREDITS.md` copied beside the bundled models.
+- Worlds derivative processing: `public/assets/elsemesh/debris/PREPARATION.md`; the donor preparation process is recorded without running it against or modifying the game checkout. Thumbnails are authored schematic illustrations.
+- Other vendor assets have per-family notices; do not infer the game's MIT licence overrides those notices.
+- No external asset library was added. The Worlds repo's own baseline and assets are preserved; no repository push or game runtime change was made.
+
