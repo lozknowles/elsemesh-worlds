@@ -1,0 +1,2 @@
+import {defineConfig,devices} from '@playwright/test';
+export default defineConfig({testDir:'./e2e',testMatch:'neon-native-performance.spec.ts',workers:1,timeout:90000,outputDir:'.local-evidence/neon-native-tests',use:{baseURL:'http://127.0.0.1:5194',...devices['Desktop Chrome'],viewport:{width:1280,height:800},launchOptions:{executablePath:process.env.ELSEMESH_BROWSER_EXECUTABLE,args:['--no-sandbox','--enable-unsafe-webgpu','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']},screenshot:'only-on-failure'}});

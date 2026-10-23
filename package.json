@@ -1,7 +1,7 @@
 {
   "name": "elsemesh-worlds",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5190",
@@ -10,14 +10,16 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:ui": "playwright test",
-    "verify:catalogue": "node scripts/verify-object-catalogue.mjs"
+    "verify:catalogue": "node scripts/verify-object-catalogue.mjs",
+    "test:private-world": "node --test scripts/private-neon-server.test.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "ws": "8.22.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

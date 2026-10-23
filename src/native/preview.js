@@ -14,6 +14,8 @@ import { Environment } from '../vendor/elsemesh/sky/Environment.js';
 import { PostFX } from '../vendor/elsemesh/post/PostFX.js';
 import { createDryWorldMedium, terrainMistBase } from './DriftingMist.js';
 import { NativeWeather } from './NativeWeather.js';
+import { buildComputerGeometry, disposeComputerGeometry } from '../domain/computer.ts';
+import { buildNativeNeon } from './NativeNeon.js';
 import { buildNativeFeatures } from './NativeFeatures.js';
 import { buildNativeForest } from './NativeForest.js';
 import { buildNativeAsset } from './NativeAssets.js';
@@ -24,6 +26,7 @@ import { NativeNavigation } from './NativeNavigation.js';
 const status = document.querySelector('#status');
 let project, engine, atmosphere, sky, clouds, environment, post, sr, medium, world, shadows, weather, forest;
 let revision = 0, navigation, nextNavigationReport = 0;
+let neonRuntime={},serverOffsetMs=0;
 let assetDiagnostics=[];
 let terrainDiagnostics={imagery:false};
 const report = (value) => { status.textContent = value; };
@@ -75,7 +78,13 @@ async function rebuild(value) {
     if(object.kind==='tree'||object.kind==='group')continue;
     const item=new N.Group(); item.userData.editorObjectId=object.id; item.matrixAutoUpdate=false; item.matrix.fromArray(objectMatrices.get(object.id).elements);
     const c=object.color;
-    if(object.kind==='glb') {
+    if(object.kind==='computer') {
+      const computer=buildComputerGeometry();item.userData.computerParts=[];
+      for(const part of computer.parts){const color=part.emissive?object.computer.screenColor:part.color;const material=new Material({name:'computer-'+part.name,color,emissive:part.emissive?color:'#000000',roughness:.45,side:'double'});if(part.emissive)material.emissive.multiplyScalar(.15);item.add(new N.Mesh(nativeGeometry(part.geometry),material));item.userData.computerParts.push({name:part.name,vertices:part.geometry.getAttribute('position').count,emissive:material.emissive.toArray()});}
+      disposeComputerGeometry(computer);
+    } else if(object.kind==='neon-sign') {
+      const neon=buildNativeNeon(object.neon,nativeGeometry);neon.userData.neonObjectId=object.id;item.add(neon);
+    } else if(object.kind==='glb') {
       try {
         const asset=value.assets.find(a=>a.id===object.assetId);
         if(!asset) throw new Error('Referenced GLB asset is missing.');
@@ -146,6 +155,7 @@ async function init() {
       if(forest && forest.userData.treePreviewStats()!==previousTreeStats)send('elsemesh-native-quality',{trees:forest.userData.treePreviewStats(),renderPixels:engine.width*engine.height});
       const weatherState=weather.update(time,engine.camera,navigation.yaw,project.environment,event=>send('elsemesh-native-thunder',{event}));
       medium.uniforms.fields.lightning.value=weatherState.flash;
+      world?.traverse(node=>{if(!node.userData.updateNeon)return;const state=neonRuntime[node.userData.neonObjectId];const elapsed=Number.isFinite(state?.effectStartMs)?Math.max(0,(Date.now()+serverOffsetMs-state.effectStartMs)/1000):time;node.userData.updateNeon(elapsed,project.environment.timeOfDay??14,state?.powered);});
       setEnvironment(); atmosphere.update(dt,engine.camera.position.y);
       if(atmosphere.sunTransmittance) {
         const d=atmosphere.sunDir.value, t=atmosphere.sunTransmittance;
@@ -156,8 +166,10 @@ async function init() {
       clouds.update(dt,engine.camera); environment.update(dt); post.beginFrame();
       shadows.render(engine.scene,engine.meshRenderer,shadows.update(engine.camera,G.sunDir.value));
       sr.render(); post.render(); post.endFrame(); GPU.submit();
+      const computers=[];world?.traverse(node=>{if(node.userData.computerParts)computers.push({id:node.userData.editorObjectId,parts:node.userData.computerParts});});
+      const neons=[];world?.traverse(node=>{if(node.userData.neonState)neons.push(node.userData.neonState);});
       const hierarchyMatrices={};world?.traverse(node=>{if(node.userData.editorObjectId)hierarchyMatrices[node.userData.editorObjectId]=Array.from(node.matrixWorld.elements);});
-      window.__nativePreview={hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
+      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
       if(engine.frame===2) send('elsemesh-native-rendered');
     } catch(error) { engine.stop(); report(`Native preview failed: ${error.message}`); console.error(error); send('elsemesh-native-error',{message:error.message}); }
   });
@@ -165,6 +177,7 @@ async function init() {
 }
 window.addEventListener('message',e=>{
   if(e.origin!==location.origin || e.source!==parent) return;
+  if(e.data?.type==='elsemesh-native-neon-runtime') { neonRuntime=e.data.states??{};serverOffsetMs=Number.isFinite(e.data.serverOffsetMs)?e.data.serverOffsetMs:0;return; }
   if(e.data?.type==='elsemesh-native-navigation') { navigation?.command(e.data); if(['overview','spawn','recenter'].includes(e.data.action)) engine?.canvas.focus(); return; }
   if(e.data?.type!=='elsemesh-native-project') return;
   const next=e.data.project;

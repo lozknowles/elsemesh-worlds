@@ -1,4 +1,6 @@
+import { COMPUTER_BOUNDS } from './computer';
 import { Box3, Euler, Matrix4, Quaternion, Vector3 } from 'three';
+import { getNeonBounds } from './neon-geometry';
 import { inspectGlbJson } from './asset-glb';
 import { createTreeGeometry } from './trees';
 import type { EditorObject, Vec3, WorldProject } from './world';
@@ -73,11 +75,13 @@ export function ungroupObjects(project:WorldProject,ids:string[]):WorldProject{
 export function cloneSubtrees(project:WorldProject,ids:string[]):{objects:EditorObject[];rootIds:string[]}{
  const roots=pruneSelection(project.objects,ids),all=subtreeIds(project.objects,roots),map=new Map([...all].map(id=>[id,crypto.randomUUID()]));
  const worlds=resolveWorldMatrices(project.objects),rootSet=new Set(roots);
- const objects=project.objects.filter(o=>all.has(o.id)).map(o=>{const clone=structuredClone(o);clone.id=map.get(o.id)!;if(rootSet.has(o.id))return fromMatrix(clone,worlds.get(o.id)!);clone.parentId=map.get(o.parentId!);return clone;});
+ const objects=project.objects.filter(o=>all.has(o.id)).map(o=>{const clone=structuredClone(o);clone.id=map.get(o.id)!;if(clone.computer?.targetSignId&&map.has(clone.computer.targetSignId))clone.computer.targetSignId=map.get(clone.computer.targetSignId)!;if(rootSet.has(o.id))return fromMatrix(clone,worlds.get(o.id)!);clone.parentId=map.get(o.parentId!);return clone;});
  return{objects,rootIds:roots.map(id=>map.get(id)!)};
 }
 const treeBoundsCache=new Map<string,Box3>();
 export function objectLocalBounds(project:WorldProject,o:EditorObject):Box3{
+ if(o.kind==='computer')return new Box3(new Vector3(...COMPUTER_BOUNDS.min),new Vector3(...COMPUTER_BOUNDS.max));
+ if(o.kind==='neon-sign'){if(!o.neon)throw new Error('Missing neon config.');const bounds=getNeonBounds(o.neon);return new Box3(new Vector3(...bounds.min),new Vector3(...bounds.max));}
  if(o.kind==='glb'){const asset=project.assets.find(a=>a.id===o.assetId);if(!asset)throw new Error('Asset bounds are unavailable.');let b=asset.bounds;if(!b){const binary=atob(asset.dataUrl.slice(asset.dataUrl.indexOf(',')+1));b=inspectGlbJson(Uint8Array.from(binary,c=>c.charCodeAt(0)).buffer).bounds;}return new Box3(new Vector3(...b.min),new Vector3(...b.max));}
  if(o.kind==='building'){const roof=2.7/Math.sqrt(2);return new Box3(new Vector3(-roof,0,-roof),new Vector3(roof,3.1,roof));}
  if(o.kind==='tree'){

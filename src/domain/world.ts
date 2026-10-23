@@ -1,3 +1,8 @@
+import { validateComputer, MAX_COMPUTERS } from './computer';
+import type { ComputerConfig } from './computer';
+import { neonTriangleCount, MAX_WORLD_NEON_TRIANGLES } from './neon-geometry';
+import { validateNeonSign } from './neon-sign';
+import type { NeonSignConfig } from './neon-sign';
 import { validateHierarchy, validateWorldBounds } from './object-hierarchy';
 import { inspectGlbJson, MAX_ASSET_BYTES } from './asset-glb';
 import type { AssetBounds } from './asset-glb';
@@ -43,7 +48,9 @@ export type WorldAsset = {
 export type EditorObject = {
   id: string;
   name: string;
-  kind: PrimitiveKind | 'glb' | 'group';
+  kind: PrimitiveKind | 'glb' | 'group' | 'neon-sign' | 'computer';
+  computer?: ComputerConfig;
+  neon?: NeonSignConfig;
   parentId?: string;
   locked?: boolean;
   description?: string;
@@ -261,7 +268,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       object.scale.some((n) => n <= 0 || n > 1000)
     )
       errors.push(`Object ${index + 1} has invalid properties or transforms.`);
-    if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb', 'group'].includes(object.kind))
+    if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb', 'group', 'neon-sign', 'computer'].includes(object.kind))
       errors.push(`Object ${index + 1} uses an unsupported type.`);
     if (object?.kind === 'glb' && (typeof object.assetId !== 'string' || !assetIds.has(object.assetId)))
       errors.push(`Object ${index + 1} references an asset that is missing from the project.`);
@@ -279,7 +286,13 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       if (object.kind !== 'glb') errors.push(`Object ${index + 1} material overrides require an imported GLB.`);
     }
   }
-  if (Array.isArray(p.objects)) errors.push(...validateHierarchy(p.objects));
+  if (Array.isArray(p.objects)) {
+    errors.push(...validateHierarchy(p.objects));
+    if(p.objects.filter(o=>o?.kind==='computer').length>MAX_COMPUTERS)errors.push('Worlds may contain at most 32 computers.');
+    for(const o of p.objects){if(o?.kind==='computer'){errors.push(...validateComputer(o.computer));if(o.assetId!==undefined)errors.push('Computers cannot reference assets.');}else if(o?.computer!==undefined)errors.push('Computer configuration requires a computer object.');}
+    if(p.objects.filter(o=>o?.kind==='neon-sign').length>50)errors.push('Worlds may contain at most 50 neon signs.');
+    for(const o of p.objects){if(o?.kind==='neon-sign')errors.push(...validateNeonSign(o.neon));else if(o?.neon!==undefined)errors.push('Neon configuration requires a neon-sign object.');}
+  }
   if (!p.spawn || !finiteVec3(p.spawn.position) || !Number.isFinite(p.spawn.yaw))
     errors.push('Spawn position is invalid.');
   if (
@@ -367,7 +380,10 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
     try { if (new TextEncoder().encode(JSON.stringify(p)).byteLength > MAX_PROJECT_BYTES) errors.push('Projects with embedded imagery must fit the 25 MiB project limit.'); }
     catch { errors.push('Project imagery could not be serialized.'); }
   }
-  if (!errors.length) errors.push(...validateWorldBounds(p as WorldProject));
+  if (!errors.length) {
+    try { if (p.objects!.reduce((n,o)=>n+(o.kind==='neon-sign'?neonTriangleCount(o.neon!):0),0)>MAX_WORLD_NEON_TRIANGLES)errors.push('Neon signs exceed the world budget of 1,000,000 triangles.'); } catch(error){ errors.push((error as Error).message); }
+    if(!errors.length)errors.push(...validateWorldBounds(p as WorldProject));
+  }
   return errors.length ? { valid: false, errors } : { valid: true, errors, project: { ...p, features: p.features ?? [] } as WorldProject };
 }
 

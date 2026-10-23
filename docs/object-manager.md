@@ -81,3 +81,7 @@ The limits remain 2,000 objects (including group containers), 128 embedded asset
 15 MiB embedded asset bytes and 25 MiB project bytes. Grouping the warehouse adds
 one object. Copying that entire assembly into the same world exceeds the object
 limit and is rejected.
+
+## Camera framing
+
+Use **Frame world** in the editor viewport toolbar to fit visible objects, including elevated builds. **Frame selected** fits the selection and its descendants. Empty worlds fit terrain. These commands preserve the current viewing direction; ordinary object edits preserve manual orbit and pan. Framing is unavailable during first-person or native preview.

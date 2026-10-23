@@ -1,4 +1,4 @@
-# ElseMesh Worlds
+# ElseMesh Worlds 1.0
 
 Standalone local browser world builder. Run `npm ci` then `npm run dev`; open http://127.0.0.1:5190/ in Edge. `npm run build`, `npm run lint`, `npm test`, and `npm run test:ui` provide build and checks.
 
@@ -8,8 +8,11 @@ Standalone local browser world builder. Run `npm ci` then `npm run dev`; open ht
 - Place seeded broadleaf, palm and pine trees with wind animation.
 - Draw rivers, clipped lakes, paths, bridges, shapes and animated waterfalls using Pen & water.
 - Import OS-compatible EPSG:27700 ASCII terrain with centre/radius crop; drape licensed, bounded PNG/JPEG imagery.
-- Search the unified asset catalogue: four prepared CC0 scanned debris models plus clearly labelled primitives and blockouts. Static GLB import, source material slots, overrides, transforms, snapping and grounded placement.
-- Save/open embedded .emw project documents, browser autosave, Undo/Redo and JSON world export.
+- Browse 1,775 verified static Kenney models across 19 source packs, alongside four prepared ElseMesh debris models and clearly labelled primitives/blockouts. Static GLB import, source material slots, overrides, transforms, snapping and grounded placement.
+- Group objects in a hierarchical Scene explorer; Shift-select, resize complete assemblies, copy subtrees and inherit visibility/locks.
+- Create procedural 3D neon signs with two bundled fonts, editable presets, eight lighting effects and local first-person power interaction. Save reusable single-sign presets.
+- Place an interactive desktop computer with Home, World Info and Linked Neon Control in local first-person preview.
+- Save/open schema 2 embedded .emw projects, explicitly migrate legacy flat projects, use browser autosave and Undo/Redo, and export repository snapshots.
 
 ## Views
 
@@ -27,4 +30,13 @@ See docs/user-guide.md, docs/world-format.md, docs/asset-inventory.md, docs/tree
 
 Choose **World repository** to open or save a separate content folder in Edge or Chrome. Each player can maintain that folder in their own GitHub repository. Models and imagery are separate binary files, settings are JSON, and the root manifest selects an immutable snapshot. The builder needs no GitHub credentials. Commit/push with GitHub Desktop or Git. See [world repository guide](docs/world-repositories.md) for workflow, conflict handling and compatibility limits.
 
-CI runs dependency audit, lint, build and the existing domain checks. Native browser scenarios are local headed Edge qualification and some require the separately supplied Hope Valley data; they are not claimed by Linux CI. World repository folder-picker and interrupted-write acceptance have not yet been independently exercised.
+Release 1.0 is verified locally on hpubuntu; GitHub CI is not used for this release. The retained workflow is not a release gate. Native browser scenarios are local headed Edge qualification and some require the separately supplied Hope Valley data; they are not claimed by Linux CI. World repository folder-picker and interrupted-write acceptance have not yet been independently exercised.
+
+
+## Experimental private sign world
+
+An explicitly enrolled, single-authority private test server and fixed loopback client proxy are included. Owner/member permissions, challenge authentication, versioned snapshots and durable updates have focused tests. This is not federation between independent servers; actual multi-device acceptance remains outstanding. See [private world](docs/private-neon-world.md) and [client setup](docs/private-neon-client.md).
+
+## Release scope
+
+Version 1.0.0 is an editor source release. It does not deploy or modify the live ElseMesh game. Player-world/2 admission, general behaviour graphs, movement-path simulation, shell-only resizing, full programmable prefabs and production federation remain unqualified or unimplemented. Group dimensions and first-person object contact use conservative bounds. See [object manager](docs/object-manager.md), [neon signs](docs/neon-signs.md), [computer](docs/computer.md), and [release notes](CHANGELOG.md).

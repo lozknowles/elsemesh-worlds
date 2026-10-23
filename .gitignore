@@ -19,3 +19,5 @@ worlds/
 public/worlds/*
 !public/worlds/warehouse/
 !public/worlds/warehouse/warehouse.emw
+
+.local-evidence/

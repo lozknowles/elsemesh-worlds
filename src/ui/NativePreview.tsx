@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
+import type { NeonRuntimeState } from './NeonRuntime';
 import type { WorldProject } from '../domain/world';
 import { createThunderAudio } from './thunderAudio';
 import './NativePreview.css';
 
-export default function NativePreview({ project, onChange, onClose }: {
+export default function NativePreview({ project, onChange, onClose, neonRuntime, serverOffsetMs = 0 }: {
   project: WorldProject;
+  neonRuntime?: Record<string,NeonRuntimeState>;
+  serverOffsetMs?: number;
   onChange: (update: (project: WorldProject) => WorldProject) => void;
   onClose: () => void;
 }) {
@@ -36,6 +39,9 @@ export default function NativePreview({ project, onChange, onClose }: {
   useEffect(() => {
     if (ready) frame.current?.contentWindow?.postMessage({ type: 'elsemesh-native-project', project }, location.origin);
   }, [ready, project]);
+  useEffect(() => {
+    if (ready) frame.current?.contentWindow?.postMessage({type:'elsemesh-native-neon-runtime',states:neonRuntime ?? {},serverOffsetMs},location.origin);
+  },[ready,neonRuntime,serverOffsetMs]);
   const change = (key: string, value: number) => onChange(p => ({ ...p, environment: { ...p.environment, [key]: value } }));
   const navigate = (action: string, extra: { value?: number; code?: string } = {}) => frame.current?.contentWindow?.postMessage({ type: 'elsemesh-native-navigation', action, ...extra }, location.origin);
   const controls = [

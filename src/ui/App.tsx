@@ -2,7 +2,7 @@ import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Grid, OrbitControls, TransformControls } from '@react-three/drei';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent, ReactNode } from 'react';
+import type { ChangeEvent, ComponentRef, ReactNode } from 'react';
 import * as THREE from 'three';
 import {
   createTerrain,
@@ -19,7 +19,22 @@ import { loadSavedProject, saveProject as persistProject } from '../domain/persi
 import NativePreview from './NativePreview';
 import CataloguePanel from './CataloguePanel';
 import SceneExplorer from './SceneExplorer';
-import { effectiveObjectState, pruneSelection, groupObjects, ungroupObjects, reparentObjects, getGroupBounds, resizeGroup, cloneSubtrees, subtreeIds, collisionWorldBounds, resolveWorldMatrices } from '../domain/object-hierarchy';
+import NeonSign, { NeonInteraction } from './NeonSign';
+import { NeonRuntimeContext } from './NeonRuntime';
+import type { NeonRuntimeState,NeonInteractionTarget } from './NeonRuntime';
+import NeonDesigner from './NeonDesigner';
+import ComputerShape from './ComputerShape';
+import ComputerPanel from './ComputerPanel';
+import { defaultComputer } from '../domain/computer';
+import { resolvePlayerMotion } from '../domain/player-contact';
+import { PrivateNeonSession } from './PrivateNeonSession';
+import type { PrivateNeonControl } from './PrivateNeonSession';
+import type { PrivateNeonSnapshot } from '../domain/private-neon-client';
+import { privateNeonMatchesWorld } from '../domain/private-neon-client';
+import { getNeonBounds } from '../domain/neon-geometry';
+import { defaultNeonSign } from '../domain/neon-sign';
+import type { NeonSignConfig } from '../domain/neon-sign';
+import { effectiveObjectState, pruneSelection, groupObjects, ungroupObjects, reparentObjects, getGroupBounds, resizeGroup, cloneSubtrees, subtreeIds, collisionWorldBounds, resolveWorldMatrices, objectLocalBounds } from '../domain/object-hierarchy';
 import CataloguePlacement from './CataloguePlacement';
 import type { PlacementHit } from './CataloguePlacement';
 import { fetchCatalogueModel, surfacePlacement, commitCataloguePlacement } from '../domain/object-catalogue';
@@ -39,6 +54,7 @@ import RepositoryPanel from './RepositoryPanel';
 import type { createGeographicTerrain, TerrainImagery } from '../domain/geography';
 
 type Tool = 'select' | 'translate' | 'rotate' | 'scale';
+type FrameRequest = { kind: 'world' | 'selected'; revision: number };
 type Brush = 'raise' | 'lower' | 'flatten' | 'smooth' | 'paint' | 'vertices';
 const palettes = ['#a8b87b', '#cf956c', '#9dabb9', '#d8c36e', '#779e9a', '#d7d4c8'];
 const terrainColors = [
@@ -235,6 +251,8 @@ function TerrainMesh({
 
 function Shape({ object, asset }: { object: EditorObject; asset?: WorldProject['assets'][number] }) {
   const common = { castShadow: true, receiveShadow: true };
+  if (object.kind === 'computer' && object.computer) return <ComputerShape id={object.id} screenColor={object.computer.screenColor}/>;
+  if (object.kind === 'neon-sign' && object.neon) return <NeonSign id={object.id} config={object.neon}/>;
   if (object.kind === 'glb') return <ImportedAsset asset={asset} overrides={object.materialOverrides} />;
   if (object.kind === 'sphere')
     return (
@@ -357,15 +375,18 @@ function WorldEntity({
 function PreviewCamera({
   project,
   active,
+  paused,
   onExit,
 }: {
   project: WorldProject;
   active: boolean;
+  paused: boolean;
   onExit: () => void;
 }) {
   const { camera, gl } = useThree();
   const keys = useRef(new Set<string>());
-  const velocityY = useRef(0);
+  const velocityY = useRef(0),grounded = useRef(false),pausedRef = useRef(paused);
+  useEffect(()=>{pausedRef.current=paused;if(paused){keys.current.clear();document.exitPointerLock?.();}},[paused]);
   const colliders = useMemo(() => collisionWorldBounds(project), [project]);
   const yaw = useRef(project.spawn.yaw);
   const pitch = useRef(0);
@@ -382,13 +403,14 @@ function PreviewCamera({
     );
     camera.rotation.set(0, yaw.current, 0);
     const down = (event: globalThis.KeyboardEvent) => {
+      if(pausedRef.current)return;
       keys.current.add(event.code);
       if (event.code === 'Escape') onExit();
     };
     const up = (event: globalThis.KeyboardEvent) => keys.current.delete(event.code);
     const lock = () => setLocked(document.pointerLockElement === gl.domElement);
     const move = (event: MouseEvent) => {
-      if (document.pointerLockElement !== gl.domElement) return;
+      if (pausedRef.current || document.pointerLockElement !== gl.domElement) return;
       yaw.current -= event.movementX * 0.002;
       pitch.current = Math.max(-1.35, Math.min(1.35, pitch.current - event.movementY * 0.002));
     };
@@ -404,7 +426,7 @@ function PreviewCamera({
     };
   }, [active, camera, gl, onExit, project.spawn]);
   useFrame((_, delta) => {
-    if (!active) return;
+    if (!active || pausedRef.current) return;
     const dt = Math.min(delta, 0.04),
       key = keys.current;
     const speed = key.has('ShiftLeft') ? 8 : 4.5;
@@ -413,28 +435,12 @@ function PreviewCamera({
     const dir = new THREE.Vector3(side, 0, -forward)
       .normalize()
       .applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw.current);
-    const oldX = camera.position.x,
-      oldZ = camera.position.z;
-    camera.position.x += dir.x * speed * dt;
-    camera.position.z += dir.z * speed * dt;
-    const feet = camera.position.y - 1.65;
-    let groundY = sampleTerrain(project.terrain, camera.position.x, camera.position.z);
-    for (const { object, bounds } of colliders) {
-      const bottom = bounds.min.y, top = bounds.max.y;
-      const overlaps = camera.position.x > bounds.min.x - 0.28 && camera.position.x < bounds.max.x + 0.28 &&
-        camera.position.z > bounds.min.z - 0.28 && camera.position.z < bounds.max.z + 0.28;
-      if (!overlaps) continue;
-      if (object.collision === 'walkable' && feet <= top + 0.45) groundY = Math.max(groundY, top);
-      else if (feet < top && feet + 1.75 > bottom) {
-        camera.position.x = oldX;
-        camera.position.z = oldZ;
-      }
-    }
-    const ground = groundY + 1.65;
-    if (key.has('Space') && camera.position.y <= ground + 0.03) velocityY.current = 5.2;
-    velocityY.current -= 12 * dt;
-    camera.position.y = Math.max(ground, camera.position.y + velocityY.current * dt);
-    if (camera.position.y <= ground) velocityY.current = 0;
+    const previous=camera.position.toArray() as Vec3;
+    if(key.has('Space')&&grounded.current)velocityY.current=5.2;
+    velocityY.current-=12*dt;
+    const proposed:Vec3=[previous[0]+dir.x*speed*dt,previous[1]+velocityY.current*dt,previous[2]+dir.z*speed*dt];
+    const contact=resolvePlayerMotion({previous,position:proposed,velocityY:velocityY.current,colliders,terrainHeight:sampleTerrain(project.terrain,proposed[0],proposed[2]),terrainHeightAt:(x,z)=>sampleTerrain(project.terrain,x,z)});
+    camera.position.fromArray(contact.position);velocityY.current=contact.velocityY;grounded.current=contact.grounded;
     camera.rotation.order = 'YXZ';
     camera.rotation.set(pitch.current, yaw.current, 0);
   });
@@ -458,6 +464,7 @@ function Scene({
   strength,
   material,
   preview,
+  computerPaused,
   terrainEditing,
   onExitPreview,
   objects,
@@ -470,7 +477,9 @@ function Scene({
   snapStep,
   placementActive,
   onMoveObject,
+  frameRequest,
 }: {
+  frameRequest: FrameRequest | null;
   project: WorldProject;
   selectedId: string | null;
   selectedIds: string[];
@@ -482,6 +491,7 @@ function Scene({
   strength: number;
   material: number;
   preview: boolean;
+  computerPaused: boolean;
   terrainEditing: boolean;
   onExitPreview: () => void;
   placementActive: boolean;
@@ -497,6 +507,33 @@ function Scene({
 }) {
   const camera = useThree((state) => state.camera);
   const [terrainDragging, setTerrainDragging] = useState(false);
+  const orbitRef = useRef<ComponentRef<typeof OrbitControls>>(null);
+  const orbitTarget = useMemo<Vec3>(() => [0, project.geography ? sampleTerrain(project.terrain,0,0) : 3,0], [project.geography,project.terrain]);
+  const lastFrameRequest = useRef<FrameRequest | null>(null);
+  useEffect(() => {
+    if (!frameRequest || lastFrameRequest.current === frameRequest || preview || !orbitRef.current || !(camera instanceof THREE.PerspectiveCamera)) return;
+    lastFrameRequest.current = frameRequest;
+    const included = frameRequest.kind === 'selected' ? subtreeIds(project.objects,selectedIds) : null;
+    const matrices = resolveWorldMatrices(project.objects);
+    const bounds = new THREE.Box3();
+    for (const object of project.objects) {
+      if (object.kind === 'group' || (included && !included.has(object.id)) || !effectiveObjectState(project.objects,object.id).visible) continue;
+      bounds.union(objectLocalBounds(project,object).applyMatrix4(matrices.get(object.id)!));
+    }
+    if (bounds.isEmpty()) bounds.set(new THREE.Vector3(-project.terrain.width/2,Math.min(...project.terrain.heights),-project.terrain.depth/2),new THREE.Vector3(project.terrain.width/2,Math.max(...project.terrain.heights),project.terrain.depth/2));
+    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+    const vertical = THREE.MathUtils.degToRad(camera.fov);
+    const horizontal = 2*Math.atan(Math.tan(vertical/2)*camera.aspect);
+    const distance = Math.max(4,sphere.radius/Math.sin(Math.min(vertical,horizontal)/2)*1.15);
+    const direction = camera.position.clone().sub(orbitRef.current.target).normalize();
+    if (!direction.lengthSq()) direction.set(1,1,1).normalize();
+    camera.position.copy(sphere.center).addScaledVector(direction,distance);
+    orbitRef.current.target.copy(sphere.center);
+    camera.lookAt(sphere.center);
+    camera.updateProjectionMatrix();
+    orbitRef.current.update();
+  }, [frameRequest,preview,camera,project,selectedIds]);
+
   const cameraConfiguration = useRef<{ view: string; geography: WorldProject['geography']; worldId: string } | null>(null);
   useEffect(() => {
     if (cameraConfiguration.current?.view === viewPreset && cameraConfiguration.current?.geography === project.geography && cameraConfiguration.current?.worldId === project.metadata.worldId) return;
@@ -582,14 +619,15 @@ function Scene({
         {renderObjects()}
       </Suspense>
       <OrbitControls
+        ref={orbitRef}
         makeDefault
         enabled={!preview && !terrainDragging && !placementActive}
-        target={[0, project.geography ? sampleTerrain(project.terrain, 0, 0) : 3, 0]}
+        target={orbitTarget}
         maxPolarAngle={Math.PI * 0.49}
         minDistance={4}
         maxDistance={Math.max(220, project.terrain.width * 4)}
       />
-      <PreviewCamera project={project} active={preview} onExit={onExitPreview} />
+      <PreviewCamera project={project} active={preview} paused={computerPaused} onExit={onExitPreview} />
     </>
   );
 }
@@ -617,7 +655,12 @@ function makeObject(kind: PrimitiveKind): EditorObject {
 export default function App() {
   const [project, setProjectState] = useState<WorldProject>(() => createWorld('Northwind test world'));
   const projectRef = useRef(project);
-  const setProjectRaw = useCallback((next: WorldProject) => {
+  const setProjectRaw = useCallback((candidate: WorldProject) => {
+    const snapshot=privateSnapshotRef.current;
+    const matches=privateNeonMatchesWorld(snapshot,candidate.metadata.worldId,candidate.objects.filter(object=>object.kind==='neon-sign').map(object=>object.id));
+    const accepted=matches&&snapshot?new Map(snapshot.signs.map(sign=>[sign.id,sign.config])):null;
+    const next=accepted&&snapshot?{...candidate,environment:{...candidate.environment,timeOfDay:snapshot.worldHour},objects:candidate.objects.map(object=>{const config=accepted.get(object.id);return config&&object.kind==='neon-sign'?{...object,neon:structuredClone(config),color:config.color}:object;})}:candidate;
+    if(openComputerIdRef.current&&!next.objects.some(object=>object.id===openComputerIdRef.current&&object.kind==='computer')){openComputerIdRef.current=null;setOpenComputerId(null);}
     projectRef.current = next;
     setProjectState(next);
     setSelection(previous => pruneSelection(next.objects,previous));
@@ -626,8 +669,9 @@ export default function App() {
   const [selection, setSelection] = useState<string[]>([]);
   const selectedIds = useMemo(() => pruneSelection(project.objects, selection), [project.objects, selection]);
   const selectedId = selectedIds.at(-1) ?? null;
-  const setSelectedId = useCallback((id: string | null) => setSelection(id ? [id] : []), []);
-  const selectObject = useCallback((id: string, additive = false) => setSelection(previous => additive ? previous.includes(id) ? previous.filter(item => item !== id) : [...previous, id] : [id]), []);
+  const selectionEpoch = useRef(0);
+  const setSelectedId = useCallback((id: string | null) => { selectionEpoch.current++;setSelection(id ? [id] : []); }, []);
+  const selectObject = useCallback((id: string, additive = false) => { selectionEpoch.current++;setSelection(previous => additive ? previous.includes(id) ? previous.filter(item => item !== id) : [...previous, id] : [id]); }, []);
   const clipboard = useRef<{ project: WorldProject; ids: string[] } | null>(null);
   const [tool, setTool] = useState<Tool>('select');
   const [brush, setBrush] = useState<Brush>('raise');
@@ -650,10 +694,51 @@ export default function App() {
   const worldGeneration = useRef(0);
   const assetOperation = useRef(0);
   const pendingAssetOperation = useRef<number | null>(null);
+  const [frameRequest,setFrameRequest] = useState<FrameRequest | null>(null);
   const [viewPreset, setViewPreset] = useState<'perspective' | 'top'>('perspective');
   const [preview, setPreview] = useState(false);
   const [nativePreview, setNativePreview] = useState(false);
   const [pointerLocked, setPointerLocked] = useState(false);
+  const [neonRuntime,setNeonRuntime] = useState<Record<string,NeonRuntimeState>>({});
+  const [neonTarget,setNeonTarget] = useState<NeonInteractionTarget|null>(null);
+  const [openComputerId,setOpenComputerId] = useState<string|null>(null);
+  const openComputerIdRef = useRef<string|null>(null);
+  const computerOpened = useRef({clock:0,at:0});
+  const openComputerPanel = useCallback((id:string,time:number)=>{computerOpened.current={clock:time,at:performance.now()};openComputerIdRef.current=id;setOpenComputerId(id);setNeonTarget(null);document.exitPointerLock?.();},[]);
+  const closeComputerPanel = useCallback(()=>{openComputerIdRef.current=null;setOpenComputerId(null);const canvas=document.querySelector('main canvas') as HTMLCanvasElement|null;if(canvas){canvas.tabIndex=0;canvas.focus();}},[]);
+  const [privateSnapshot,setPrivateSnapshot] = useState<PrivateNeonSnapshot|null>(null);
+  const [privateClockOffset,setPrivateClockOffset] = useState(0);
+  const [privateLoadedWorldId,setPrivateLoadedWorldId] = useState<string|null>(null);
+  const privateSnapshotRef = useRef<PrivateNeonSnapshot|null>(null),privateControlRef = useRef<PrivateNeonControl|null>(null),privateWorldId = useRef<string|null>(null);
+  const privateSignIds = project.objects.filter(object => object.kind === 'neon-sign').map(object => object.id);
+  const privateSessionActive = privateNeonMatchesWorld(privateSnapshot,project.metadata.worldId,privateSignIds);
+  const privateWorldHour=privateSessionActive?privateSnapshot!.worldHour:undefined;
+  const privateRenderProject=useMemo(() => privateWorldHour===undefined?project:{...project,environment:{...project.environment,timeOfDay:privateWorldHour}}, [project,privateWorldHour]);
+  const effectiveNeonRuntime: Record<string,NeonRuntimeState> = privateSessionActive ? Object.fromEntries(privateSnapshot!.signs.map(sign => [sign.id,{powered:sign.powered,effectStart:0,effectStartMs:privateSnapshot!.effectStart,config:sign.config}])) : neonRuntime;
+  const receivePrivateRuntime = useCallback((snapshot: PrivateNeonSnapshot|null,offsetMs: number) => {
+    privateSnapshotRef.current=snapshot;setPrivateSnapshot(snapshot);setPrivateClockOffset(offsetMs);
+    if (!privateNeonMatchesWorld(snapshot,projectRef.current.metadata.worldId,projectRef.current.objects.filter(object => object.kind === 'neon-sign').map(object => object.id)) || !snapshot) return;
+    privateWorldId.current=snapshot.worldId;setPrivateLoadedWorldId(snapshot.worldId);
+    const accepted=new Map(snapshot.signs.map(sign => [sign.id,sign.config])),latest=projectRef.current;
+    const objects=latest.objects.map(object => {
+      const config=accepted.get(object.id);
+      return config && object.kind === 'neon-sign' && JSON.stringify(config) !== JSON.stringify(object.neon) ? {...object,neon:structuredClone(config),color:config.color} : object;
+    });
+    if (objects.every((object,index) => object === latest.objects[index]) && latest.environment.timeOfDay === snapshot.worldHour) return;
+    const result=validateWorld({...latest,objects,environment:{...latest.environment,timeOfDay:snapshot.worldHour}});
+    if(result.valid && result.project)setProjectRaw(result.project);
+  }, [setProjectRaw]);
+  const receivePrivateControl = useCallback((control: PrivateNeonControl|null) => {privateControlRef.current=control;}, []);
+  const toggleRuntimeNeon = useCallback((id: string,time: number) => {
+    const object = projectRef.current.objects.find(object => object.id === id);
+    if (!object?.neon) return;
+    if (privateWorldId.current === projectRef.current.metadata.worldId || privateSnapshotRef.current?.worldId === projectRef.current.metadata.worldId) {
+      const snapshot=privateSnapshotRef.current,sign=snapshot?.signs.find(sign => sign.id === id);
+      if (!privateNeonMatchesWorld(snapshot,projectRef.current.metadata.worldId,projectRef.current.objects.filter(object => object.kind === 'neon-sign').map(object => object.id)) || !privateControlRef.current || !sign) { setToast('Connect to the private server before changing shared signs.'); return; }
+      privateControlRef.current.setPower(id,!sign.powered);return;
+    }
+    setNeonRuntime(previous => ({ ...previous,[id]:{ powered: !(previous[id]?.powered ?? object.neon!.powered),effectStart: time } }));
+  }, []);
   const [hydrated, setHydrated] = useState(false);
   const [saved, setSaved] = useState('Saved locally');
   const [toast, setToast] = useState('');
@@ -673,7 +758,7 @@ export default function App() {
   const selectedLocked = selected ? [...subtreeIds(objects,[selected.id])].some(id => effectiveObjectState(objects,id).locked) : false;
   const selectedParentLocked = selected?.parentId ? effectiveObjectState(objects,selected.parentId).locked : false;
   const current = project;
-  const exitPreview = useCallback(() => setPreview(false), []);
+  const exitPreview = useCallback(() => { setPreview(false); openComputerIdRef.current=null;setOpenComputerId(null);setNeonRuntime({}); setNeonTarget(null); }, []);
 
   const setProject = useCallback((update: (value: WorldProject) => WorldProject) => {
     const before = projectRef.current;
@@ -725,6 +810,7 @@ export default function App() {
   }, [current, hydrated]);
   useEffect(() => {
     const key = (event: globalThis.KeyboardEvent) => {
+      if(openComputerId){if(event.key==='Escape'){event.preventDefault();closeComputerPanel();}return;}
       if ((pendingPlacement || catalogueAbort.current) && !isTyping(event.target)) {
         if (event.key === 'Escape') { event.preventDefault(); cancelAssetOperations(); message('Object placement cancelled'); return; }
         if (event.key.toLowerCase() === 'r' && pendingPlacement) { event.preventDefault(); setPendingPlacement(p => p ? { ...p, yaw: p.yaw + Math.PI / 12 } : p); return; }
@@ -803,6 +889,7 @@ export default function App() {
     if (next.kind === 'waterfall') finishFeature(next); else setDraftFeature(next);
   }
   function undo() {
+    if (privateSessionActive) { message('Disconnect the private session before using Undo. Accepted server configuration is not undone locally.'); return; }
     const previous = undoStack.current.pop();
     if (!previous) return;
     redoStack.current.push(current);
@@ -810,6 +897,7 @@ export default function App() {
     message('Change undone');
   }
   function redo() {
+    if (privateSessionActive) { message('Disconnect the private session before using Redo.'); return; }
     const next = redoStack.current.pop();
     if (!next) return;
     undoStack.current.push(current);
@@ -839,6 +927,46 @@ export default function App() {
     if (!result.valid || !result.project) throw new Error(result.errors[0] ?? 'Invalid object change.');
     if (new TextEncoder().encode(JSON.stringify(next)).byteLength > MAX_PROJECT_BYTES) throw new Error('The project would exceed the 25 MiB limit.');
     setProject(() => result.project!);
+  }
+  function loadPrivateWorld(snapshot: PrivateNeonSnapshot) {
+    if (!window.confirm('Load the matching private neon test world? Your current world is retained in Undo; disconnect the private session before restoring it.')) return;
+    try {
+      const next=createWorld('Private neon test world');next.metadata.worldId=snapshot.worldId;
+      next.metadata.description='Private server-authorised sign configuration and runtime power; object transforms remain local.';
+      next.terrain.heights.fill(0);next.spawn.position=[0,0,2.5];next.environment.timeOfDay=snapshot.worldHour;
+      let cursor=0;
+      next.objects=snapshot.signs.map((sign,index) => {
+        const bounds=getNeonBounds(sign.config),width=bounds.max[0]-bounds.min[0];
+        const object:EditorObject={id:sign.id,name:'Shared sign '+(index+1),kind:'neon-sign',neon:structuredClone(sign.config),position:[cursor,1.65,0],rotation:[0,0,0],scale:[1,1,1],color:sign.config.color,visible:true,collision:'none'};
+        cursor+=width+2;return object;
+      });
+      cancelAssetOperations();commitObjectCommand(next);privateWorldId.current=snapshot.worldId;setPrivateLoadedWorldId(snapshot.worldId);
+      setSelectedId(next.objects[0]?.id??null);setPreview(false);setNativePreview(false);
+      message('Private test world loaded. Enter preview and aim at the first sign to use E.');
+    } catch(error) { message(error instanceof Error ? error.message : 'Could not load private world'); }
+  }
+  function addComputer() {
+    try {
+      const computer=defaultComputer(projectRef.current.objects.find(object=>object.kind==='neon-sign')?.id);
+      const object:EditorObject={id:newId(),name:'World computer',kind:'computer',computer,position:[0,sampleTerrain(project.terrain,0,0)+1,0],rotation:[0,0,0],scale:[1,1,1],color:'#1b2028',visible:true,collision:'none'};
+      commitObjectCommand({...projectRef.current,objects:[...projectRef.current.objects,object]});setSelectedId(object.id);message('Computer created. Place it on a desk, then aim at it in preview and press E.');
+    } catch(error){message(error instanceof Error?error.message:'Could not create computer');}
+  }
+  function addNeonSign() {
+    try {
+      const config = defaultNeonSign('THE RED LION');
+      const object: EditorObject = { id:newId(), name:'Neon sign',kind:'neon-sign',neon:config,position:[0,sampleTerrain(project.terrain,0,0)+3,0],rotation:[0,0,0],scale:[1,1,1],color:config.color,visible:true,collision:'none' };
+      commitObjectCommand({ ...projectRef.current,objects:[...projectRef.current.objects,object] });setSelectedId(object.id);message('Neon sign created: THE RED LION');
+    } catch (error) { message(error instanceof Error ? error.message : 'Could not create neon sign'); }
+  }
+  function updateNeonSign(config: NeonSignConfig) {
+    if (!selected || selected.kind !== 'neon-sign') return;
+    if (privateWorldId.current === projectRef.current.metadata.worldId || privateSnapshotRef.current?.worldId === projectRef.current.metadata.worldId) {
+      const snapshot=privateSnapshotRef.current;
+      if (!privateNeonMatchesWorld(snapshot,projectRef.current.metadata.worldId,projectRef.current.objects.filter(object => object.kind === 'neon-sign').map(object => object.id)) || !privateControlRef.current || snapshot?.role !== 'owner') { message('Only the connected enrolled owner can edit shared sign configuration.'); return; }
+      privateControlRef.current.setConfig(selected.id,config);return;
+    }
+    if (mutateObject(selected.id,{ neon:config,color:config.color })) setNeonRuntime(previous => { const next={...previous};delete next[selected.id];return next; });
   }
   function copySelection() {
     if (!selectedIds.length) return;
@@ -1016,6 +1144,8 @@ export default function App() {
     }
   }
   function cancelAssetOperations() {
+    openComputerIdRef.current=null;setOpenComputerId(null);
+    setNeonRuntime({}); setNeonTarget(null);
     catalogueAbort.current?.abort(); catalogueAbort.current = null;
     setPendingPlacement(null); setPlacementHit(null);
     worldGeneration.current++;
@@ -1179,10 +1309,10 @@ export default function App() {
           <span className="save-state">{saved}</span>
         </div>
         <div className="top-actions">
-          <button title="Undo (Ctrl+Z)" onClick={undo}>
+          <button title="Undo (Ctrl+Z)" onClick={undo} disabled={privateSessionActive}>
             ↶
           </button>
-          <button title="Redo (Ctrl+Y)" onClick={redo}>
+          <button title="Redo (Ctrl+Y)" onClick={redo} disabled={privateSessionActive}>
             ↷
           </button>
           <span className="divider" />
@@ -1248,7 +1378,8 @@ export default function App() {
           </div>
         </aside>
         <aside className="left-panel">
-          {panel === 'objects' && <CataloguePanel busy={assetBusy || !!pendingPlacement} onAdd={(entry) => void beginCataloguePlacement(entry)} />}
+          <div hidden={panel !== 'objects'}><PrivateNeonSession worldId={project.metadata.worldId} signIds={privateSignIds} onLoadPrivateWorld={loadPrivateWorld} onRuntime={receivePrivateRuntime} onControl={receivePrivateControl}/></div>
+          {panel === 'objects' && <><section className="interactive-objects" aria-label="Interactive objects"><h3>Interactive Objects</h3><button onClick={addNeonSign}>Neon Sign</button><button onClick={addComputer}>World Computer</button><p className="library-note">Editable 3D lettering with local preview effects and power toggle.</p></section><CataloguePanel busy={assetBusy || !!pendingPlacement} onAdd={(entry) => void beginCataloguePlacement(entry)} /></>}
           {panel === 'scene' && <SceneExplorer project={project} selectedIds={selectedIds} onSelect={selectObject} onAdd={() => addObject('box')} onTerrain={() => setPanel('terrain')}
             onVisible={id => mutateObject(id,{ visible: !project.objects.find(object => object.id === id)!.visible })}
             onLock={toggleObjectLock} onGroup={() => groupSelection(false)} onUngroup={ungroupSelection} onGroupAll={() => groupSelection(true)} onCopy={copySelection} onPaste={pasteSelection} />}
@@ -1661,6 +1792,8 @@ export default function App() {
               {preview ? 'FIRST PERSON' : 'DESIGN VIEW'}
             </div>
             <div className="viewport-right">
+              <button disabled={preview || nativePreview} onClick={() => setFrameRequest(previous => ({kind:'world',revision:(previous?.revision ?? 0)+1}))}>Frame world</button>
+              <button disabled={preview || nativePreview || !selectedIds.length} onClick={() => setFrameRequest(previous => ({kind:'selected',revision:(previous?.revision ?? 0)+1}))}>Frame selected</button>
               <span className="coord-label">
                 X 0 <span>Y 0</span> Z 0
               </span>
@@ -1677,7 +1810,7 @@ export default function App() {
                 (e.currentTarget.querySelector('canvas') as HTMLCanvasElement | null)?.requestPointerLock();
             }}
           >
-            {nativePreview && <NativePreview project={project} onChange={setProject} onClose={() => setNativePreview(false)} />}
+            {nativePreview && <NativePreview project={privateRenderProject} neonRuntime={effectiveNeonRuntime} serverOffsetMs={privateSessionActive?privateClockOffset:0} onChange={setProject} onClose={() => setNativePreview(false)} />}
             <Canvas
               frameloop={nativePreview ? 'never' : 'always'}
               shadows
@@ -1686,8 +1819,10 @@ export default function App() {
               gl={{ antialias: true, powerPreference: 'high-performance' }}
               onPointerMissed={() => setSelectedId(null)}
             >
+              <NeonRuntimeContext.Provider value={{states:effectiveNeonRuntime,worldHour:privateSessionActive?privateSnapshot!.worldHour:project.environment.timeOfDay ?? 14,serverOffsetMs:privateSessionActive?privateClockOffset:0}}>
               <Scene
                 project={current}
+                frameRequest={frameRequest}
                 selectedId={selectedId}
                 selectedIds={selectedIds}
                 selectObject={selectObject}
@@ -1698,6 +1833,7 @@ export default function App() {
                 strength={strength}
                 material={terrainMaterial}
                 preview={preview}
+                computerPaused={!!openComputerId}
                 placementActive={!!pendingPlacement}
                 onMoveObject={object => mutateObject(object.id,object)}
                 terrainEditing={panel === 'terrain' && !preview && !pendingPlacement}
@@ -1711,15 +1847,19 @@ export default function App() {
                 onSelectFeature={selectFeature}
                 onTerrainPoint={!preview && ((panel === 'pen' && draftFeature) || (panel === 'assets' && placingTree)) ? terrainPoint : undefined}
               />
+              <NeonInteraction project={project} active={preview&&!openComputerId} onTarget={setNeonTarget} onToggle={toggleRuntimeNeon} onOpenComputer={openComputerPanel}/>
+              </NeonRuntimeContext.Provider>
               {pendingPlacement && <CataloguePlacement asset={pendingPlacement.asset} yaw={pendingPlacement.yaw} scale={pendingPlacement.entry.defaultScale} onHit={setPlacementHit} onConfirm={confirmCataloguePlacement} onError={cataloguePlacementFailed} />}
             </Canvas>
+            {openComputerId && project.objects.find(object=>object.id===openComputerId&&object.kind==='computer') && <ComputerPanel object={project.objects.find(object=>object.id===openComputerId)!} project={project} runtime={effectiveNeonRuntime} onToggle={id=>toggleRuntimeNeon(id,computerOpened.current.clock+(performance.now()-computerOpened.current.at)/1000)} onClose={closeComputerPanel}/>}
+            {preview && neonTarget && <div className="neon-interaction" role="status">E · {neonTarget.kind==='computer'?'Open':'Turn '+(neonTarget.powered?'off':'on')} {neonTarget.name}</div>}
             {pendingPlacement && <div className="placement-banner" role="status"><b>Place {pendingPlacement.entry.name}</b><div>{placementHit ? 'Surface: ' + placementHit.surface : 'Move over terrain or an object surface'} · R rotates · Escape cancels</div><button onClick={() => setPendingPlacement(p => p ? { ...p, yaw: p.yaw + Math.PI / 12 } : p)}>Rotate 15°</button><button disabled={!placementHit} onClick={() => { if (placementHit) confirmCataloguePlacement(placementHit); }}>Confirm placement</button><button onClick={cancelAssetOperations}>Cancel placement</button></div>}
             {preview ? (
               <>
                 <div className="preview-hud">
                   <span>FIRST-PERSON PREVIEW</span>
                   <span>WASD MOVE&nbsp;&nbsp; SHIFT SPRINT&nbsp;&nbsp; SPACE JUMP</span>
-                  <button onClick={() => setPreview(false)}>Exit preview&nbsp; Esc</button>
+                  <button onClick={exitPreview}>Exit preview&nbsp; Esc</button>
                 </div>
                 {!pointerLocked && (
                   <button
@@ -1813,7 +1953,7 @@ export default function App() {
                 <div className="field-label">TYPE</div>
                 <div className="readonly-field">{selected.kind.toUpperCase()}</div>
                 {selected.kind === 'tree' && <><div className="field-label">TREE SPECIES</div><select className="wide-select" value={selected.treeSpecies ?? 'broadleaf'} onChange={(event) => updateSelected({ treeSpecies: event.target.value as typeof treeSpecies })}>{TREE_SPECIES.map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</select></>}
-                {selected.kind === 'group' ? null : selected.kind === 'glb' ? <><div className="field-label">SOURCE MATERIALS</div><AssetMaterialEditor key={selected.id} object={selected} asset={project.assets.find((asset) => asset.id === selected.assetId)} onChange={(materialOverrides) => updateSelected({ materialOverrides })} /><button className="reset-material-button" onClick={groundSelectedOnTerrain}>Ground model on terrain</button></> : <>
+                {selected.kind === 'computer' && selected.computer ? <div className="neon-designer"><h3>World computer</h3><label>Linked neon sign<select aria-label="Computer linked neon" value={selected.computer.targetSignId??''} onChange={event=>updateSelected({computer:{...selected.computer!,targetSignId:event.target.value||undefined}})}><option value="">No linked sign</option>{objects.filter(object=>object.kind==='neon-sign').map(object=><option key={object.id} value={object.id}>{object.name}</option>)}</select></label><label>Screen colour<input aria-label="Computer screen colour" type="color" value={selected.computer.screenColor} onChange={event=>updateSelected({computer:{...selected.computer!,screenColor:event.target.value}})}/></label><p>Aim at the computer within 3 m in first-person preview and press E. Its terminal shows real world information and controls the linked neon sign.</p></div> : selected.kind === 'neon-sign' && selected.neon ? <fieldset className="object-properties-fieldset" disabled={(privateLoadedWorldId === project.metadata.worldId || privateSnapshot?.worldId === project.metadata.worldId) && (!privateSessionActive || privateSnapshot?.role !== 'owner')}><NeonDesigner config={selected.neon} onChange={updateNeonSign} onError={message} captureImportGuard={() => { const before=projectRef.current,generation=worldGeneration.current,epoch=selectionEpoch.current;return () => before === projectRef.current && generation === worldGeneration.current && epoch === selectionEpoch.current; }}/></fieldset> : selected.kind === 'group' ? null : selected.kind === 'glb' ? <><div className="field-label">SOURCE MATERIALS</div><AssetMaterialEditor key={selected.id} object={selected} asset={project.assets.find((asset) => asset.id === selected.assetId)} onChange={(materialOverrides) => updateSelected({ materialOverrides })} /><button className="reset-material-button" onClick={groundSelectedOnTerrain}>Ground model on terrain</button></> : <>
                 <div className="field-label">MATERIAL COLOR</div>
                 <div className="color-row">
                   <input
