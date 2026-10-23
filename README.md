@@ -6,8 +6,9 @@
 
 The public game opens a deliberately published, commit-pinned island snapshot.
 Editor saves remain local; publishing another snapshot is an explicit operation.
-The public snapshot is single-player until connected to an authorised multiplayer
-server. These links do not replace the editor’s preview of your current project.
+The public snapshot is single-player. Connected worlds use one owner runtime per
+player; each owner keeps their world repository, keys and persistent ledger locally.
+These links do not replace the editor’s preview of your current project.
 
 Standalone local browser world builder. Run `npm ci` then `npm run dev`; open http://127.0.0.1:5190/ in Edge. `npm run build`, `npm run lint`, `npm test`, and `npm run test:ui` provide build and checks.
 
@@ -29,9 +30,9 @@ Three.js supplies the editing viewport. ElseMesh graphics opens a separate nativ
 
 ## Limits
 
-This is a local authoring tool, not a released game-world importer. Water is authored surface animation, not volume/erosion simulation. Bridges are visual without walking collision. Trees/materials do not reproduce the complete game's vegetation or terrain shaders. Geo import uses supplied local files and a source-grid picker, not Google Maps imagery extraction; geographic tests use known fixtures until a real OS dataset is exercised. Imagery drapes onto terrain but does not automatically classify editable roads/vegetation/water. Existing objects retain coordinates when terrain changes. Maximum aggregate resource responsiveness is unqualified.
+This is a local authoring tool with validated repository-world import/export. All 11 checked repository worlds passed actual Open/Save, independent fresh-context reopening and the installed game loader. Warehouse and dock manual move/material edits preserved all other project fields. The dock editor screenshot capture timed out; data and UI value checks passed. Legacy procedural scenes require a non-destructive export before editing. Water is authored surface animation, not volume/erosion simulation. Bridges are visual without walking collision. Trees/materials do not reproduce the complete game's vegetation or terrain shaders. Geo import uses supplied local files and a source-grid picker, not Google Maps imagery extraction; geographic tests use known fixtures until a real OS dataset is exercised. Imagery drapes onto terrain but does not automatically classify editable roads/vegetation/water. Existing objects retain coordinates when terrain changes. Maximum aggregate resource responsiveness is unqualified.
 
-Game and donor checkouts are read-only references. No deployment or game source changes are part of this project.
+The editor consumes a pinned engine snapshot. It never edits an engine checkout when saving a world. The game integration is maintained in the separate ElseMesh repository.
 
 See docs/user-guide.md, docs/world-format.md, docs/asset-inventory.md, docs/tree-geometry-provenance.md and docs/architecture.md. Vendor hashes and MIT notice accompany the pinned engine snapshot; catalogue CC0 attribution and derivative preparation notes accompany the assets.
 
@@ -41,7 +42,9 @@ Open **World repository** for independent content folders, commit-pinned public 
 
 See [portal authoring and connection declarations](docs/portal-world-format.md), [format and compatibility](docs/world-repository-format.md), [Git checkpoint workflow](docs/world-repository-git.md), [runtime adapter](docs/world-runtime-adapter.md), and [shared engine contract](docs/world-engine-contract.md). The original folder format remains readable; migration writes a separate repository without replacing the source project. Ordinary Git is supported within the bounded asset budget; LFS pointer files must be hydrated before loading.
 
-The actual ElseMesh repository has a separate repository-world entry using its installed native engine and player. The shared validated contract is generated from an exact editor revision; world content contains no engine implementation. Existing island initialization remains available as the legacy game route. Full extraction of every procedural legacy-island system into editable data is outside this increment.
+The actual ElseMesh repository has a separate repository-world entry using its installed native engine and player. The shared validated contract is generated from an exact editor revision; world content contains no engine implementation. Existing island initialization remains available as the legacy game route. Warehouse and original dock exports are editable repository worlds, including stable portal definitions, bounded road traffic and collision volumes. Full extraction of every procedural legacy-island system into editable data is outside this increment.
+
+See the engine's [per-player owner runtime setup](https://github.com/lozknowles/ElseMesh/blob/main/docs/owner-world-setup.md) for connecting independent world owners. Repository access does not grant runtime administration.
 
 
 ## Experimental private sign world
