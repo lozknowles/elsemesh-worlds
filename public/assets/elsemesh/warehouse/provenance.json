@@ -1,0 +1,1176 @@
+{
+  "source": "ElseMesh / src/world/PortalInteriorRecipe.js",
+  "sourceSha": "f91cabbd4bac784076095b73ac45ec1ffc5da9f0",
+  "recipeSha256": "efb73bea8e5e81cb7cccc6b8a5449c51b31137a73044d132b91dfaf499f1666c",
+  "license": "MIT; Copyright (c) 2026 DRG Software Solutions LLC",
+  "prefabs": [
+    {
+      "id": "dining-chair",
+      "name": "Dining chair",
+      "bytes": 4580,
+      "components": 6,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        5,
+        0.010000000000000009,
+        -6.505
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:0732",
+          "name": "dining chair seat"
+        },
+        {
+          "id": "warehouse:object:0733",
+          "name": "dining chair back"
+        },
+        {
+          "id": "warehouse:object:0734",
+          "name": "chair leg"
+        },
+        {
+          "id": "warehouse:object:0735",
+          "name": "chair leg"
+        },
+        {
+          "id": "warehouse:object:0736",
+          "name": "chair leg"
+        },
+        {
+          "id": "warehouse:object:0737",
+          "name": "chair leg"
+        }
+      ]
+    },
+    {
+      "id": "potted-plant",
+      "name": "Potted plant",
+      "bytes": 8976,
+      "components": 10,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -1.0015008529784715,
+        0,
+        6.56369005987392
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:1421",
+          "name": "tall black houseplant pot"
+        },
+        {
+          "id": "warehouse:object:1422",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1423",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1424",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1425",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1426",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1427",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1428",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1429",
+          "name": "broad houseplant leaf"
+        },
+        {
+          "id": "warehouse:object:1430",
+          "name": "broad houseplant leaf"
+        }
+      ]
+    },
+    {
+      "id": "c64-computer",
+      "name": "C64 computer",
+      "bytes": 29220,
+      "components": 84,
+      "materials": 5,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -11.395058883420603,
+        4.3625,
+        8.694360106395582
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:0892",
+          "name": "c64 CRT pedestal"
+        },
+        {
+          "id": "warehouse:object:0893",
+          "name": "c64 CRT rear case"
+        },
+        {
+          "id": "warehouse:object:0894",
+          "name": "c64 CRT face surround"
+        },
+        {
+          "id": "warehouse:object:0895",
+          "name": "c64 CRT recessed bezel"
+        },
+        {
+          "id": "warehouse:object:0896",
+          "name": "C64 screen"
+        },
+        {
+          "id": "warehouse:object:0897",
+          "name": "c64 monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:0898",
+          "name": "c64 monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:0899",
+          "name": "c64 monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:0900",
+          "name": "c64 monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:0901",
+          "name": "c64 monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:0902",
+          "name": "c64 monitor knob"
+        },
+        {
+          "id": "warehouse:object:0903",
+          "name": "c64 monitor power button"
+        },
+        {
+          "id": "warehouse:object:0904",
+          "name": "c64 monitor status LED"
+        },
+        {
+          "id": "warehouse:object:0905",
+          "name": "c64 computer base"
+        },
+        {
+          "id": "warehouse:object:0906",
+          "name": "c64 keyboard tray"
+        },
+        {
+          "id": "warehouse:object:0907",
+          "name": "c64 key r0 k0"
+        },
+        {
+          "id": "warehouse:object:0908",
+          "name": "c64 key r0 k1"
+        },
+        {
+          "id": "warehouse:object:0909",
+          "name": "c64 key r0 k2"
+        },
+        {
+          "id": "warehouse:object:0910",
+          "name": "c64 key r0 k3"
+        },
+        {
+          "id": "warehouse:object:0911",
+          "name": "c64 key r0 k4"
+        },
+        {
+          "id": "warehouse:object:0912",
+          "name": "c64 key r0 k5"
+        },
+        {
+          "id": "warehouse:object:0913",
+          "name": "c64 key r0 k6"
+        },
+        {
+          "id": "warehouse:object:0914",
+          "name": "c64 key r0 k7"
+        },
+        {
+          "id": "warehouse:object:0915",
+          "name": "c64 key r0 k8"
+        },
+        {
+          "id": "warehouse:object:0916",
+          "name": "c64 key r0 k9"
+        },
+        {
+          "id": "warehouse:object:0917",
+          "name": "c64 key r0 k10"
+        },
+        {
+          "id": "warehouse:object:0918",
+          "name": "c64 key r0 k11"
+        },
+        {
+          "id": "warehouse:object:0919",
+          "name": "c64 key r0 k12"
+        },
+        {
+          "id": "warehouse:object:0920",
+          "name": "c64 key r1 k0"
+        },
+        {
+          "id": "warehouse:object:0921",
+          "name": "c64 key r1 k1"
+        },
+        {
+          "id": "warehouse:object:0922",
+          "name": "c64 key r1 k2"
+        },
+        {
+          "id": "warehouse:object:0923",
+          "name": "c64 key r1 k3"
+        },
+        {
+          "id": "warehouse:object:0924",
+          "name": "c64 key r1 k4"
+        },
+        {
+          "id": "warehouse:object:0925",
+          "name": "c64 key r1 k5"
+        },
+        {
+          "id": "warehouse:object:0926",
+          "name": "c64 key r1 k6"
+        },
+        {
+          "id": "warehouse:object:0927",
+          "name": "c64 key r1 k7"
+        },
+        {
+          "id": "warehouse:object:0928",
+          "name": "c64 key r1 k8"
+        },
+        {
+          "id": "warehouse:object:0929",
+          "name": "c64 key r1 k9"
+        },
+        {
+          "id": "warehouse:object:0930",
+          "name": "c64 key r1 k10"
+        },
+        {
+          "id": "warehouse:object:0931",
+          "name": "c64 key r1 k11"
+        },
+        {
+          "id": "warehouse:object:0932",
+          "name": "c64 key r1 k12"
+        },
+        {
+          "id": "warehouse:object:0933",
+          "name": "c64 key r1 k13"
+        },
+        {
+          "id": "warehouse:object:0934",
+          "name": "c64 key r2 k0"
+        },
+        {
+          "id": "warehouse:object:0935",
+          "name": "c64 key r2 k1"
+        },
+        {
+          "id": "warehouse:object:0936",
+          "name": "c64 key r2 k2"
+        },
+        {
+          "id": "warehouse:object:0937",
+          "name": "c64 key r2 k3"
+        },
+        {
+          "id": "warehouse:object:0938",
+          "name": "c64 key r2 k4"
+        },
+        {
+          "id": "warehouse:object:0939",
+          "name": "c64 key r2 k5"
+        },
+        {
+          "id": "warehouse:object:0940",
+          "name": "c64 key r2 k6"
+        },
+        {
+          "id": "warehouse:object:0941",
+          "name": "c64 key r2 k7"
+        },
+        {
+          "id": "warehouse:object:0942",
+          "name": "c64 key r2 k8"
+        },
+        {
+          "id": "warehouse:object:0943",
+          "name": "c64 key r2 k9"
+        },
+        {
+          "id": "warehouse:object:0944",
+          "name": "c64 key r2 k10"
+        },
+        {
+          "id": "warehouse:object:0945",
+          "name": "c64 key r2 k11"
+        },
+        {
+          "id": "warehouse:object:0946",
+          "name": "c64 key r2 k12"
+        },
+        {
+          "id": "warehouse:object:0947",
+          "name": "c64 key r3 k0"
+        },
+        {
+          "id": "warehouse:object:0948",
+          "name": "c64 key r3 k1"
+        },
+        {
+          "id": "warehouse:object:0949",
+          "name": "c64 key r3 k2"
+        },
+        {
+          "id": "warehouse:object:0950",
+          "name": "c64 key r3 k3"
+        },
+        {
+          "id": "warehouse:object:0951",
+          "name": "c64 key r3 k4"
+        },
+        {
+          "id": "warehouse:object:0952",
+          "name": "c64 key r3 k5"
+        },
+        {
+          "id": "warehouse:object:0953",
+          "name": "c64 key r3 k6"
+        },
+        {
+          "id": "warehouse:object:0954",
+          "name": "c64 key r3 k7"
+        },
+        {
+          "id": "warehouse:object:0955",
+          "name": "c64 key r3 k8"
+        },
+        {
+          "id": "warehouse:object:0956",
+          "name": "c64 key r3 k9"
+        },
+        {
+          "id": "warehouse:object:0957",
+          "name": "c64 key r3 k10"
+        },
+        {
+          "id": "warehouse:object:0958",
+          "name": "c64 key r3 k11"
+        },
+        {
+          "id": "warehouse:object:0959",
+          "name": "c64 space key"
+        },
+        {
+          "id": "warehouse:object:0960",
+          "name": "c64 left shift key"
+        },
+        {
+          "id": "warehouse:object:0961",
+          "name": "c64 return key"
+        },
+        {
+          "id": "warehouse:object:0962",
+          "name": "c64 function key 0"
+        },
+        {
+          "id": "warehouse:object:0963",
+          "name": "c64 function key 1"
+        },
+        {
+          "id": "warehouse:object:0964",
+          "name": "c64 function key 2"
+        },
+        {
+          "id": "warehouse:object:0965",
+          "name": "c64 function key 3"
+        },
+        {
+          "id": "warehouse:object:0966",
+          "name": "c64 function key 4"
+        },
+        {
+          "id": "warehouse:object:0967",
+          "name": "c64 function key 5"
+        },
+        {
+          "id": "warehouse:object:0968",
+          "name": "c64 function key 6"
+        },
+        {
+          "id": "warehouse:object:0969",
+          "name": "c64 function key 7"
+        },
+        {
+          "id": "warehouse:object:0972",
+          "name": "c64 base vent slit"
+        },
+        {
+          "id": "warehouse:object:0973",
+          "name": "c64 base vent slit"
+        },
+        {
+          "id": "warehouse:object:0974",
+          "name": "c64 base vent slit"
+        },
+        {
+          "id": "warehouse:object:0975",
+          "name": "c64 base vent slit"
+        },
+        {
+          "id": "warehouse:object:0976",
+          "name": "c64 base vent slit"
+        },
+        {
+          "id": "warehouse:object:1001",
+          "name": "c64 coiled monitor cable"
+        }
+      ]
+    },
+    {
+      "id": "bbc-computer",
+      "name": "BBC computer",
+      "bytes": 28844,
+      "components": 84,
+      "materials": 5,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -8.395058883420603,
+        4.3625,
+        8.694360106395582
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:1007",
+          "name": "bbc CRT pedestal"
+        },
+        {
+          "id": "warehouse:object:1008",
+          "name": "bbc CRT rear case"
+        },
+        {
+          "id": "warehouse:object:1009",
+          "name": "bbc CRT face surround"
+        },
+        {
+          "id": "warehouse:object:1010",
+          "name": "bbc CRT recessed bezel"
+        },
+        {
+          "id": "warehouse:object:1011",
+          "name": "BBC screen"
+        },
+        {
+          "id": "warehouse:object:1012",
+          "name": "bbc monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1013",
+          "name": "bbc monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1014",
+          "name": "bbc monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1015",
+          "name": "bbc monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1016",
+          "name": "bbc monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1017",
+          "name": "bbc monitor knob"
+        },
+        {
+          "id": "warehouse:object:1018",
+          "name": "bbc monitor power button"
+        },
+        {
+          "id": "warehouse:object:1019",
+          "name": "bbc monitor status LED"
+        },
+        {
+          "id": "warehouse:object:1020",
+          "name": "bbc computer base"
+        },
+        {
+          "id": "warehouse:object:1021",
+          "name": "bbc keyboard tray"
+        },
+        {
+          "id": "warehouse:object:1022",
+          "name": "bbc key r0 k0"
+        },
+        {
+          "id": "warehouse:object:1023",
+          "name": "bbc key r0 k1"
+        },
+        {
+          "id": "warehouse:object:1024",
+          "name": "bbc key r0 k2"
+        },
+        {
+          "id": "warehouse:object:1025",
+          "name": "bbc key r0 k3"
+        },
+        {
+          "id": "warehouse:object:1026",
+          "name": "bbc key r0 k4"
+        },
+        {
+          "id": "warehouse:object:1027",
+          "name": "bbc key r0 k5"
+        },
+        {
+          "id": "warehouse:object:1028",
+          "name": "bbc key r0 k6"
+        },
+        {
+          "id": "warehouse:object:1029",
+          "name": "bbc key r0 k7"
+        },
+        {
+          "id": "warehouse:object:1030",
+          "name": "bbc key r0 k8"
+        },
+        {
+          "id": "warehouse:object:1031",
+          "name": "bbc key r0 k9"
+        },
+        {
+          "id": "warehouse:object:1032",
+          "name": "bbc key r0 k10"
+        },
+        {
+          "id": "warehouse:object:1033",
+          "name": "bbc key r0 k11"
+        },
+        {
+          "id": "warehouse:object:1034",
+          "name": "bbc key r0 k12"
+        },
+        {
+          "id": "warehouse:object:1035",
+          "name": "bbc key r1 k0"
+        },
+        {
+          "id": "warehouse:object:1036",
+          "name": "bbc key r1 k1"
+        },
+        {
+          "id": "warehouse:object:1037",
+          "name": "bbc key r1 k2"
+        },
+        {
+          "id": "warehouse:object:1038",
+          "name": "bbc key r1 k3"
+        },
+        {
+          "id": "warehouse:object:1039",
+          "name": "bbc key r1 k4"
+        },
+        {
+          "id": "warehouse:object:1040",
+          "name": "bbc key r1 k5"
+        },
+        {
+          "id": "warehouse:object:1041",
+          "name": "bbc key r1 k6"
+        },
+        {
+          "id": "warehouse:object:1042",
+          "name": "bbc key r1 k7"
+        },
+        {
+          "id": "warehouse:object:1043",
+          "name": "bbc key r1 k8"
+        },
+        {
+          "id": "warehouse:object:1044",
+          "name": "bbc key r1 k9"
+        },
+        {
+          "id": "warehouse:object:1045",
+          "name": "bbc key r1 k10"
+        },
+        {
+          "id": "warehouse:object:1046",
+          "name": "bbc key r1 k11"
+        },
+        {
+          "id": "warehouse:object:1047",
+          "name": "bbc key r1 k12"
+        },
+        {
+          "id": "warehouse:object:1048",
+          "name": "bbc key r1 k13"
+        },
+        {
+          "id": "warehouse:object:1049",
+          "name": "bbc key r2 k0"
+        },
+        {
+          "id": "warehouse:object:1050",
+          "name": "bbc key r2 k1"
+        },
+        {
+          "id": "warehouse:object:1051",
+          "name": "bbc key r2 k2"
+        },
+        {
+          "id": "warehouse:object:1052",
+          "name": "bbc key r2 k3"
+        },
+        {
+          "id": "warehouse:object:1053",
+          "name": "bbc key r2 k4"
+        },
+        {
+          "id": "warehouse:object:1054",
+          "name": "bbc key r2 k5"
+        },
+        {
+          "id": "warehouse:object:1055",
+          "name": "bbc key r2 k6"
+        },
+        {
+          "id": "warehouse:object:1056",
+          "name": "bbc key r2 k7"
+        },
+        {
+          "id": "warehouse:object:1057",
+          "name": "bbc key r2 k8"
+        },
+        {
+          "id": "warehouse:object:1058",
+          "name": "bbc key r2 k9"
+        },
+        {
+          "id": "warehouse:object:1059",
+          "name": "bbc key r2 k10"
+        },
+        {
+          "id": "warehouse:object:1060",
+          "name": "bbc key r2 k11"
+        },
+        {
+          "id": "warehouse:object:1061",
+          "name": "bbc key r2 k12"
+        },
+        {
+          "id": "warehouse:object:1062",
+          "name": "bbc key r3 k0"
+        },
+        {
+          "id": "warehouse:object:1063",
+          "name": "bbc key r3 k1"
+        },
+        {
+          "id": "warehouse:object:1064",
+          "name": "bbc key r3 k2"
+        },
+        {
+          "id": "warehouse:object:1065",
+          "name": "bbc key r3 k3"
+        },
+        {
+          "id": "warehouse:object:1066",
+          "name": "bbc key r3 k4"
+        },
+        {
+          "id": "warehouse:object:1067",
+          "name": "bbc key r3 k5"
+        },
+        {
+          "id": "warehouse:object:1068",
+          "name": "bbc key r3 k6"
+        },
+        {
+          "id": "warehouse:object:1069",
+          "name": "bbc key r3 k7"
+        },
+        {
+          "id": "warehouse:object:1070",
+          "name": "bbc key r3 k8"
+        },
+        {
+          "id": "warehouse:object:1071",
+          "name": "bbc key r3 k9"
+        },
+        {
+          "id": "warehouse:object:1072",
+          "name": "bbc key r3 k10"
+        },
+        {
+          "id": "warehouse:object:1073",
+          "name": "bbc key r3 k11"
+        },
+        {
+          "id": "warehouse:object:1074",
+          "name": "bbc space key"
+        },
+        {
+          "id": "warehouse:object:1075",
+          "name": "bbc left shift key"
+        },
+        {
+          "id": "warehouse:object:1076",
+          "name": "bbc return key"
+        },
+        {
+          "id": "warehouse:object:1077",
+          "name": "bbc function key 0"
+        },
+        {
+          "id": "warehouse:object:1078",
+          "name": "bbc function key 1"
+        },
+        {
+          "id": "warehouse:object:1079",
+          "name": "bbc function key 2"
+        },
+        {
+          "id": "warehouse:object:1080",
+          "name": "bbc function key 3"
+        },
+        {
+          "id": "warehouse:object:1081",
+          "name": "bbc function key 4"
+        },
+        {
+          "id": "warehouse:object:1082",
+          "name": "bbc function key 5"
+        },
+        {
+          "id": "warehouse:object:1083",
+          "name": "bbc function key 6"
+        },
+        {
+          "id": "warehouse:object:1084",
+          "name": "bbc function key 7"
+        },
+        {
+          "id": "warehouse:object:1087",
+          "name": "bbc base vent slit"
+        },
+        {
+          "id": "warehouse:object:1088",
+          "name": "bbc base vent slit"
+        },
+        {
+          "id": "warehouse:object:1089",
+          "name": "bbc base vent slit"
+        },
+        {
+          "id": "warehouse:object:1090",
+          "name": "bbc base vent slit"
+        },
+        {
+          "id": "warehouse:object:1091",
+          "name": "bbc base vent slit"
+        },
+        {
+          "id": "warehouse:object:1116",
+          "name": "bbc coiled monitor cable"
+        }
+      ]
+    },
+    {
+      "id": "sun-workstation",
+      "name": "Sun workstation",
+      "bytes": 40068,
+      "components": 89,
+      "materials": 5,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -5.382499999999999,
+        4.3625,
+        8.694360106395582
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:1122",
+          "name": "sun CRT pedestal"
+        },
+        {
+          "id": "warehouse:object:1123",
+          "name": "sun CRT rear case"
+        },
+        {
+          "id": "warehouse:object:1124",
+          "name": "sun CRT face surround"
+        },
+        {
+          "id": "warehouse:object:1125",
+          "name": "sun CRT recessed bezel"
+        },
+        {
+          "id": "warehouse:object:1126",
+          "name": "Sun screen"
+        },
+        {
+          "id": "warehouse:object:1127",
+          "name": "sun monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1128",
+          "name": "sun monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1129",
+          "name": "sun monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1130",
+          "name": "sun monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1131",
+          "name": "sun monitor vent slit"
+        },
+        {
+          "id": "warehouse:object:1132",
+          "name": "sun monitor knob"
+        },
+        {
+          "id": "warehouse:object:1133",
+          "name": "sun monitor power button"
+        },
+        {
+          "id": "warehouse:object:1134",
+          "name": "sun monitor status LED"
+        },
+        {
+          "id": "warehouse:object:1135",
+          "name": "sun computer base"
+        },
+        {
+          "id": "warehouse:object:1136",
+          "name": "sun keyboard tray"
+        },
+        {
+          "id": "warehouse:object:1137",
+          "name": "sun key r0 k0"
+        },
+        {
+          "id": "warehouse:object:1138",
+          "name": "sun key r0 k1"
+        },
+        {
+          "id": "warehouse:object:1139",
+          "name": "sun key r0 k2"
+        },
+        {
+          "id": "warehouse:object:1140",
+          "name": "sun key r0 k3"
+        },
+        {
+          "id": "warehouse:object:1141",
+          "name": "sun key r0 k4"
+        },
+        {
+          "id": "warehouse:object:1142",
+          "name": "sun key r0 k5"
+        },
+        {
+          "id": "warehouse:object:1143",
+          "name": "sun key r0 k6"
+        },
+        {
+          "id": "warehouse:object:1144",
+          "name": "sun key r0 k7"
+        },
+        {
+          "id": "warehouse:object:1145",
+          "name": "sun key r0 k8"
+        },
+        {
+          "id": "warehouse:object:1146",
+          "name": "sun key r0 k9"
+        },
+        {
+          "id": "warehouse:object:1147",
+          "name": "sun key r0 k10"
+        },
+        {
+          "id": "warehouse:object:1148",
+          "name": "sun key r0 k11"
+        },
+        {
+          "id": "warehouse:object:1149",
+          "name": "sun key r0 k12"
+        },
+        {
+          "id": "warehouse:object:1150",
+          "name": "sun key r0 k13"
+        },
+        {
+          "id": "warehouse:object:1151",
+          "name": "sun key r1 k0"
+        },
+        {
+          "id": "warehouse:object:1152",
+          "name": "sun key r1 k1"
+        },
+        {
+          "id": "warehouse:object:1153",
+          "name": "sun key r1 k2"
+        },
+        {
+          "id": "warehouse:object:1154",
+          "name": "sun key r1 k3"
+        },
+        {
+          "id": "warehouse:object:1155",
+          "name": "sun key r1 k4"
+        },
+        {
+          "id": "warehouse:object:1156",
+          "name": "sun key r1 k5"
+        },
+        {
+          "id": "warehouse:object:1157",
+          "name": "sun key r1 k6"
+        },
+        {
+          "id": "warehouse:object:1158",
+          "name": "sun key r1 k7"
+        },
+        {
+          "id": "warehouse:object:1159",
+          "name": "sun key r1 k8"
+        },
+        {
+          "id": "warehouse:object:1160",
+          "name": "sun key r1 k9"
+        },
+        {
+          "id": "warehouse:object:1161",
+          "name": "sun key r1 k10"
+        },
+        {
+          "id": "warehouse:object:1162",
+          "name": "sun key r1 k11"
+        },
+        {
+          "id": "warehouse:object:1163",
+          "name": "sun key r1 k12"
+        },
+        {
+          "id": "warehouse:object:1164",
+          "name": "sun key r1 k13"
+        },
+        {
+          "id": "warehouse:object:1165",
+          "name": "sun key r2 k0"
+        },
+        {
+          "id": "warehouse:object:1166",
+          "name": "sun key r2 k1"
+        },
+        {
+          "id": "warehouse:object:1167",
+          "name": "sun key r2 k2"
+        },
+        {
+          "id": "warehouse:object:1168",
+          "name": "sun key r2 k3"
+        },
+        {
+          "id": "warehouse:object:1169",
+          "name": "sun key r2 k4"
+        },
+        {
+          "id": "warehouse:object:1170",
+          "name": "sun key r2 k5"
+        },
+        {
+          "id": "warehouse:object:1171",
+          "name": "sun key r2 k6"
+        },
+        {
+          "id": "warehouse:object:1172",
+          "name": "sun key r2 k7"
+        },
+        {
+          "id": "warehouse:object:1173",
+          "name": "sun key r2 k8"
+        },
+        {
+          "id": "warehouse:object:1174",
+          "name": "sun key r2 k9"
+        },
+        {
+          "id": "warehouse:object:1175",
+          "name": "sun key r2 k10"
+        },
+        {
+          "id": "warehouse:object:1176",
+          "name": "sun key r2 k11"
+        },
+        {
+          "id": "warehouse:object:1177",
+          "name": "sun key r2 k12"
+        },
+        {
+          "id": "warehouse:object:1178",
+          "name": "sun key r3 k0"
+        },
+        {
+          "id": "warehouse:object:1179",
+          "name": "sun key r3 k1"
+        },
+        {
+          "id": "warehouse:object:1180",
+          "name": "sun key r3 k2"
+        },
+        {
+          "id": "warehouse:object:1181",
+          "name": "sun key r3 k3"
+        },
+        {
+          "id": "warehouse:object:1182",
+          "name": "sun key r3 k4"
+        },
+        {
+          "id": "warehouse:object:1183",
+          "name": "sun key r3 k5"
+        },
+        {
+          "id": "warehouse:object:1184",
+          "name": "sun key r3 k6"
+        },
+        {
+          "id": "warehouse:object:1185",
+          "name": "sun key r3 k7"
+        },
+        {
+          "id": "warehouse:object:1186",
+          "name": "sun key r3 k8"
+        },
+        {
+          "id": "warehouse:object:1187",
+          "name": "sun key r3 k9"
+        },
+        {
+          "id": "warehouse:object:1188",
+          "name": "sun key r3 k10"
+        },
+        {
+          "id": "warehouse:object:1189",
+          "name": "sun key r3 k11"
+        },
+        {
+          "id": "warehouse:object:1190",
+          "name": "sun space key"
+        },
+        {
+          "id": "warehouse:object:1191",
+          "name": "sun left shift key"
+        },
+        {
+          "id": "warehouse:object:1192",
+          "name": "sun return key"
+        },
+        {
+          "id": "warehouse:object:1193",
+          "name": "sun function key 0"
+        },
+        {
+          "id": "warehouse:object:1194",
+          "name": "sun function key 1"
+        },
+        {
+          "id": "warehouse:object:1195",
+          "name": "sun function key 2"
+        },
+        {
+          "id": "warehouse:object:1196",
+          "name": "sun function key 3"
+        },
+        {
+          "id": "warehouse:object:1197",
+          "name": "sun function key 4"
+        },
+        {
+          "id": "warehouse:object:1198",
+          "name": "sun function key 5"
+        },
+        {
+          "id": "warehouse:object:1199",
+          "name": "sun function key 6"
+        },
+        {
+          "id": "warehouse:object:1200",
+          "name": "sun function key 7"
+        },
+        {
+          "id": "warehouse:object:1201",
+          "name": "sun function key 8"
+        },
+        {
+          "id": "warehouse:object:1202",
+          "name": "sun function key 9"
+        },
+        {
+          "id": "warehouse:object:1204",
+          "name": "Sun purple accent"
+        },
+        {
+          "id": "warehouse:object:1205",
+          "name": "Sun mouse"
+        },
+        {
+          "id": "warehouse:object:1207",
+          "name": "sun base vent slit"
+        },
+        {
+          "id": "warehouse:object:1208",
+          "name": "sun base vent slit"
+        },
+        {
+          "id": "warehouse:object:1209",
+          "name": "sun base vent slit"
+        },
+        {
+          "id": "warehouse:object:1210",
+          "name": "sun base vent slit"
+        },
+        {
+          "id": "warehouse:object:1211",
+          "name": "sun base vent slit"
+        },
+        {
+          "id": "warehouse:object:1236",
+          "name": "sun coiled monitor cable"
+        }
+      ]
+    }
+  ],
+  "scope": "Computers contain case, screen, keyboard, individual keys, vents, cable, and Sun mouse/accent. Desks, desk-mounted nameplates, runtime keyboard-legend overlays, chairs, lamps and clutter excluded. Static artwork and PBR fidelity limits match warehouse world."
+}

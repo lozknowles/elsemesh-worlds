@@ -13,3 +13,9 @@ worlds/
 *.emw
 *.emw-world.json
 .codex-remote-attachments/
+
+# Distributed, reproducible starter content (not user-authored worlds).
+!public/worlds/
+public/worlds/*
+!public/worlds/warehouse/
+!public/worlds/warehouse/warehouse.emw

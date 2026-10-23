@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { sampleTerrain } from './world';
 import type { EditorObject, PrimitiveKind, Terrain, Vec3, WorldAsset } from './world';
 
-export type LibraryCategory = 'Nature' | 'Coastal' | 'Building' | 'Primitive';
+export type LibraryCategory = 'Nature' | 'Coastal' | 'Building' | 'Primitive' | 'Furniture' | 'Computer';
 export type LibraryAsset = {
   id: string;
   name: string;
@@ -21,6 +21,19 @@ export type LibraryAsset = {
 };
 
 export const assetLibrary: LibraryAsset[] = [
+  ...([
+    ['dining-chair', 'Dining chair', 'Furniture', 'Seat, back and four steel legs.', '♧'],
+    ['potted-plant', 'Potted plant', 'Nature', 'Black pot with nine separate leaf components.', '♣'],
+    ['c64-computer', 'C64 computer', 'Computer', 'Period computer, CRT, keyboard and static BASIC screen.', '▣'],
+    ['bbc-computer', 'BBC computer', 'Computer', 'Period computer, CRT, keyboard and static BASIC screen.', '▣'],
+    ['sun-workstation', 'Sun workstation', 'Computer', 'Period workstation, CRT, keyboard, mouse and static windowed screen.', '▣'],
+  ] as const).map(([id, name, category, description, preview]): LibraryAsset => ({
+    id: `warehouse-${id}`, name, category, description, preview, kind: 'glb',
+    source: 'ElseMesh PortalInteriorRecipe.js · DRG Software Solutions LLC · source commit and component membership in assets/elsemesh/warehouse/provenance.json',
+    license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC',
+    readiness: 'Prepared recipe prefab; named component hierarchy and separate PBR material slots. Bottom-centre pivot. Static screens; no game interaction or runtime surface shaders.',
+    assetUrl: `/assets/elsemesh/warehouse/${id}.glb`, scale: [1, 1, 1],
+  })),
   { id: 'dead-quiver-trunk', name: 'Dead quiver trunk', category: 'Nature', description: 'Scanned fallen tree trunk; the game selects one of three LODs by distance.', kind: 'glb', preview: '▰', source: 'Burning-Horizons/public/models/debris/dead_quiver_trunk.glb · Poly Haven Dead Quiver Trunk', license: 'CC0 1.0', readiness: 'Single LOD0; albedo and normal embedded, ARM omitted, generic PBR factors. Schematic preview.', assetUrl: '/assets/elsemesh/debris/dead_quiver_trunk.glb', thumbnailUrl: '/assets/elsemesh/debris/dead_quiver_trunk.svg', scale: [1, 1, 1] },
   { id: 'dead-quiver-branch-1', name: 'Dead quiver branch 01', category: 'Nature', description: 'Scanned fallen branch; the game selects one of three LODs by distance.', kind: 'glb', preview: '⌁', source: 'Burning-Horizons/public/models/debris/dead_quiver_branch_01.glb · Poly Haven Dead Quiver Branch 01', license: 'CC0 1.0', readiness: 'Single LOD0; albedo and normal embedded, ARM omitted, generic PBR factors. Schematic preview.', assetUrl: '/assets/elsemesh/debris/dead_quiver_branch_01.glb', thumbnailUrl: '/assets/elsemesh/debris/dead_quiver_branch_01.svg', scale: [1, 1, 1] },
   { id: 'dead-quiver-branch-2', name: 'Dead quiver branch 02', category: 'Nature', description: 'Scanned fallen branch; the game selects one of three LODs by distance.', kind: 'glb', preview: '⌁', source: 'Burning-Horizons/public/models/debris/dead_quiver_branch_02.glb · Poly Haven Dead Quiver Branch 02', license: 'CC0 1.0', readiness: 'Single LOD0; albedo and normal embedded, ARM omitted, generic PBR factors. Schematic preview.', assetUrl: '/assets/elsemesh/debris/dead_quiver_branch_02.glb', thumbnailUrl: '/assets/elsemesh/debris/dead_quiver_branch_02.svg', scale: [1, 1, 1] },

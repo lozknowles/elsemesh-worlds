@@ -480,21 +480,23 @@ function Scene({
 }) {
   const camera = useThree((state) => state.camera);
   const [terrainDragging, setTerrainDragging] = useState(false);
-  const cameraConfiguration = useRef<{ view: string; geography: WorldProject['geography'] } | null>(null);
+  const cameraConfiguration = useRef<{ view: string; geography: WorldProject['geography']; worldId: string } | null>(null);
   useEffect(() => {
-    if (cameraConfiguration.current?.view === viewPreset && cameraConfiguration.current?.geography === project.geography) return;
-    cameraConfiguration.current = { view: viewPreset, geography: project.geography };
+    if (cameraConfiguration.current?.view === viewPreset && cameraConfiguration.current?.geography === project.geography && cameraConfiguration.current?.worldId === project.metadata.worldId) return;
+    cameraConfiguration.current = { view: viewPreset, geography: project.geography, worldId: project.metadata.worldId };
     camera.up.set(0, 1, 0);
-    const extent = project.geography ? Math.max(project.terrain.width, project.terrain.depth) : 0;
+    const warehouse = project.metadata.worldId.startsWith('elsemesh.world:warehouse-portal-interior');
+    const extent = project.geography ? Math.max(project.terrain.width, project.terrain.depth) : warehouse ? 40 : 0;
     const height = project.geography ? Math.max(...project.terrain.heights) : 0;
     if (viewPreset === 'top') {
       camera.position.set(0, extent ? height + extent * 1.4 : 95, 0.01);
       camera.up.set(0, 0, -1);
-    } else if (extent) camera.position.set(extent * 0.8, height + extent * 0.65, extent * 0.85);
+    } else if (warehouse) camera.position.set(30, 30, -30);
+    else if (extent) camera.position.set(extent * 0.8, height + extent * 0.65, extent * 0.85);
     else camera.position.set(82, 65, 88);
     camera.lookAt(0, project.geography ? sampleTerrain(project.terrain, 0, 0) : 2, 0);
     camera.updateProjectionMatrix();
-  }, [camera, viewPreset, project.geography, project.terrain]);
+  }, [camera, viewPreset, project.geography, project.terrain, project.metadata.worldId]);
   const selected = objects.find((object) => object.id === selectedId);
   const onSculpt = useCallback((next: WorldProject) => setProject(() => next), [setProject]);
   return (
@@ -656,6 +658,7 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false);
   const [saved, setSaved] = useState('Saved locally');
   const [toast, setToast] = useState('');
+  const [warehouseBusy, setWarehouseBusy] = useState(false);
   const [panel, setPanel] = useState<'scene' | 'assets' | 'terrain' | 'pen' | 'geo' | 'world'>('scene');
   const undoStack = useRef<WorldProject[]>([]);
   const redoStack = useRef<WorldProject[]>([]);
@@ -884,6 +887,42 @@ export default function App() {
       message('Could not read this project file');
     }
   }
+  async function loadWarehouseWorld() {
+    if (warehouseBusy) return;
+    const generation = worldGeneration.current;
+    const previous = projectRef.current;
+    setWarehouseBusy(true);
+    try {
+      const response = await fetch(new URL('worlds/warehouse/warehouse.emw', document.baseURI));
+      if (!response.ok) throw new Error('The warehouse starter world could not be loaded.');
+      const file = new File([await response.blob()], 'warehouse.emw', { type: 'application/json' });
+      if (file.size > MAX_PROJECT_BYTES) throw new Error('Warehouse project exceeds the 25 MiB limit.');
+      const result = validateWorld(JSON.parse(await file.text()));
+      if (!result.valid || !result.project) throw new Error(result.errors[0] ?? 'Invalid warehouse project.');
+      if (generation !== worldGeneration.current || previous !== projectRef.current) {
+        message('Your world changed while loading. Click Load warehouse world again.');
+        return;
+      }
+      if (!window.confirm('Load the warehouse with its portal and computer room? Your current world will be replaced and saved locally. Undo restores it; Save project keeps a separate file.')) return;
+      const next: WorldProject = {
+        ...result.project,
+        metadata: {
+          ...result.project.metadata,
+          worldId: `elsemesh.world:warehouse-portal-interior:${crypto.randomUUID()}`,
+          regionId: `elsemesh.region:${crypto.randomUUID()}`,
+        },
+      };
+      cancelAssetOperations();
+      setProject(() => next);
+      setSelectedId(null); setSelectedFeatureId(null); setDraftFeature(null); setPlacingTree(false);
+      setPreview(false); setNativePreview(false); setPanel('scene');
+      message(`Warehouse loaded: ${result.project.objects.length} editable components. Undo restores your previous world.`);
+    } catch (error) {
+      message(error instanceof Error ? error.message : 'Could not load the warehouse world.');
+    } finally {
+      setWarehouseBusy(false);
+    }
+  }
   function exportPackage() {
     try {
       const worldPackage = createPlayerWorldPackage(current);
@@ -963,6 +1002,17 @@ export default function App() {
       if (pendingAssetOperation.current === operation) { pendingAssetOperation.current = null; setAssetBusy(false); }
     }
   }
+  function placeProjectAsset(asset: WorldAsset) {
+    try {
+      const existing = projectRef.current.objects.find((object) => object.assetId === asset.id);
+      const object: EditorObject = existing
+        ? { ...existing, id: newId(), name: `${existing.name} copy`, position: [0, 0, 0], visible: true }
+        : { ...makeObject('box'), id: newId(), name: asset.name.replace(/\.glb$/i, ''), kind: 'glb', assetId: asset.id, position: [0, 0, 0], scale: [1, 1, 1] };
+      if (commitEmbeddedAsset(asset, object, worldGeneration.current)) message(`${asset.name} placed again`);
+    } catch (error) {
+      message(error instanceof Error ? error.message : 'Could not place this model');
+    }
+  }
   async function importGlb(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -1026,6 +1076,9 @@ export default function App() {
           <span className="divider" />
           <button className="subdued" onClick={newProject} disabled={!hydrated}>
             New world
+          </button>
+          <button className="subdued" onClick={() => void loadWarehouseWorld()} disabled={!hydrated || warehouseBusy}>
+            {warehouseBusy ? 'Loading warehouse…' : 'Load warehouse world'}
           </button>
           <label className="button subdued">
             Open
@@ -1172,7 +1225,7 @@ export default function App() {
                       >
                         {entry.thumbnailUrl ? <img src={entry.thumbnailUrl} alt={`${entry.name} schematic preview`} /> : entry.preview}
                       </span>
-                      <span>{entry.name}</span><small>{entry.kind === 'glb' ? 'Prepared scan · CC0' : entry.kind === 'tree' ? 'Procedural tree' : 'Editor blockout'}</small>
+                      <span>{entry.name}</span><small>{entry.kind === 'glb' ? `Prepared model · ${entry.license.split(' · ')[0]}` : entry.kind === 'tree' ? 'Procedural tree' : 'Editor blockout'}</small>
                     </button>
                   ),
                 )}
@@ -1183,7 +1236,7 @@ export default function App() {
               {placingTree && <div className="terrain-help"><div><b>Place {treeSpecies} tree</b><small>Click terrain to plant. Escape cancels.</small><button onClick={() => setPlacingTree(false)}>Cancel placement</button></div></div>}
               <label className="import-card">
                 <span>＋</span>
-                <b>Import GLB</b>
+                <b>Import Blender / GLB model</b>
                 <small>Binary glTF · max 15 MiB</small>
                 <input
                   type="file"
@@ -1193,17 +1246,19 @@ export default function App() {
                   onChange={(event) => void importGlb(event)}
                 />
               </label>
+              <p className="library-note">In Blender, export selected static objects as glTF 2.0 → GLB (binary), apply scale and embed materials/textures. Import the .glb here to move, rotate, scale and edit its material slots. Direct .blend files are not supported.</p>
               <div className="snap-controls"><label><input type="checkbox" checked={snapEnabled} onChange={(event) => setSnapEnabled(event.target.checked)} /> Snap transforms</label><select aria-label="Snap step" value={snapStep} onChange={(event) => setSnapStep(Number(event.target.value))}><option value="0.1">0.1 m</option><option value="0.5">0.5 m</option><option value="1">1 m</option><option value="5">5 m</option></select></div>
-              <p className="library-note">Four prepared CC0 scans include albedo and normal textures. Other props are editor blockouts. Transform snap uses the chosen distance, 15° rotation and 0.1 scale.</p>
-              <div className="tree-group-label">
-                IN PROJECT <span>{project.assets.length}</span>
-              </div>
+              <p className="library-note">Warehouse furniture and computers are reusable MIT recipe prefabs. Four CC0 scans include albedo and normal textures. Each card shows its own licence. Transform snap uses the chosen distance, 15° rotation and 0.1 scale.</p>
+              <details open={project.assets.length <= 12}>
+              <summary className="tree-group-label">REUSE PROJECT MODELS <span>{project.assets.length}</span></summary>
               {project.assets.map((asset) => (
                 <div className="asset-list-row" key={asset.id}>
                   <span className="file-badge">3D</span>
                   <span>{asset.name}</span>
+                  <button className="subdued" disabled={assetBusy} onClick={() => placeProjectAsset(asset)} title="Place another instance using the same embedded model">Place again</button>
                 </div>
               ))}
+              </details>
             </>
           )}
           {panel === 'pen' && <FeaturePanel project={project} draft={draftFeature} selectedId={selectedFeatureId} width={featureWidth} elevation={featureElevation} drop={waterfallDrop}

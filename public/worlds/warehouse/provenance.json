@@ -1,0 +1,244 @@
+{
+  "source": "ElseMesh / src/world/PortalInteriorRecipe.js",
+  "sourceSha": "f91cabbd4bac784076095b73ac45ec1ffc5da9f0",
+  "recipeSha256": "efb73bea8e5e81cb7cccc6b8a5449c51b31137a73044d132b91dfaf499f1666c",
+  "objects": 1755,
+  "assets": 59,
+  "assetBytes": 298980,
+  "projectBytes": 857915,
+  "recipeScreens": [
+    {
+      "id": "c64",
+      "object": "C64 screen",
+      "width": 1024,
+      "height": 768,
+      "background": 3233188,
+      "border": 7906520,
+      "foreground": 10340331,
+      "lines": [
+        "COMMODORE 64 BASIC V2",
+        "38911 BASIC BYTES FREE",
+        "READY."
+      ],
+      "cursor": {
+        "column": 0,
+        "row": 3,
+        "color": 10340331,
+        "blink": true
+      }
+    },
+    {
+      "id": "bbc",
+      "object": "BBC screen",
+      "width": 1024,
+      "height": 768,
+      "background": 328965,
+      "border": 1118481,
+      "foreground": 15921896,
+      "lines": [
+        "BBC Computer 32K",
+        "BASIC",
+        ">"
+      ],
+      "cursor": {
+        "column": 1,
+        "row": 2,
+        "color": 16777215,
+        "blink": true
+      }
+    },
+    {
+      "id": "sun",
+      "object": "Sun screen",
+      "width": 1536,
+      "height": 1152,
+      "background": 10988197,
+      "border": 3423037,
+      "foreground": 1514782,
+      "windows": true
+    }
+  ],
+  "recipeZones": {
+    "arrival": [
+      0,
+      1,
+      0
+    ],
+    "lounge": [
+      -9,
+      1,
+      4
+    ],
+    "kitchen": [
+      5,
+      1,
+      5
+    ],
+    "dining": [
+      7,
+      1,
+      -5
+    ],
+    "retro": [
+      -7.5,
+      4,
+      10
+    ],
+    "mezzanine": [
+      -7,
+      4,
+      10
+    ]
+  },
+  "omittedRuntimeLights": [
+    {
+      "name": "lounge pool",
+      "position": [
+        -9,
+        3,
+        4
+      ],
+      "color": 16761466,
+      "intensity": 5,
+      "range": 8
+    },
+    {
+      "name": "kitchen pendants",
+      "position": [
+        5,
+        3.2,
+        5
+      ],
+      "color": 16758117,
+      "intensity": 6,
+      "range": 7
+    },
+    {
+      "name": "dining pool",
+      "position": [
+        7,
+        3,
+        -5
+      ],
+      "color": 16760954,
+      "intensity": 5,
+      "range": 7
+    },
+    {
+      "name": "stair safety",
+      "position": [
+        3,
+        4.5,
+        7
+      ],
+      "color": 15773802,
+      "intensity": 4,
+      "range": 6
+    },
+    {
+      "name": "computer room west",
+      "position": [
+        -10,
+        6.1,
+        10
+      ],
+      "color": 16755036,
+      "intensity": 5,
+      "range": 6
+    },
+    {
+      "name": "computer room east",
+      "position": [
+        -4.5,
+        6.1,
+        10
+      ],
+      "color": 16759923,
+      "intensity": 5,
+      "range": 6
+    },
+    {
+      "name": "workbench pool",
+      "position": [
+        10,
+        3,
+        15
+      ],
+      "color": 16758381,
+      "intensity": 4,
+      "range": 6
+    },
+    {
+      "name": "arrival practical",
+      "position": [
+        -2,
+        3.5,
+        0
+      ],
+      "color": 15319956,
+      "intensity": 3,
+      "range": 5
+    },
+    {
+      "name": "stair tread wash",
+      "position": [
+        4.8,
+        2.6,
+        5.6
+      ],
+      "color": 16753745,
+      "intensity": 4,
+      "range": 5
+    },
+    {
+      "name": "mezzanine downlights",
+      "position": [
+        -8,
+        3.15,
+        9.8
+      ],
+      "color": 16758381,
+      "intensity": 4,
+      "range": 7
+    },
+    {
+      "name": "lounge floor lamp",
+      "position": [
+        -12.85,
+        2,
+        5.65
+      ],
+      "color": 16760185,
+      "intensity": 3.5,
+      "range": 4.5
+    },
+    {
+      "name": "kitchen task strip",
+      "position": [
+        5.1,
+        1.9,
+        7.55
+      ],
+      "color": 16765338,
+      "intensity": 3.5,
+      "range": 4.8
+    },
+    {
+      "name": "retro desk task lamps",
+      "position": [
+        -8.5,
+        5,
+        9
+      ],
+      "color": 16758639,
+      "intensity": 3.2,
+      "range": 5
+    }
+  ],
+  "limitations": [
+    "Static screen artwork is an original approximation of recipe labels, not the runtime canvas output.",
+    "No C64 emulation, computer input, portal travel, game navigation logic or runtime local lights.",
+    "PBR base colors, opacity, roughness, metalness and emissive colors retained; procedural patterns and warehouse image textures omitted.",
+    "Every source component remains a separately editable scene object; repeated shapes share embedded asset definitions."
+  ]
+}
