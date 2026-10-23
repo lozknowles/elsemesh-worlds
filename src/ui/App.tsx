@@ -540,7 +540,6 @@ function Scene({
   const camera = useThree((state) => state.camera);
   const [terrainDragging, setTerrainDragging] = useState(false);
   const orbitRef = useRef<ComponentRef<typeof OrbitControls>>(null);
-  const orbitTarget = useMemo<Vec3>(() => [0, project.geography ? sampleTerrain(project.terrain,0,0) : 3,0], [project.geography,project.terrain]);
   const lastFrameRequest = useRef<FrameRequest | null>(null);
   useEffect(() => {
     if (!frameRequest || lastFrameRequest.current === frameRequest || preview || !orbitRef.current || !(camera instanceof THREE.PerspectiveCamera)) return;
@@ -573,16 +572,26 @@ function Scene({
     if (cameraConfiguration.current?.view === viewPreset && cameraConfiguration.current?.geography === project.geography && cameraConfiguration.current?.worldId === project.metadata.worldId) return;
     cameraConfiguration.current = { view: viewPreset, geography: project.geography, worldId: project.metadata.worldId };
     camera.up.set(0, 1, 0);
-    const warehouse = project.metadata.worldId.startsWith('elsemesh.world:warehouse-portal-interior');
-    const extent = project.geography ? Math.max(project.terrain.width, project.terrain.depth) : warehouse ? 40 : 0;
-    const height = project.geography ? Math.max(...project.terrain.heights) : 0;
+    const bounds = new THREE.Box3();
+    const matrices = resolveWorldMatrices(project.objects);
+    if (!project.geography) for (const object of project.objects) {
+      if (object.kind === 'group' || object.collisionOnly || !effectiveObjectState(project.objects,object.id).visible) continue;
+      bounds.union(objectLocalBounds(project,object).applyMatrix4(matrices.get(object.id)!));
+    }
+    if (bounds.isEmpty()) bounds.set(
+      new THREE.Vector3(-project.terrain.width/2,Math.min(...project.terrain.heights),-project.terrain.depth/2),
+      new THREE.Vector3(project.terrain.width/2,Math.max(...project.terrain.heights),project.terrain.depth/2));
+    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+    const fov = camera instanceof THREE.PerspectiveCamera ? THREE.MathUtils.degToRad(camera.fov) : Math.PI/3;
+    const horizontal = camera instanceof THREE.PerspectiveCamera ? 2*Math.atan(Math.tan(fov/2)*camera.aspect) : fov;
+    const distance = Math.max(40,sphere.radius/Math.sin(Math.min(fov,horizontal)/2)*1.15);
     if (viewPreset === 'top') {
-      camera.position.set(0, extent ? height + extent * 1.4 : 95, 0.01);
-      camera.up.set(0, 0, -1);
-    } else if (warehouse) camera.position.set(30, 30, -30);
-    else if (extent) camera.position.set(extent * 0.8, height + extent * 0.65, extent * 0.85);
-    else camera.position.set(82, 65, 88);
-    camera.lookAt(0, project.geography ? sampleTerrain(project.terrain, 0, 0) : 2, 0);
+      camera.position.copy(sphere.center).add(new THREE.Vector3(0,distance,.01));
+      camera.up.set(0,0,-1);
+    } else camera.position.copy(sphere.center).addScaledVector(new THREE.Vector3(1,.8,1).normalize(),distance);
+    camera.lookAt(sphere.center);
+    orbitRef.current?.target.copy(sphere.center);
+    orbitRef.current?.update();
     camera.updateProjectionMatrix();
   }, [camera, viewPreset, project.geography, project.terrain, project.metadata.worldId]);
   const childMap = new Map<string | undefined, EditorObject[]>();
@@ -659,7 +668,6 @@ function Scene({
         ref={orbitRef}
         makeDefault
         enabled={!preview && !terrainDragging && !placementActive && !landscapePainting}
-        target={orbitTarget}
         maxPolarAngle={Math.PI * 0.49}
         minDistance={4}
         maxDistance={Math.max(220, project.terrain.width * 4)}
