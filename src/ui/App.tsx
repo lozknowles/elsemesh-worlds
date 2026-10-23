@@ -1858,8 +1858,8 @@ export default function App() {
               <div className="integration-note">
                 <b>Runtime integration</b>
                 <p>
-                  Project editing is local. The inspected ElseMesh player does not yet expose a general
-                  external world-package loader. Export remains provisional until that adapter is verified.
+                  Save a repository snapshot to load this world in ElseMesh. Connected portals require
+                  both world owners to be running their games and to allow viewing and entry.
                 </p>
               </div>
           </div>
