@@ -1,5 +1,6 @@
-import { BufferGeometry, BufferAttribute, Group, Mesh, Color, Matrix4, Matrix3, Quaternion, Euler, Vector3, CylinderGeometry, SphereGeometry, ConeGeometry } from '../vendor/elsemesh/engine/index.js';
+import { BufferGeometry, BufferAttribute, Group, Mesh, Color, Matrix4, Matrix3, Vector3, CylinderGeometry, SphereGeometry, ConeGeometry } from '../vendor/elsemesh/engine/index.js';
 import { Material } from '../vendor/elsemesh/engine/render/Material.js';
+import { resolveWorldMatrices, effectiveObjectState } from '../domain/object-hierarchy.ts';
 import { createTreeGeometry } from '../domain/trees.ts';
 
 // Native preview policy; saved objects retain their exact seeds and transforms.
@@ -72,14 +73,15 @@ function geometryFor(records,kind) {
   return geometry;
 }
 export function buildNativeForest(sourceObjects,camera) {
-  const objects=sourceObjects.filter(object=>object.kind==='tree'&&object.visible).slice(0,TREE_PREVIEW_POLICY.maxTrees),group=new Group();
+  const worldMatrices=resolveWorldMatrices(sourceObjects);
+  const objects=sourceObjects.filter(object=>object.kind==='tree'&&effectiveObjectState(sourceObjects,object.id).visible).map(object=>({...object,position:new Vector3().setFromMatrixPosition(worldMatrices.get(object.id)).toArray(),worldMatrix:worldMatrices.get(object.id).elements})).slice(0,TREE_PREVIEW_POLICY.maxTrees),group=new Group();
   const meshes=materials().map(material=>{const mesh=new Mesh(new BufferGeometry(),material);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);return mesh;});
   let selected=new Set(),lastCamera=camera.clone(),lastCheck=-Infinity,stats;
   function rebuild(ids) {
-    const records=objects.map(object=>{const transform=new Matrix4().compose(new Vector3(...object.position),new Quaternion().setFromEuler(new Euler(...object.rotation)),new Vector3(...object.scale));const species=object.treeSpecies??'broadleaf';return{object,species,transform,normal:new Matrix3().getNormalMatrix(transform),template:template(species,object.treeSeed??7319,ids.has(object.id))};});
+    const records=objects.map(object=>{const transform=new Matrix4().fromArray(object.worldMatrix);const species=object.treeSpecies??'broadleaf';return{object,species,transform,normal:new Matrix3().getNormalMatrix(transform),template:template(species,object.treeSeed??7319,ids.has(object.id))};});
     let vertices=0,triangles=0;
     for(const [index,kind] of ['bark','foliage'].entries()){const geometry=geometryFor(records,kind);meshes[index].geometry.dispose();meshes[index].geometry=geometry;meshes[index].visible=objects.length>0;vertices+=geometry.getAttribute('position').count;triangles+=(geometry.index?.count??0)/3;}
-    selected=ids;stats={sourceTrees:sourceObjects.filter(object=>object.kind==='tree'&&object.visible).length,renderedTrees:objects.length,highDetailTrees:ids.size,lowDetailTrees:objects.length-ids.size,vertices,triangles,batches:objects.length?2:0,cachedTemplates:templates.size,policy:TREE_PREVIEW_POLICY};
+    selected=ids;stats={sourceTrees:sourceObjects.filter(object=>object.kind==='tree'&&effectiveObjectState(sourceObjects,object.id).visible).length,renderedTrees:objects.length,highDetailTrees:ids.size,lowDetailTrees:objects.length-ids.size,vertices,triangles,batches:objects.length?2:0,cachedTemplates:templates.size,policy:TREE_PREVIEW_POLICY};
   }
   rebuild(detailedIds(objects,camera));
   group.userData.treePreviewStats=()=>stats;

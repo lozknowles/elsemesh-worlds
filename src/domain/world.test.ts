@@ -78,7 +78,7 @@ describe('world authoring document', () => {
     project.terrain.heights[32 * 65 + 32] = 12.75;
     const exported = createPlayerWorldPackage(project);
     expect(exported).toMatchObject({
-      schema: 'elsemesh.player-world/1',
+      schema: 'elsemesh.player-world/2',
       units: 'metres',
       axes: 'right-handed-y-up-minus-z-forward',
       project: { terrain: { heights: expect.arrayContaining([12.75]) } },

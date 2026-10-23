@@ -1,7 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createWorld } from '../src/domain/world';
+import { type WorldProject, createWorld } from '../src/domain/world';
 import fs from 'node:fs/promises';
-const catalogue='/assets/catalogue/manifest.json';
 async function setup(page:Page, surface=false){
  await page.goto('/'); await expect(page.getByRole('button',{name:'New world',exact:true})).toBeEnabled();
  const world=createWorld('Catalogue acceptance');world.terrain.heights.fill(0);world.objects=surface?[{id:'surface-platform',name:'Placement platform',kind:'box',position:[0,2,0],rotation:[0,0,0],scale:[8,2.5,8],color:'#888888',visible:true,collision:'walkable'}]:[];
@@ -19,7 +18,7 @@ async function place(page:Page,x=.5,y=.5){
  await page.mouse.move(box.x+box.width*x,box.y+box.height*y);await page.mouse.click(box.x+box.width*x,box.y+box.height*y);
  await expect(page.getByRole('button',{name:'Cancel placement',exact:true})).toHaveCount(0);
 }
-async function saved(page:Page){const download=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const file=await download;const target=await file.path();if(!target)throw Error('No downloaded world');return JSON.parse(await fs.readFile(target,'utf8'));}
+async function saved(page:Page){const download=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const file=await download;const target=await file.path();if(!target)throw Error('No downloaded world');return JSON.parse(await fs.readFile(target,'utf8')) as WorldProject;}
 
 test('search, filters, preview and cancellation do not commit content',async({page})=>{
  await setup(page);await page.getByRole('button',{name:'Interiors',exact:true}).click();await expect(page.getByText('359 models',{exact:false})).toBeVisible();
@@ -40,7 +39,7 @@ test('chair surface placement, terrain placement, dedup, transform and reopen',a
 });
 test('building and vehicle remain ordinary editable saved objects',async({page})=>{
  await setup(page);await choose(page,'city-kit-suburban','Building type a');await place(page,.4,.55);await choose(page,'car-kit','Ambulance');await place(page,.65,.7);
- const project=await saved(page);expect(project.objects.map((o:any)=>o.name)).toEqual(['Building type a','Ambulance']);expect(project.assets).toHaveLength(2);expect(project.assets.every((a:any)=>a.license.includes('CC0'))).toBe(true);
+ const project=await saved(page);expect(project.objects.map((o)=>o.name)).toEqual(['Building type a','Ambulance']);expect(project.assets).toHaveLength(2);expect(project.assets.every((a)=>a.license.includes('CC0'))).toBe(true);
  await page.getByRole('button',{name:'New world',exact:true}).click();await page.locator('input[accept=".emw,.json,application/json"]').setInputFiles({name:'models.emw',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});expect((await saved(page)).objects).toHaveLength(2);
 });
 test('corrupted model fails without changing the world',async({page})=>{

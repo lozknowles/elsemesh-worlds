@@ -1,3 +1,4 @@
+import { validateWorld } from './world';
 import type { WorldProject } from './world';
 
 const DB_NAME = 'elsemesh-worlds';
@@ -35,7 +36,13 @@ export async function loadSavedProject(): Promise<WorldProject | null> {
       }
       const request = store.get(active.result);
       request.onsuccess = () =>
-        resolve((request.result as { project?: WorldProject } | undefined)?.project ?? null);
+        {
+        const saved = (request.result as { project?: unknown } | undefined)?.project;
+        if (!saved) { resolve(null); return; }
+        const result = validateWorld(saved);
+        if (!result.valid || !result.project) { reject(new Error(result.errors.join(' '))); return; }
+        resolve(result.project);
+      };
       request.onerror = () => reject(request.error ?? new Error('Could not read the saved project.'));
     };
     active.onerror = () => reject(active.error ?? new Error('Could not locate the active project.'));

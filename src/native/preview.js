@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { resolveWorldMatrices, effectiveObjectState } from '../domain/object-hierarchy.ts';
 import * as N from '../vendor/elsemesh/engine/index.js';
 import { Engine } from '../vendor/elsemesh/engine/Engine.js';
 import { GPU } from '../vendor/elsemesh/engine/gpu/GPU.js';
@@ -69,9 +70,10 @@ async function rebuild(value) {
   group.add(terrainMesh);
   let warnings=0;
   const nextAssetDiagnostics=[];
-  for(const object of value.objects.filter(o=>o.visible)) {
-    if(object.kind==='tree')continue;
-    const item=new N.Group(); item.position.fromArray(object.position); item.rotation.set(...object.rotation); item.scale.fromArray(object.scale);
+  const objectMatrices=resolveWorldMatrices(value.objects);
+  for(const object of value.objects.filter(o=>effectiveObjectState(value.objects,o.id).visible)) {
+    if(object.kind==='tree'||object.kind==='group')continue;
+    const item=new N.Group(); item.userData.editorObjectId=object.id; item.matrixAutoUpdate=false; item.matrix.fromArray(objectMatrices.get(object.id).elements);
     const c=object.color;
     if(object.kind==='glb') {
       try {
@@ -154,7 +156,8 @@ async function init() {
       clouds.update(dt,engine.camera); environment.update(dt); post.beginFrame();
       shadows.render(engine.scene,engine.meshRenderer,shadows.update(engine.camera,G.sunDir.value));
       sr.render(); post.render(); post.endFrame(); GPU.submit();
-      window.__nativePreview={frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
+      const hierarchyMatrices={};world?.traverse(node=>{if(node.userData.editorObjectId)hierarchyMatrices[node.userData.editorObjectId]=Array.from(node.matrixWorld.elements);});
+      window.__nativePreview={hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
       if(engine.frame===2) send('elsemesh-native-rendered');
     } catch(error) { engine.stop(); report(`Native preview failed: ${error.message}`); console.error(error); send('elsemesh-native-error',{message:error.message}); }
   });

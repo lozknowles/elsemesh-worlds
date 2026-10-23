@@ -1,8 +1,8 @@
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Grid, OrbitControls, TransformControls } from '@react-three/drei';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 import * as THREE from 'three';
 import {
   createTerrain,
@@ -18,6 +18,8 @@ import type { DrawnFeature, EditorObject, FeatureKind, PrimitiveKind, Vec3, Worl
 import { loadSavedProject, saveProject as persistProject } from '../domain/persistence';
 import NativePreview from './NativePreview';
 import CataloguePanel from './CataloguePanel';
+import SceneExplorer from './SceneExplorer';
+import { effectiveObjectState, pruneSelection, groupObjects, ungroupObjects, reparentObjects, getGroupBounds, resizeGroup, cloneSubtrees, subtreeIds, collisionWorldBounds, resolveWorldMatrices } from '../domain/object-hierarchy';
 import CataloguePlacement from './CataloguePlacement';
 import type { PlacementHit } from './CataloguePlacement';
 import { fetchCatalogueModel, surfacePlacement, commitCataloguePlacement } from '../domain/object-catalogue';
@@ -287,16 +289,21 @@ function WorldEntity({
   moved,
   snapEnabled,
   snapStep,
+  locked,
+  children,
 }: {
   object: EditorObject;
   asset?: WorldProject['assets'][number];
   selected: boolean;
   tool: Tool;
-  select: () => void;
-  moved: (object: EditorObject) => void;
+  select: (additive?: boolean) => void;
+  locked: boolean;
+  children?: ReactNode;
+  moved: (object: EditorObject) => boolean;
   snapEnabled: boolean;
   snapStep: number;
 }) {
+  const sceneRoot = useThree(state => state.scene);
   const [target, setTarget] = useState<THREE.Group | null>(null);
   const attach = useCallback((node: THREE.Group | null) => setTarget(node), []);
   return (
@@ -310,10 +317,11 @@ function WorldEntity({
         visible={object.visible}
         onPointerDown={(event) => {
           event.stopPropagation();
-          select();
+          if (!locked) select(event.shiftKey);
         }}
       >
-        <Shape object={object} asset={asset} />
+        {object.kind !== 'group' && <Shape object={object} asset={asset} />}
+        {children}
         {selected && (
           <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[1.2, 1.24, 48]} />
@@ -321,7 +329,7 @@ function WorldEntity({
           </mesh>
         )}
       </group>
-      {selected && tool !== 'select' && target && (
+      {selected && !locked && tool !== 'select' && target && createPortal(
         <TransformControls
           object={target}
           mode={tool}
@@ -329,14 +337,18 @@ function WorldEntity({
           rotationSnap={snapEnabled ? THREE.MathUtils.degToRad(15) : null}
           scaleSnap={snapEnabled ? 0.1 : null}
           onMouseUp={() => {
-            moved({
+            const accepted = moved({
               ...object,
               position: target.position.toArray() as [number, number, number],
               rotation: target.rotation.toArray().slice(0, 3) as [number, number, number],
               scale: target.scale.toArray() as [number, number, number],
             });
+            if (!accepted) {
+              target.position.fromArray(object.position); target.rotation.set(...object.rotation); target.scale.fromArray(object.scale);
+              target.updateMatrixWorld(true);
+            }
           }}
-        />
+        />, sceneRoot
       )}
     </>
   );
@@ -354,6 +366,7 @@ function PreviewCamera({
   const { camera, gl } = useThree();
   const keys = useRef(new Set<string>());
   const velocityY = useRef(0);
+  const colliders = useMemo(() => collisionWorldBounds(project), [project]);
   const yaw = useRef(project.spawn.yaw);
   const pitch = useRef(0);
   const [locked, setLocked] = useState(false);
@@ -406,18 +419,10 @@ function PreviewCamera({
     camera.position.z += dir.z * speed * dt;
     const feet = camera.position.y - 1.65;
     let groundY = sampleTerrain(project.terrain, camera.position.x, camera.position.z);
-    for (const object of project.objects) {
-      if (!object.visible || object.collision === 'none') continue;
-      const sx = object.scale[0],
-        sy = object.scale[1],
-        sz = object.scale[2];
-      const halfX = (object.kind === 'building' ? 1.8 : object.kind === 'tree' ? 0.45 : 0.8) * sx;
-      const halfZ = (object.kind === 'building' ? 1.5 : object.kind === 'tree' ? 0.45 : 0.8) * sz;
-      const bottom = object.position[1] - (object.kind === 'tree' ? 0 : 0.8) * sy;
-      const top = object.position[1] + (object.kind === 'tree' ? 4.25 : 0.8) * sy;
-      const overlaps =
-        Math.abs(camera.position.x - object.position[0]) < halfX + 0.28 &&
-        Math.abs(camera.position.z - object.position[2]) < halfZ + 0.28;
+    for (const { object, bounds } of colliders) {
+      const bottom = bounds.min.y, top = bounds.max.y;
+      const overlaps = camera.position.x > bounds.min.x - 0.28 && camera.position.x < bounds.max.x + 0.28 &&
+        camera.position.z > bounds.min.z - 0.28 && camera.position.z < bounds.max.z + 0.28;
       if (!overlaps) continue;
       if (object.collision === 'walkable' && feet <= top + 0.45) groundY = Math.max(groundY, top);
       else if (feet < top && feet + 1.75 > bottom) {
@@ -444,7 +449,8 @@ function PreviewCamera({
 function Scene({
   project,
   selectedId,
-  setSelectedId,
+  selectedIds,
+  selectObject,
   tool,
   setProject,
   brush,
@@ -463,10 +469,12 @@ function Scene({
   snapEnabled,
   snapStep,
   placementActive,
+  onMoveObject,
 }: {
   project: WorldProject;
   selectedId: string | null;
-  setSelectedId: (id: string | null) => void;
+  selectedIds: string[];
+  selectObject: (id: string, additive?: boolean) => void;
   tool: Tool;
   setProject: (fn: (p: WorldProject) => WorldProject) => void;
   brush: Brush;
@@ -477,6 +485,7 @@ function Scene({
   terrainEditing: boolean;
   onExitPreview: () => void;
   placementActive: boolean;
+  onMoveObject: (object: EditorObject) => boolean;
   objects: EditorObject[];
   viewPreset: 'perspective' | 'top';
   draftFeature: DrawnFeature | null;
@@ -505,7 +514,20 @@ function Scene({
     camera.lookAt(0, project.geography ? sampleTerrain(project.terrain, 0, 0) : 2, 0);
     camera.updateProjectionMatrix();
   }, [camera, viewPreset, project.geography, project.terrain, project.metadata.worldId]);
-  const selected = objects.find((object) => object.id === selectedId);
+  const childMap = new Map<string | undefined, EditorObject[]>();
+  for (const object of objects) { const list = childMap.get(object.parentId) ?? []; list.push(object); childMap.set(object.parentId, list); }
+  const blocked = new Set<string>(), byId = new Map(objects.map(object => [object.id,object]));
+  for (const object of objects) if (object.locked) { let current: EditorObject | undefined = object; while (current && !blocked.has(current.id)) { blocked.add(current.id); current = current.parentId ? byId.get(current.parentId) : undefined; } }
+  const renderObjects = (parentId?: string, ancestorLocked = false): ReactNode => (childMap.get(parentId) ?? []).map(object => {
+    const locked = ancestorLocked || !!object.locked;
+    return <WorldEntity key={object.id} object={object} asset={project.assets.find(asset => asset.id === object.assetId)}
+      selected={selectedIds.includes(object.id)} tool={object.id === selectedId ? tool : 'select'} locked={locked || blocked.has(object.id)}
+      snapEnabled={snapEnabled} snapStep={snapStep} select={additive => selectObject(object.id, additive)}
+      moved={next => {
+        if (locked || blocked.has(object.id)) return false;
+        return onMoveObject(next);
+      }}>{renderObjects(object.id, locked)}</WorldEntity>;
+  });
   const onSculpt = useCallback((next: WorldProject) => setProject(() => next), [setProject]);
   return (
     <>
@@ -557,44 +579,7 @@ function Scene({
           onTerrainPoint={onTerrainPoint}
         />
         <DrawnFeatures project={project} draft={draftFeature} selectedId={selectedFeatureId} onSelect={onSelectFeature} editing={!preview} />
-        {objects
-          .filter((object) => object.id !== selectedId)
-          .map((object) => (
-            <WorldEntity
-              key={object.id}
-              object={object}
-              asset={project.assets.find((item) => item.id === object.assetId)}
-              selected={false}
-              tool={tool}
-              snapEnabled={snapEnabled}
-              snapStep={snapStep}
-              select={() => setSelectedId(object.id)}
-              moved={(next) =>
-                setProject((p) => ({
-                  ...p,
-                  objects: p.objects.map((item) => (item.id === next.id ? next : item)),
-                }))
-              }
-            />
-          ))}
-        {selected && (
-          <WorldEntity
-            key={`${selected.id}-${tool}`}
-            object={selected}
-            asset={project.assets.find((item) => item.id === selected.assetId)}
-            selected
-            tool={tool}
-            snapEnabled={snapEnabled}
-            snapStep={snapStep}
-            select={() => setSelectedId(selected.id)}
-            moved={(next) =>
-              setProject((p) => ({
-                ...p,
-                objects: p.objects.map((item) => (item.id === next.id ? next : item)),
-              }))
-            }
-          />
-        )}
+        {renderObjects()}
       </Suspense>
       <OrbitControls
         makeDefault
@@ -635,9 +620,15 @@ export default function App() {
   const setProjectRaw = useCallback((next: WorldProject) => {
     projectRef.current = next;
     setProjectState(next);
+    setSelection(previous => pruneSelection(next.objects,previous));
   }, []);
   const objects = project.objects;
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<string[]>([]);
+  const selectedIds = useMemo(() => pruneSelection(project.objects, selection), [project.objects, selection]);
+  const selectedId = selectedIds.at(-1) ?? null;
+  const setSelectedId = useCallback((id: string | null) => setSelection(id ? [id] : []), []);
+  const selectObject = useCallback((id: string, additive = false) => setSelection(previous => additive ? previous.includes(id) ? previous.filter(item => item !== id) : [...previous, id] : [id]), []);
+  const clipboard = useRef<{ project: WorldProject; ids: string[] } | null>(null);
   const [tool, setTool] = useState<Tool>('select');
   const [brush, setBrush] = useState<Brush>('raise');
   const [brushRadius, setBrushRadius] = useState(8);
@@ -679,6 +670,8 @@ export default function App() {
   const redoStack = useRef<WorldProject[]>([]);
   const saveRevision = useRef(0);
   const selected = objects.find((object) => object.id === selectedId) ?? null;
+  const selectedLocked = selected ? [...subtreeIds(objects,[selected.id])].some(id => effectiveObjectState(objects,id).locked) : false;
+  const selectedParentLocked = selected?.parentId ? effectiveObjectState(objects,selected.parentId).locked : false;
   const current = project;
   const exitPreview = useCallback(() => setPreview(false), []);
 
@@ -749,10 +742,14 @@ export default function App() {
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
         event.preventDefault();
         redo();
-      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd' && selectedId) {
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c' && !isTyping(event.target)) {
+        event.preventDefault(); copySelection();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v' && !isTyping(event.target)) {
+        event.preventDefault(); pasteSelection();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd' && selectedId && !isTyping(event.target)) {
         event.preventDefault();
         duplicateSelected();
-      } else if (event.code === 'Delete' && selectedId && !preview) deleteSelected();
+      } else if (event.code === 'Delete' && selectedId && !preview && !isTyping(event.target)) deleteSelected();
       else if (!preview && ['q', 'w', 'e', 'r'].includes(event.key.toLowerCase()) && !isTyping(event.target))
         setTool(
           ({ q: 'select', w: 'translate', e: 'rotate', r: 'scale' } as const)[
@@ -837,29 +834,91 @@ export default function App() {
     redoStack.current = [];
     message('New world created');
   }
-  function duplicateSelected() {
-    if (!selected) return;
-    const position: [number, number, number] = [
-      selected.position[0] + 1.5,
-      selected.position[1],
-      selected.position[2],
-    ];
-    const copy: EditorObject = { ...selected, id: newId(), name: selected.name + ' copy', position };
-    setProject((p) => ({ ...p, objects: [...p.objects, copy] }));
-    setSelectedId(copy.id);
-    message('Object duplicated');
+  function commitObjectCommand(next: WorldProject) {
+    const result = validateWorld(next);
+    if (!result.valid || !result.project) throw new Error(result.errors[0] ?? 'Invalid object change.');
+    if (new TextEncoder().encode(JSON.stringify(next)).byteLength > MAX_PROJECT_BYTES) throw new Error('The project would exceed the 25 MiB limit.');
+    setProject(() => result.project!);
+  }
+  function copySelection() {
+    if (!selectedIds.length) return;
+    clipboard.current = { project: projectRef.current, ids: [...selectedIds] };
+    message(selectedIds.length + ' selection roots copied');
+  }
+  function pasteSelection() {
+    const source = clipboard.current;
+    if (!source) { message('Copy a selection first'); return; }
+    try {
+      const cloned = cloneSubtrees(source.project, source.ids), latest = projectRef.current;
+      const assets = [...latest.assets], assetIds = new Map<string,string>();
+      for (const assetId of new Set(cloned.objects.flatMap(object => object.assetId ? [object.assetId] : []))) {
+        const candidate = source.project.assets.find(asset => asset.id === assetId);
+        if (!candidate) throw new Error('Copied model asset is missing.');
+        const existing = assets.find(asset => asset.dataUrl === candidate.dataUrl);
+        const asset = existing ?? { ...candidate, id: assets.some(asset => asset.id === candidate.id) ? newId() : candidate.id };
+        if (!existing) assets.push(asset); assetIds.set(assetId,asset.id);
+      }
+      const roots = new Set(cloned.rootIds);
+      const copies = cloned.objects.map(object => ({ ...object, ...(object.assetId ? { assetId: assetIds.get(object.assetId)! } : {}), position: roots.has(object.id) ? [object.position[0] + 1.5,object.position[1],object.position[2]] as Vec3 : object.position }));
+      commitObjectCommand({ ...latest, assets, objects: [...latest.objects,...copies] });
+      setSelection(cloned.rootIds); message('Object subtrees pasted');
+    } catch (error) { message(error instanceof Error ? error.message : 'Paste failed'); }
+  }
+  function duplicateSelected() { copySelection(); pasteSelection(); }
+  function groupSelection(entireWorld: boolean) {
+    try {
+      const ids = entireWorld ? projectRef.current.objects.filter(object => !object.parentId).map(object => object.id) : selectedIds;
+      const result = groupObjects(projectRef.current, ids, entireWorld ? project.metadata.name + ' group' : 'Group');
+      commitObjectCommand(result.project); setSelectedId(result.groupId); message('Objects grouped');
+    } catch (error) { message(error instanceof Error ? error.message : 'Could not group objects'); }
+  }
+  function ungroupSelection() {
+    try { commitObjectCommand(ungroupObjects(projectRef.current, selectedIds)); setSelectedId(null); message('Groups removed; child world transforms preserved'); }
+    catch (error) { message(error instanceof Error ? error.message : 'Could not ungroup'); }
   }
   function deleteSelected() {
-    if (!selectedId) return;
-    setProject((p) => ({ ...p, objects: p.objects.filter((object) => object.id !== selectedId) }));
-    setSelectedId(null);
+    if (!selectedIds.length) return;
+    try {
+      const removed = subtreeIds(projectRef.current.objects, selectedIds);
+      if ([...removed].some(id => effectiveObjectState(projectRef.current.objects,id).locked)) throw new Error('Unlock the selected subtree before deleting it.');
+      commitObjectCommand({ ...projectRef.current, objects: projectRef.current.objects.filter(object => !removed.has(object.id)) }); setSelectedId(null);
+    } catch (error) { message(error instanceof Error ? error.message : 'Could not delete selection'); }
   }
-  function updateSelected(update: Partial<EditorObject>) {
+  function mutateObject(id: string, update: Partial<EditorObject>) {
+    try {
+      const latest = projectRef.current;
+      if ([...subtreeIds(latest.objects,[id])].some(childId => effectiveObjectState(latest.objects,childId).locked)) throw new Error('Unlock the object and its descendants before changing it.');
+      commitObjectCommand({ ...latest, objects: latest.objects.map(object => object.id === id ? { ...object,...update } : object) }); return true;
+    } catch (error) { message(error instanceof Error ? error.message : 'Could not change object'); return false; }
+  }
+  function toggleObjectLock(id: string) {
+    const latest = projectRef.current, object = latest.objects.find(object => object.id === id);
+    if (!object || (object.parentId && effectiveObjectState(latest.objects,object.parentId).locked)) { message('Unlock the parent group first'); return; }
+    try { commitObjectCommand({ ...latest, objects: latest.objects.map(item => item.id === id ? { ...item,locked: !item.locked } : item) }); }
+    catch (error) { message(error instanceof Error ? error.message : 'Could not change lock'); }
+  }
+  function updateSelected(update: Partial<EditorObject>) { if (selected) mutateObject(selected.id,update); }
+  function reparentSelection(parentId: string) {
+    try { commitObjectCommand(reparentObjects(projectRef.current,selectedIds,parentId || undefined)); message('Parent changed; world transforms preserved'); }
+    catch (error) { message(error instanceof Error ? error.message : 'Could not reparent objects'); }
+  }
+  function groundSelectedOnTerrain() {
     if (!selected) return;
-    const nextObjects = project.objects.map((object) =>
-      object.id === selected.id ? { ...object, ...update } : object,
-    );
-    setProject((p) => ({ ...p, objects: nextObjects }));
+    try {
+      const latest = projectRef.current, asset = latest.assets.find(asset => asset.id === selected.assetId);
+      if (!asset?.bounds) throw new Error('Model bounds unavailable.');
+      const matrices = resolveWorldMatrices(latest.objects), matrix = matrices.get(selected.id)!;
+      const bounds = new THREE.Box3(new THREE.Vector3(...asset.bounds.min),new THREE.Vector3(...asset.bounds.max)).applyMatrix4(matrix);
+      const origin = new THREE.Vector3().setFromMatrixPosition(matrix);
+      origin.y += sampleTerrain(latest.terrain,origin.x,origin.z) - bounds.min.y;
+      if (selected.parentId) origin.applyMatrix4(matrices.get(selected.parentId)!.clone().invert());
+      mutateObject(selected.id,{ position: origin.toArray() as Vec3 });
+    } catch (error) { message(error instanceof Error ? error.message : 'Could not ground model'); }
+  }
+  function resizeSelectedGroup(dimensions: Vec3, uniform: boolean) {
+    if (!selected) return;
+    try { commitObjectCommand(resizeGroup(projectRef.current,selected.id,dimensions,uniform)); message('Group and all contents resized'); }
+    catch (error) { message(error instanceof Error ? error.message : 'Could not resize group'); }
   }
   function download(filename: string, data: string) {
     const blob = new Blob([data], { type: 'application/json' }),
@@ -1059,7 +1118,7 @@ export default function App() {
     try {
       const existing = projectRef.current.objects.find((object) => object.assetId === asset.id);
       const object: EditorObject = existing
-        ? { ...existing, id: newId(), name: `${existing.name} copy`, position: [0, 0, 0], visible: true }
+        ? { ...existing, parentId: undefined, locked: false, id: newId(), name: `${existing.name} copy`, position: [0, 0, 0], visible: true }
         : { ...makeObject('box'), id: newId(), name: asset.name.replace(/\.glb$/i, ''), kind: 'glb', assetId: asset.id, position: [0, 0, 0], scale: [1, 1, 1] };
       if (commitEmbeddedAsset(asset, object, worldGeneration.current)) message(`${asset.name} placed again`);
     } catch (error) {
@@ -1190,71 +1249,9 @@ export default function App() {
         </aside>
         <aside className="left-panel">
           {panel === 'objects' && <CataloguePanel busy={assetBusy || !!pendingPlacement} onAdd={(entry) => void beginCataloguePlacement(entry)} />}
-          {panel === 'scene' && (
-            <>
-              <div className="panel-heading">
-                <div>
-                  <span className="eyebrow">WORLD OUTLINE</span>
-                  <h2>Scene</h2>
-                </div>
-                <button className="icon-btn" title="Add object" onClick={() => addObject('box')}>
-                  ＋
-                </button>
-              </div>
-              <div className="scene-meta">
-                <span className="tiny-dot" />
-                {objects.length + (project.features?.length ?? 0) + 1} entities <span>·</span> {project.terrain.resolution} ×{' '}
-                {project.terrain.resolution} terrain
-              </div>
-              <div className="tree-list">
-                <div className="tree-row root">
-                  <span className="chevron">⌄</span>
-                  <span className="scene-icon">◈</span>
-                  <span>{project.metadata.name}</span>
-                  <span className="row-menu">···</span>
-                </div>
-                <button className="tree-row terrain-row" onClick={() => setPanel('terrain')}>
-                  <span className="indent" />
-                  <span className="scene-icon terrain-icon">▱</span>
-                  <span>Terrain</span>
-                  <span className="visible-eye">◉</span>
-                </button>
-                <div className="tree-group-label">
-                  OBJECTS <span>{objects.length}</span>
-                </div>
-                {objects.map((object) => (
-                  <div
-                    key={object.id}
-                    className={`tree-row object-row ${selectedId === object.id ? 'selected' : ''}`}
-                  >
-                    <button onClick={() => setSelectedId(object.id)}>
-                      <span className="indent" />
-                      <span className="scene-icon">
-                        {object.kind === 'tree' ? '♣' : object.kind === 'building' ? '⌂' : '◻'}
-                      </span>
-                      <span>{object.name}</span>
-                    </button>
-                    <button
-                      className="row-eye"
-                      title={object.visible ? 'Hide object' : 'Show object'}
-                      onClick={() => {
-                        const next = project.objects.map((o) =>
-                          o.id === object.id ? { ...o, visible: !o.visible } : o,
-                        );
-                        setProject((p) => ({ ...p, objects: next }));
-                      }}
-                    >
-                      {object.visible ? '◉' : '○'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="panel-footer">
-                <span className="footer-dot" />
-                Autosave on
-              </div>
-            </>
-          )}
+          {panel === 'scene' && <SceneExplorer project={project} selectedIds={selectedIds} onSelect={selectObject} onAdd={() => addObject('box')} onTerrain={() => setPanel('terrain')}
+            onVisible={id => mutateObject(id,{ visible: !project.objects.find(object => object.id === id)!.visible })}
+            onLock={toggleObjectLock} onGroup={() => groupSelection(false)} onUngroup={ungroupSelection} onGroupAll={() => groupSelection(true)} onCopy={copySelection} onPaste={pasteSelection} />}
           {panel === 'assets' && (
             <>
               <div className="panel-heading">
@@ -1692,7 +1689,8 @@ export default function App() {
               <Scene
                 project={current}
                 selectedId={selectedId}
-                setSelectedId={setSelectedId}
+                selectedIds={selectedIds}
+                selectObject={selectObject}
                 tool={tool}
                 setProject={setProject}
                 brush={brush}
@@ -1701,6 +1699,7 @@ export default function App() {
                 material={terrainMaterial}
                 preview={preview}
                 placementActive={!!pendingPlacement}
+                onMoveObject={object => mutateObject(object.id,object)}
                 terrainEditing={panel === 'terrain' && !preview && !pendingPlacement}
                 onExitPreview={exitPreview}
                 objects={objects}
@@ -1774,7 +1773,7 @@ export default function App() {
             <span>METRES</span>
             <span className="status-spacer" />
             <span>
-              WORLD SCHEMA&nbsp; <b>v1</b>
+              WORLD SCHEMA&nbsp; <b>v2</b>
             </span>
             <span>
               {nativePreview ? 'NATIVE GRAPHICS' : 'EDITOR PREVIEW'}&nbsp; <b>{nativePreview ? 'ELSEMESH WEBGPU' : 'THREE.JS WEBGL'}</b>
@@ -1793,6 +1792,13 @@ export default function App() {
           </div>
           {selected ? (
             <>
+              <div className="hierarchy-properties">
+                <label>Parent group<select aria-label="Parent group" disabled={selectedLocked} value={selected.parentId ?? ''} onChange={event => reparentSelection(event.target.value)}><option value="">World root</option>{objects.filter(object => object.kind === 'group' && !subtreeIds(objects,selectedIds).has(object.id)).map(object => <option key={object.id} value={object.id}>{object.name}</option>)}</select></label>
+                <button className="subdued" disabled={selectedParentLocked} onClick={() => toggleObjectLock(selected.id)}>{selected.locked ? 'Unlock selected object' : 'Lock selected object'}</button>
+                {selected.kind === 'group' && <GroupDimensions project={project} object={selected} disabled={selectedLocked} onResize={resizeSelectedGroup}/>}
+              </div>
+              {selectedLocked && <p className="locked-message">Object, parent or descendant is locked. Unlock it before editing this subtree.</p>}
+              <fieldset className="object-properties-fieldset" disabled={selectedLocked}>
               <div className="inspector-section">
                 <div className="section-title">
                   <span>▣</span> OBJECT <span className="collapse">⌃</span>
@@ -1803,10 +1809,11 @@ export default function App() {
                   value={selected.name}
                   onChange={(e) => updateSelected({ name: e.target.value })}
                 />
+                <div className="object-metadata"><label className="field-label">DESCRIPTION<textarea aria-label="Object description" maxLength={2000} value={selected.description ?? ''} onChange={event => updateSelected({ description: event.target.value })}/></label><label className="field-label">TAGS<input key={selected.id + '-tags'} className="wide-input" aria-label="Object tags" defaultValue={(selected.tags ?? []).join(', ')} onBlur={event => updateSelected({ tags: event.target.value.split(',').map(tag => tag.trim()).filter(Boolean) })}/></label></div>
                 <div className="field-label">TYPE</div>
                 <div className="readonly-field">{selected.kind.toUpperCase()}</div>
                 {selected.kind === 'tree' && <><div className="field-label">TREE SPECIES</div><select className="wide-select" value={selected.treeSpecies ?? 'broadleaf'} onChange={(event) => updateSelected({ treeSpecies: event.target.value as typeof treeSpecies })}>{TREE_SPECIES.map((species) => <option key={species.id} value={species.id}>{species.label}</option>)}</select></>}
-                {selected.kind === 'glb' ? <><div className="field-label">SOURCE MATERIALS</div><AssetMaterialEditor key={selected.id} object={selected} asset={project.assets.find((asset) => asset.id === selected.assetId)} onChange={(materialOverrides) => updateSelected({ materialOverrides })} /><button className="reset-material-button" onClick={() => { const grounded = groundObject(selected, project.assets.find((asset) => asset.id === selected.assetId), project.terrain); updateSelected({ position: grounded.position }); }}>Ground model on terrain</button></> : <>
+                {selected.kind === 'group' ? null : selected.kind === 'glb' ? <><div className="field-label">SOURCE MATERIALS</div><AssetMaterialEditor key={selected.id} object={selected} asset={project.assets.find((asset) => asset.id === selected.assetId)} onChange={(materialOverrides) => updateSelected({ materialOverrides })} /><button className="reset-material-button" onClick={groundSelectedOnTerrain}>Ground model on terrain</button></> : <>
                 <div className="field-label">MATERIAL COLOR</div>
                 <div className="color-row">
                   <input
@@ -1855,14 +1862,15 @@ export default function App() {
                   value={selected.collision}
                   onChange={(e) => updateSelected({ collision: e.target.value as EditorObject['collision'] })}
                 >
-                  <option value="solid">Solid object</option>
-                  <option value="walkable">Walkable surface</option>
+                  {selected.kind !== 'group' && <option value="solid">Solid object</option>}
+                  {selected.kind !== 'group' && <option value="walkable">Walkable surface</option>}
                   <option value="none">No collision</option>
                 </select>
               </div>
               <button className="delete-button" onClick={deleteSelected}>
-                ⌫&nbsp; Delete object
+                ⌫&nbsp; Delete selection
               </button>
+              </fieldset>
             </>
           ) : (
             <>
@@ -1945,6 +1953,15 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+function GroupDimensions({ project, object, disabled, onResize }: { project: WorldProject; object: EditorObject; disabled: boolean; onResize: (dimensions: Vec3, uniform: boolean) => void }) {
+  const [uniform,setUniform] = useState(false);
+  const result = useMemo(() => {
+    try { return { dimensions: getGroupBounds(project,object.id).dimensions.map((n,i) => n * object.scale[i]!) as Vec3, error: '' }; }
+    catch (error) { return { dimensions: [0,0,0] as Vec3, error: error instanceof Error ? error.message : 'Group bounds unavailable' }; }
+  }, [project,object]);
+  return <div><b>Bounding dimensions (approx.) · local axes</b><p className="library-note">Resizes this group and every object inside it.</p>{result.error ? <p role="alert">{result.error}</p> : <div className="group-dimensions">{['Width','Height','Depth'].map((label,axis) => <label key={label}>{label} m<input type="number" min="0.01" step="0.1" aria-label={'Group ' + label.toLowerCase() + ' m'} disabled={disabled || result.dimensions.some(n => n <= 0)} value={Number(result.dimensions[axis]!.toFixed(3))} onChange={event => { const next = [...result.dimensions] as Vec3; next[axis] = Number(event.target.value); if (next[axis]! > 0) onResize(next,uniform); }}/></label>)}</div>}<label><input aria-label="Keep group proportions" type="checkbox" checked={uniform} onChange={event => setUniform(event.target.checked)}/> Keep proportions</label></div>;
 }
 
 function VectorEditor({

@@ -1,0 +1,6 @@
+import { defineConfig, devices } from '@playwright/test';
+export default defineConfig({
+ testDir:'./e2e',testMatch:'object-manager.spec.ts',workers:1,timeout:120000,
+ outputDir:'.local-evidence/stage-b',
+ use:{baseURL:'http://127.0.0.1:5194',...devices['Desktop Chrome'],viewport:{width:1440,height:1000},launchOptions:{executablePath:process.env.ELSEMESH_BROWSER_EXECUTABLE,args:['--no-sandbox','--enable-webgl','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']},screenshot:'only-on-failure'},
+});

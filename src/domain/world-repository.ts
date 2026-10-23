@@ -1,4 +1,4 @@
-import { MAX_PROJECT_BYTES, PROJECT_SCHEMA, validateWorld } from './world';
+import { MAX_PROJECT_BYTES, PROJECT_SCHEMA, LEGACY_PROJECT_SCHEMA, validateWorld } from './world';
 import type { WorldProject } from './world';
 
 export const WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/1';
@@ -107,7 +107,7 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
   const manifestBytes = await read(WORLD_REPOSITORY_MANIFEST, WORLD_REPOSITORY_MANIFEST_LIMIT);
   if (manifestBytes.byteLength > WORLD_REPOSITORY_MANIFEST_LIMIT) throw new Error('Repository manifest is too large.');
   const raw = parse(manifestBytes);
-  if (!object(raw) || raw.schema !== WORLD_REPOSITORY_SCHEMA || raw.version !== 1 || raw.projectSchema !== PROJECT_SCHEMA || !object(raw.engine) || raw.engine.commit !== ENGINE_REFERENCE || raw.engine.compatibility !== 'reference-only-runtime-unverified' || typeof raw.snapshot !== 'string' || !hashPattern.test(raw.snapshot) || !object(raw.components) || Object.keys(raw.components).length !== roles.length) throw new Error('Unsupported or invalid world repository manifest.');
+  if (!object(raw) || raw.schema !== WORLD_REPOSITORY_SCHEMA || raw.version !== 1 || ![PROJECT_SCHEMA, LEGACY_PROJECT_SCHEMA].includes(raw.projectSchema as typeof PROJECT_SCHEMA) || !object(raw.engine) || raw.engine.commit !== ENGINE_REFERENCE || raw.engine.compatibility !== 'reference-only-runtime-unverified' || typeof raw.snapshot !== 'string' || !hashPattern.test(raw.snapshot) || !object(raw.components) || Object.keys(raw.components).length !== roles.length) throw new Error('Unsupported or invalid world repository manifest.');
   const components = {} as Record<Role, FileReference>;
   for (const role of roles) components[role] = reference(raw.components[role], `snapshots/${raw.snapshot}/${role}.json`);
   if (await snapshotDigest(components) !== raw.snapshot) throw new Error('Snapshot identifier does not match its components.');
@@ -149,7 +149,7 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
     imageryPlan = { metadata, ref, mediaType: ref.path.endsWith('.png') ? 'image/png' : 'image/jpeg' };
   }
   const candidate = {
-    schema: PROJECT_SCHEMA, metadata: values.metadata, terrain: values.terrain,
+    schema: raw.projectSchema, metadata: values.metadata, terrain: values.terrain,
     objects: values.objects, features: values.features, environment: values.environment,
     spawn: values.spawn, assets: assetPlans.map(({ metadata }) => ({ ...metadata, dataUrl: '' })),
     ...(geo.geography !== null ? { geography: geo.geography } : {}),

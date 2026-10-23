@@ -1,10 +1,12 @@
+import { validateHierarchy, validateWorldBounds } from './object-hierarchy';
 import { inspectGlbJson, MAX_ASSET_BYTES } from './asset-glb';
 import type { AssetBounds } from './asset-glb';
 import { validateGeography, validateTerrainImagery } from './geography';
 import type { GeoReference, TerrainImagery } from './geography';
 export { inspectGlbJson } from './asset-glb';
-export const PROJECT_SCHEMA = 'elsemesh.worlds.project/1';
-export const PLAYER_WORLD_SCHEMA = 'elsemesh.player-world/1';
+export const LEGACY_PROJECT_SCHEMA = 'elsemesh.worlds.project/1';
+export const PROJECT_SCHEMA = 'elsemesh.worlds.project/2';
+export const PLAYER_WORLD_SCHEMA = 'elsemesh.player-world/2';
 export const MAX_TERRAIN_RESOLUTION = 257;
 export const MAX_PROJECT_BYTES = 25 * 1024 * 1024;
 
@@ -41,7 +43,11 @@ export type WorldAsset = {
 export type EditorObject = {
   id: string;
   name: string;
-  kind: PrimitiveKind | 'glb';
+  kind: PrimitiveKind | 'glb' | 'group';
+  parentId?: string;
+  locked?: boolean;
+  description?: string;
+  tags?: string[];
   position: Vec3;
   rotation: Vec3;
   scale: Vec3;
@@ -169,10 +175,19 @@ export function isSimpleOutline(points: Vec3[]): boolean {
   return Math.abs(area) > 0.05;
 }
 
+export function migrateWorldProject(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const p = value as Record<string, unknown>;
+  if (p.schema !== LEGACY_PROJECT_SCHEMA) return value;
+  if (Array.isArray(p.objects) && p.objects.some(o => o && typeof o === 'object' && ('parentId' in o || o.kind === 'group'))) throw new Error('Legacy projects cannot contain hierarchy fields.');
+  return { ...p, schema: PROJECT_SCHEMA };
+}
+
 export function validateWorld(value: unknown): { valid: boolean; errors: string[]; project?: WorldProject } {
   const errors: string[] = [];
   if (!value || typeof value !== 'object' || Array.isArray(value))
     return { valid: false, errors: ['Project must be an object.'] };
+  try { value = migrateWorldProject(value); } catch (error) { return { valid: false, errors: [(error as Error).message] }; }
   const p = value as Partial<WorldProject>;
   if (p.schema !== PROJECT_SCHEMA) errors.push(`Unsupported project schema. Expected ${PROJECT_SCHEMA}.`);
   if (
@@ -246,7 +261,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       object.scale.some((n) => n <= 0 || n > 1000)
     )
       errors.push(`Object ${index + 1} has invalid properties or transforms.`);
-    if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb'].includes(object.kind))
+    if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb', 'group'].includes(object.kind))
       errors.push(`Object ${index + 1} uses an unsupported type.`);
     if (object?.kind === 'glb' && (typeof object.assetId !== 'string' || !assetIds.has(object.assetId)))
       errors.push(`Object ${index + 1} references an asset that is missing from the project.`);
@@ -264,6 +279,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       if (object.kind !== 'glb') errors.push(`Object ${index + 1} material overrides require an imported GLB.`);
     }
   }
+  if (Array.isArray(p.objects)) errors.push(...validateHierarchy(p.objects));
   if (!p.spawn || !finiteVec3(p.spawn.position) || !Number.isFinite(p.spawn.yaw))
     errors.push('Spawn position is invalid.');
   if (
@@ -351,6 +367,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
     try { if (new TextEncoder().encode(JSON.stringify(p)).byteLength > MAX_PROJECT_BYTES) errors.push('Projects with embedded imagery must fit the 25 MiB project limit.'); }
     catch { errors.push('Project imagery could not be serialized.'); }
   }
+  if (!errors.length) errors.push(...validateWorldBounds(p as WorldProject));
   return errors.length ? { valid: false, errors } : { valid: true, errors, project: { ...p, features: p.features ?? [] } as WorldProject };
 }
 

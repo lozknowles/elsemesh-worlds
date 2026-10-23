@@ -6,6 +6,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'src/vendor', 'work'] },
+  { files: ['scripts/**/*.mjs'], languageOptions: { globals: { ...globals.node } } },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { files: ['src/native/**/*.js'], languageOptions: { globals: { ...globals.browser } } },

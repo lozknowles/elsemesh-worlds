@@ -6,6 +6,7 @@ import { parseObjectCatalogue, filterCatalogue, fetchCatalogueModel } from '../d
 import type { CatalogueAsset, ObjectCatalogue } from '../domain/object-catalogue';
 import { inspectAndLoadAsset, disposeAssetScene } from './asset-admission';
 import './CataloguePanel.css';
+const EMPTY_ENTRIES: CatalogueAsset[] = [];
 
 function ModelPreview({ entry }: { entry: CatalogueAsset }) {
  const [model,setModel]=useState<Group|null>(null),[error,setError]=useState('');
@@ -33,7 +34,7 @@ export default function CataloguePanel({ onAdd, busy }: { onAdd: (entry: Catalog
   }).then(value=>{if(!controller.signal.aborted)setCatalogue(value);}).catch(error=>{if(!controller.signal.aborted)setError(error instanceof Error?error.message:'Invalid catalogue.');});
   return()=>controller.abort();
  },[]);
- const entries=catalogue?.assets??[],filtered=useMemo(()=>filterCatalogue(entries,query,pack,category),[entries,query,pack,category]);
+ const entries=catalogue?.assets??EMPTY_ENTRIES,filtered=useMemo(()=>filterCatalogue(entries,query,pack,category),[entries,query,pack,category]);
  const pages=Math.max(1,Math.ceil(filtered.length/24)),currentPage=Math.min(page,pages-1),visible=filtered.slice(currentPage*24,(currentPage+1)*24);
  const packs=[...new Map(entries.map(entry=>[entry.sourcePack.id,entry.sourcePack.name])).entries()].sort((a,b)=>a[1].localeCompare(b[1]));
  const categories=[...new Set(entries.flatMap(entry=>entry.categories))].sort();

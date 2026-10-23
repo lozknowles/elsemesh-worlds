@@ -38,7 +38,7 @@ Catalogue objects retain ordinary object IDs/transforms/materials/collision and 
 
 ## Proposed object-platform contracts
 
-Next schema revision must migrate project/1 without losing embedded assets, terrain, features or IDs. Define `ObjectRecord` with stable ID, optional parent ID, LOCAL transform and typed versioned components. Reject missing parents, cycles, invalid inverses, nonfinite transforms, duplicate IDs and dangling references. Reparent explicitly preserves world transform; group resize has two commands: scale subtree, or resize building shell while retaining furnishing size. Both renderer adapters consume the same resolved world matrices.
+Next schema revision must migrate project/1 without losing embedded assets, terrain, features or IDs. Define `ObjectRecord` with stable ID, optional parent ID, LOCAL transform and typed versioned components. Reject missing parents, cycles, invalid inverses, nonfinite transforms, duplicate IDs and dangling references. Reparent explicitly preserves world transform; the first group-resize slice scales the complete subtree. Automatic shell remodelling while retaining furnishing sizes is deferred until floors, openings, stairs and furnishing relocation have an approved contract. Both renderer adapters consume the same resolved world matrices.
 
 Independent `MovementPath` resources contain stable ID, version, waypoint coordinates, linear/Catmull-Rom interpolation, bounded speed/acceleration/braking, orientation, loop/reverse/ping-pong/delay/pauses, event and conditional/branch references. Validate path/graph/object references atomically. One route runtime owns each object's transform channel; physics/vehicle adapters compose rather than race over position.
 
@@ -54,7 +54,7 @@ Federation needs authenticated authoritative simulation ownership, per-object re
 | --- | --- | --- |
 | A | Repository/source inspection | This assessment; baseline and limitations identified; architect PLAN recorded. |
 | Catalogue slice | A + verified licence inventory | All eligible indexed assets; furniture browse/preview/ghost placement; terrain AND object-surface placement; cancel leaves no residue; dedup; save/reopen; missing/corrupt failures; representative furniture/building/vehicle browser proof. |
-| B Object Manager | Approved v2 object/component migration | Hierarchy, multi-select, group scale/shell resize, lock/search/copy-paste, typed properties, ownership metadata; migration/undo/redo tests; both renderers preserve transforms; no implied enforced network permissions yet. |
+| B Object Manager | Approved v2 object/component migration | Approved first slice: hierarchy, multi-select, whole-group scale, lock/search/copy-paste, descriptions and tags; shell remodelling, general typed components and ownership metadata remain deferred; migration/undo/redo tests; both renderers preserve transforms; no implied enforced network permissions yet. |
 | C Path Editor | B references + one simulation adapter | Click/drag/insert/delete reusable paths, linear/spline, speed/acceleration/braking/pauses and preview; deterministic route tests; preserve existing cars via adapter regression. |
 | D Behaviours | B+C | Simple forms + draggable connected graph, typed validation, trace/errors; red-light example entirely configured as data; malicious/dangling/cyclic/runaway definitions fail safely. |
 | E Programmable Prefabs | B-D | Save configured subtree/components/path/graph dependencies, instantiate with fresh IDs, overrides survive updates and reopen, dedup assets. |
@@ -66,3 +66,14 @@ Stage A and catalogue source tests do not qualify later stages. Every stage has 
 ## Gate record and baseline evidence
 
 Architect PLAN approved metadata/content separation, pinned distribution, lazy loading, transactional placement and explicit future contracts. NO-PROGRESS gate resolved SSH at transport layer: port22 was unreachable; user supplied2222, then authenticated read-only discovery succeeded. No SSH/service/ACL changes were made. Baseline on hpubuntu: `npm ci --ignore-scripts` succeeded, zero audit findings; existing48 tests across7 files passed. These are baseline checks, not the catalogue or multiplayer acceptance result.
+
+
+### Stage B PLAN gate
+
+User approved Stage B. Architect approved v1-to-v2 migration, parent groups/local TRS, pruned multi-selection, inherited visibility/locking, atomic world-preserving regrouping with shear rejection, fresh-ID subtree copy and whole-group dimension scaling. Automatic shell remodelling is deferred. Primary accepted this narrower first slice. Both renderer adapters must preserve composed matrices; player/runtime v2 acceptance is not implied.
+
+### Stage B completion gate and evidence
+
+Architect source completion passed after fixes for validated gizmo commits/restore, Delete typing guard, scene-root transform helpers, accurate primitive/tree bounds plus approximation labels, and composed matrix/inverse/world bounds limits. Consolidated browser run: four Stage B tests passed (1.4 minutes), including multi-selection, resize/locks/copy/reopen, legacy migration/reparent/ungroup/undo, 1,755-part warehouse grouping/resizing/atomic paste rejection, and actual nested gizmo dragging. Six catalogue browser tests passed together (41.9 seconds). Native WebGPU hierarchy test passed (4.8 seconds): actual rendered child matrix matches the expected composed transform. All 71 unit tests passed, lint and production build passed; existing bundle warnings remain. An earlier unit run under concurrent browser load timed out in the unchanged weather stress test; serial rerun passed without changing that test. MSI browser acceptance of the remote-built artifact grouped the existing warehouse and resized width from 32.39 to 40 metres.
+
+Primary accepted the bounded local Stage B slice. Bounds and collisions remain conservative; resize scales furnishings too; unrepresentable reparent shear is rejected. SwiftShader is correctness evidence, not physical GPU performance. Player v2 integration, shell remodelling, typed component/ownership UI, later stages and federation acceptance remain unimplemented/unqualified. No game source changes, push or deployment were made.
