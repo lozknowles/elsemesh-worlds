@@ -27,3 +27,34 @@ Physical MSI evidence loaded the independent exported snapshot in the WebGPU gam
 
 
 Final architect COMPLETION review passed the implementation after full editor admission/collision preflight and rejection-cache regression were added. No material code finding remained. Release remains conditional on final whole-suite/lint/UI/build results, clean source provenance, final physical sanity and verified remote pushes; source review alone is not publication proof.
+
+
+## PLAN gate: rounded ponds and cursor-visible landscape recording, 23 October
+
+User requests an actual editor recording of hill/grass painting, woodland bounded fill, clearing erasure and pond creation, saved in D Downloads, with a visible cursor. Ponds should use organic circle-based outlines without unintended square outer edges. Architect inspected the current source and found centre-only area masks dropping partially intersected cells before the exact polygon renderer, causing staircased shores.
+
+Primary accepted a water-only centre/radius gesture storing its explicit deterministic boundary in the existing schema. Zero irregularity makes a circle; frozen settings ensure preview and commit agree; outline clipping at the world edge is rejected rather than clamping vertices. Water paint/replace conservatively covers polygon-intersecting cells; erase keeps its previous semantics. Existing authored polygons and independent repositories are preserved.
+
+Architect challenged a proposed complete-mask fast path: it must require255 coverage in every intersecting cell, reject touching/overlapping visible water bounding boxes, charge classification before nested scans, and retain exact terrain clipping. Existing work/vertex caps remain. Targeted acceptance includes sub-cell/off-grid ponds, terrain intersection, circle/organic generation, exact geometry area, partial/overlap rejection, atomic edits, one-step undo, cancellation and save/reopen.
+
+The recording uses genuine browser mouse/key actions and an event-driven visible pointer indicator. It is an automated UI demonstration, not a recording of a native operating-system pointer. Record the entire visible workflow, a close shoreline view and actual save/reopen. Verify final MP4 decoding and the delivered D Downloads bytes before completion. Partial-mask water erasure and large overlap fallback limits are disclosed separately from rounded new outer shorelines.
+
+
+## PLAN follow-up: grade the actual shoreline
+
+New user steering requires a bank tapering into water and a submerged shelf. Architect required one atomic terrain-and-water command, a dry outer envelope on the actual triangulated terrain, an inward bed profile, outer anchors sampled from the original terrain, and resolution/budget checks before mesh or height allocation. Water coverage strength is separate from full terrain grading. Every preview is computed from frozen original terrain; release commits once. Erase retains terrain and Replace retains previous earthworks.
+
+Source review also found stale valid water previews surviving an invalid radius, and off-terrain release committing an earlier radius. The gesture now clears rejected previews, marks off-terrain drafts invalid, recovers on terrain re-entry, and rejects an off-terrain release. Browser acceptance checks valid-invalid-valid preview geometry, cancellation and both terrain/water undo/reopen.
+
+Architect challenged unconditional legacy-sea overlap rejection, because a dry island can sit within sea bounds. A conservative one-cell support-halo proof requires both original and graded heights above sea level plus maximum wave amplitude. Other water protection includes terrain support. The actual piecewise-linear dry envelope is checked at boundary/terrain triangle crossing points; an unresolved high-depth/coarse-grid shoreline rejects atomically.
+
+Primary decision: organic pond is the new water tool's only drawing gesture, while imported historical polygons remain readable and unmodified. Smoothness is claimed for complete new outer shorelines and admitted graded banks; partial-mask water erasure remains cell-based and larger partial/overlap operations can reject under unchanged safety budgets.
+
+
+## Source completion gate: bank interpolation and sea integration
+
+Architect reviewed the final source and found the previous material issues resolved. The dry-envelope proof samples every horizontal, vertical and terrain-diagonal crossing, so the piecewise-linear shoreline minimum is checked. Original and resulting support vertices must exceed the legacy sea's verified level-plus-amplitude maximum; other water bodies have a supporting-cell guard. Work is reserved before classification, cloning or grading. The final focused domain/render run passes54 tests, TypeScript passes, and the preview-safety and graded-pond UI checks pass.
+
+The added guard exposed a real unsupported combination: a coarse two-metre grid with a six-metre-deep bowl could interpolate the nominal dry outline below the water. That example is now an atomic rejection test. The same physical island pond on a one-metre grid passes. Typical off-centre seven-metre organic ponds with six-metre banks and two-metre beds remain admitted; their measured dry-envelope margin exceeds0.21m. No profile tuning was used to hide the failing case.
+
+Primary accepted source completion with remaining delivery conditions: full six-test UI regression against the frozen source, a clean contract export into ElseMesh and local runtime checks, visible descending banks/clearing/pointer in the final recording, exact final Save/Open, verified D Downloads files, and authorized ordinary GitHub pushes with CI skipped. The initial ungraded recording is supplementary first-draft footage; the final refinement must demonstrate the graded bank.

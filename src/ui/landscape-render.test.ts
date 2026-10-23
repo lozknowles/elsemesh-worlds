@@ -10,6 +10,8 @@ import {
   applyLandscapeBrush,
   updateLandscapeLayer,
   sampleLandscapeWater,
+  createLandscapePondBoundary,
+  landscapeWaterHasCompleteCoverage,
 } from '../domain/landscape';
 import {
   bakeLandscapeAtlas,
@@ -139,4 +141,10 @@ it('admits collider-bin budgets before caching or publishing a generated populat
  const candidate=createLandscapeLayer(base(),{kind:'vegetation',id:'crowded'});candidate.terrain=createTerrain(256,128,9);candidate.terrain.heights.fill(0);candidate.objects=[];candidate.features=[];candidate.assets=[{id:'wide',name:'Wide portable tree',mediaType:'model/gltf-binary',bytes:glb.length,dataUrl:'data:application/octet-stream;base64,'+Buffer.from(glb).toString('base64'),bounds:{min:[-30,0,-30],max:[30,30,30]}}];const scatter=candidate.landscape!.layers[0]!.scatter!;Object.assign(scatter,{assetRef:'wide',spacing:1,density:1,scaleMin:1,scaleMax:1});candidate.landscape!.layers[0]!.mask.tiles=Object.fromEntries(Array.from({length:80},(_,i)=>[(i%10)+':'+Math.floor(i/10),Array(256).fill(255)]));
  let current=fill('ground');const original=current,before=structuredClone(current),candidateBefore=structuredClone(candidate);expect(()=>{preflightLandscape(candidate);current=candidate;}).toThrow(/collision index bin limit/);expect(current).toBe(original);expect(current).toEqual(before);expect(candidate).toEqual(candidateBefore);expect(()=>preflightLandscape(candidate)).toThrow(/collision index bin limit/);
  scatter.density=.001;const safe=preflightLandscape(candidate);expect(safe.length).toBeGreaterThan(0);expect(preflightLandscape(candidate)).toBe(safe);
+});
+
+it('renders the full organic polygon area without a missing cell staircase',()=>{
+ const boundary=createLandscapePondBoundary([.13,0,.27],8,.6);let p=createLandscapeLayer(base(),{kind:'water',id:'pond'});p=applyLandscapeArea(p,{layerId:'pond',boundary,mode:'replace'});p=updateLandscapeLayer(p,'pond',{water:{level:2,waveAmplitude:0,waveSpeed:1,shoreFade:1}});
+ const g=landscapeWaterGeometry(p),a=g.getAttribute('position');let renderedArea=0;for(let i=0;i<a.count;i+=3)renderedArea+=Math.abs((a.getX(i+1)-a.getX(i))*(a.getZ(i+2)-a.getZ(i))-(a.getZ(i+1)-a.getZ(i))*(a.getX(i+2)-a.getX(i)))/2;
+ const polygonArea=Math.abs(boundary.reduce((sum,v,i)=>{const b=boundary[(i+1)%boundary.length]!;return sum+v[0]*b[2]-b[0]*v[2];},0))/2;expect(renderedArea).toBeCloseTo(polygonArea,3);expect(landscapeWaterHasCompleteCoverage(p,p.landscape!.layers[0]!)).toBe(true);g.dispose();
 });

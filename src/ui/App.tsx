@@ -707,7 +707,7 @@ export default function App() {
   const clipboard = useRef<{ project: WorldProject; ids: string[] } | null>(null);
   const [tool, setTool] = useState<Tool>('select');
   const [brush, setBrush] = useState<Brush>('raise');
-  const [landscapeTool,setLandscapeTool]=useState<LandscapeTool>({enabled:false,layerId:'',shape:'brush',mode:'paint',radius:8,strength:1,falloff:.5});
+  const [landscapeTool,setLandscapeTool]=useState<LandscapeTool>({enabled:false,layerId:'',shape:'brush',irregularity:.6,gradeBanks:true,bankWidth:6,bedDepth:2,mode:'paint',radius:8,strength:1,falloff:.5});
   const [landscapeDraft,setLandscapeDraft]=useState<WorldProject|null>(null);
   const [landscapeFinish,setLandscapeFinish]=useState(0),[landscapeCancel,setLandscapeCancel]=useState(0),[landscapeBoundary,setLandscapeBoundary]=useState(0),[landscapeError,setLandscapeError]=useState('');
   const [brushRadius, setBrushRadius] = useState(8);

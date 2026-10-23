@@ -1,7 +1,7 @@
 import {createTreeGeometry} from './trees';
 import {describe,it,expect} from 'vitest';
-import {createWorld,createTerrain,validateWorld,createPlayerWorldPackage,validatePlayerWorldPackage} from './world';
-import {ensureLandscape,createLandscapeLayer,applyLandscapeBrush,applyLandscapeArea,updateLandscapeLayer,updateLandscapeMaterial,reorderLandscapeLayers,createLandscapeSampler,generateLandscapeInstances,promoteLandscapeInstance,eraseGeneratedInstance,landscapeImageDigest,landscapeImageBytes,sampleLandscapeWater,createLandscapeCollisionIndex,createLandscapeImage,addLandscapeImage,admitLandscapeProject,assertLandscapeDerivedBudget,renderedLandscapeTreeSeed} from './landscape';
+import {createWorld,createTerrain,sampleTerrain,validateWorld,createPlayerWorldPackage,validatePlayerWorldPackage} from './world';
+import {ensureLandscape,createLandscapeLayer,applyLandscapeBrush,applyLandscapeArea,updateLandscapeLayer,updateLandscapeMaterial,reorderLandscapeLayers,createLandscapeSampler,generateLandscapeInstances,promoteLandscapeInstance,eraseGeneratedInstance,landscapeImageDigest,landscapeImageBytes,sampleLandscapeWater,createLandscapeCollisionIndex,createLandscapeImage,addLandscapeImage,admitLandscapeProject,assertLandscapeDerivedBudget,renderedLandscapeTreeSeed,createLandscapePondBoundary,landscapeWaterHasCompleteCoverage,validateBoundary,applyLandscapePond} from './landscape';
 import {packWorldRepository,unpackWorldRepository,inspectWorldRepository} from './world-repository';
 const base=()=>{const p=createWorld('Landscape');p.terrain=createTerrain(32,32,9);p.terrain.heights.fill(0);p.objects=[];p.features=[];delete p.water;return p;};
 const layer=(kind:'ground'|'vegetation'|'water')=>createLandscapeLayer(base(),{id:'layer:test',kind});
@@ -55,3 +55,80 @@ it('promotes the actually rendered tree variant, matching geometry seed, bounds 
 
 it('replaces only the ground/vegetation footprint while preserving a separate painted patch',()=>{for(const kind of ['ground','vegetation'] as const){let p=layer(kind);const brush={layerId:'layer:test',radius:3,strength:1,falloff:0,mode:'paint' as const};p=applyLandscapeBrush(p,{...brush,points:[[-8,0,0]]});p=applyLandscapeBrush(p,{...brush,points:[[8,0,0]]});const before=structuredClone(p);const replaced=applyLandscapeArea(p,{layerId:'layer:test',boundary:[[-12,0,-4],[-4,0,-4],[-4,0,4],[-12,0,4]],strength:.25,mode:'replace'});expect(createLandscapeSampler(replaced).maskAt('layer:test',-8,0)).toBeCloseTo(64/255);expect(createLandscapeSampler(replaced).maskAt('layer:test',8,0)).toBe(1);expect(p).toEqual(before);const touched=applyLandscapeBrush(replaced,{...brush,points:[[-8,0,0]],strength:.5,mode:'replace'});expect(createLandscapeSampler(touched).maskAt('layer:test',8,0)).toBe(1);expect(createLandscapeSampler(touched).maskAt('layer:test',-8,0)).toBeCloseTo(128/255);}});
 it('replaces one water layer body and outline explicitly',()=>{const p=filled('water'),next=applyLandscapeArea(p,{layerId:'layer:test',boundary:[[-4,0,-4],[4,0,-4],[4,0,4],[-4,0,4]],mode:'replace'});expect(createLandscapeSampler(next).maskAt('layer:test',10,0)).toBe(0);expect(next.landscape!.layers[0]!.boundary).toHaveLength(4);expect(createLandscapeSampler(p).maskAt('layer:test',10,0)).toBe(1);});
+
+describe('rounded pond footprints',()=>{
+ it('creates deterministic simple circle-based outlines with bounded smooth variation',()=>{
+  for(const irregularity of [0,.35,1])for(const radius of [.25,8,12,20,100]){
+   const outline=createLandscapePondBoundary([0,2,0],radius,irregularity),p=base();p.terrain=createTerrain(256,256,65);
+   expect(outline).toEqual(createLandscapePondBoundary([0,2,0],radius,irregularity));expect(outline.length).toBeGreaterThanOrEqual(16);expect(outline.length).toBeLessThanOrEqual(64);expect(()=>validateBoundary(outline,p)).not.toThrow();
+   for(const v of outline){expect(v[1]).toBe(2);expect(Math.hypot(v[0],v[2])).toBeGreaterThanOrEqual(radius*.75-1e-8);expect(Math.hypot(v[0],v[2])).toBeLessThanOrEqual(radius*1.25+1e-8);if(!irregularity)expect(Math.hypot(v[0],v[2])).toBeCloseTo(radius,8);}
+  }
+  expect(()=>createLandscapePondBoundary([0,0,0],0)).toThrow();expect(()=>createLandscapePondBoundary([0,0,0],5,NaN)).toThrow();
+ });
+ it('retains partial boundary cells and excludes everything beyond the exact shoreline',()=>{
+  const outline=createLandscapePondBoundary([.13,0,.27],8,.35);let p=applyLandscapeArea(layer('water'),{layerId:'layer:test',boundary:outline,mode:'replace'});p=updateLandscapeLayer(p,'layer:test',{water:{level:2,waveAmplitude:.15,waveSpeed:1,shoreFade:1}});
+  expect(landscapeWaterHasCompleteCoverage(p,p.landscape!.layers[0]!)).toBe(true);
+  for(let i=0;i<outline.length;i++){const a=outline[i]!,b=outline[(i+1)%outline.length]!;for(const t of [.1,.5,.9]){const x=(a[0]+(b[0]-a[0])*t)*.999,z=(a[2]+(b[2]-a[2])*t)*.999;expect(sampleLandscapeWater(p,x,z)).not.toBeNull();}}
+  expect(sampleLandscapeWater(p,10,10)).toBeNull();const before=structuredClone(p);expect(()=>applyLandscapeBrush(p,{layerId:'layer:test',points:[[0,0,0]],radius:1,strength:1,falloff:0,mode:'erase'})).toThrow(/water derived work limit/);expect(p).toEqual(before);
+ });
+ it('admits typical smooth ponds without raising budgets and falls back for overlaps',()=>{
+  for(const radius of [8,12,20]){let p=createLandscapeLayer(createWorld(),{kind:'water',id:'pond'});p.terrain.heights.fill(0);p=applyLandscapeArea(p,{layerId:'pond',mode:'replace',boundary:createLandscapePondBoundary([0,0,0],radius)});expect(assertLandscapeDerivedBudget(p).waterWork).toBeLessThan(64000000);expect(landscapeWaterHasCompleteCoverage(p,p.landscape!.layers[0]!)).toBe(true);}
+  let p=createLandscapeLayer(createWorld(),{kind:'water',id:'layer:test'});p=applyLandscapeArea(p,{layerId:'layer:test',boundary:createLandscapePondBoundary([0,0,0],.5),mode:'replace'});p=createLandscapeLayer(p,{kind:'water',id:'other'});p=applyLandscapeArea(p,{layerId:'other',boundary:createLandscapePondBoundary([0,0,0],.5),mode:'replace'});expect(landscapeWaterHasCompleteCoverage(p,p.landscape!.layers[0]!)).toBe(false);
+ });
+});
+
+it('preserves rounded pond bytes through repository reopen and fails fallback transitions atomically',async()=>{
+ let p=createLandscapeLayer(createWorld(),{kind:'water',id:'pond'});p.terrain.heights.fill(0);p=applyLandscapeArea(p,{layerId:'pond',mode:'replace',boundary:createLandscapePondBoundary([0,0,0],12)});const before=structuredClone(p),files=await packWorldRepository(p),reopened=await unpackWorldRepository(read(files));expect(reopened).toEqual(p);expect(landscapeWaterHasCompleteCoverage(reopened,reopened.landscape!.layers[0]!)).toBe(true);
+ expect(()=>applyLandscapeBrush(p,{layerId:'pond',points:[[0,0,0]],radius:1,strength:1,falloff:0,mode:'erase'})).toThrow(/water (vertex|derived work) limit/);expect(p).toEqual(before);
+ const withOther=createLandscapeLayer(p,{kind:'water',id:'other'});const otherBefore=structuredClone(withOther);expect(()=>applyLandscapeArea(withOther,{layerId:'other',mode:'replace',boundary:createLandscapePondBoundary([0,0,0],.5)})).toThrow(/water (vertex|derived work) limit/);expect(withOther).toEqual(otherBefore);
+ const partial=structuredClone(p);partial.landscape!.layers[0]!.mask.tiles['4:4']![0]=128;expect(landscapeWaterHasCompleteCoverage(partial,partial.landscape!.layers[0]!)).toBe(false);
+});
+
+it('rejects pathological coverage work before reading any sparse mask cell',()=>{
+ const p=layer('water');p.terrain=createTerrain(256,256,9);const water=p.landscape!.layers[0]!;water.boundary=Array.from({length:512},(_,i)=>[120*Math.cos(i*Math.PI/256),0,120*Math.sin(i*Math.PI/256)] as [number,number,number]);Object.defineProperty(water.mask,'tiles',{get(){throw Error('Heavy cell classification must not run');}});
+ expect(landscapeWaterHasCompleteCoverage(p,water)).toBe(false);expect(()=>assertLandscapeDerivedBudget(p)).toThrow(/before coverage classification/);
+});
+
+describe('atomic graded pond terrain',()=>{
+ const fixture=()=>{const p=createLandscapeLayer(createWorld(),{kind:'water',id:'pond'});p.terrain.heights=p.terrain.heights.map((_,i)=>{const x=i%p.terrain.resolution*2-64,z=Math.floor(i/p.terrain.resolution)*2-64;return 5+x*.03+z*.01;});return p;};
+ const command={layerId:'pond',center:[0,0,0] as [number,number,number],radius:12,irregularity:0,bankWidth:6,bedDepth:2,mode:'replace' as const};
+ it('forms a descending dry bank, wet shallow edge and underwater shelf on an asymmetric hill',()=>{
+  const p=fixture(),before=structuredClone(p),next=applyLandscapePond(p,command),heights=[-20,-18,-16,-14,-12,-10,-8,-6,0].map(x=>sampleTerrain(next.terrain,x,0));
+  for(let i=2;i<heights.length;i++)expect(heights[i]!).toBeLessThanOrEqual(heights[i-1]!+1e-8);expect(heights[3]).toBeGreaterThan(.25);expect(heights[4]).toBeGreaterThan(0);expect(heights[5]).toBeLessThan(0);expect(heights.at(-1)).toBeCloseTo(-2,8);expect(sampleLandscapeWater(next,-10,0)).not.toBeNull();expect(sampleLandscapeWater(next,-14,0)).toBeNull();
+  for(let i=0;i<p.terrain.heights.length;i++){const x=i%65*2-64,z=Math.floor(i/65)*2-64;if(Math.hypot(x,z)>=18)expect(next.terrain.heights[i]).toBe(p.terrain.heights[i]);}
+  expect(p).toEqual(before);expect(next.terrain).not.toBe(p.terrain);expect(next.objects).toEqual(p.objects);expect(next.features).toEqual(p.features);
+ });
+ it('uses the original outer anchor rather than a deep previous basin under the new bank',()=>{
+  const p=fixture();for(let i=0;i<p.terrain.heights.length;i++){const x=i%65*2-64,z=Math.floor(i/65)*2-64;if(Math.hypot(x,z)<15)p.terrain.heights[i]=-10;}
+  const next=applyLandscapePond(p,command);expect(sampleTerrain(next.terrain,-14,0)).toBeGreaterThan(.25);expect(sampleTerrain(next.terrain,-10,0)).toBeLessThan(0);
+ });
+ it('rejects incompatible levels, coarse resolution and cropped banks without mutating the input',()=>{
+  const p=fixture(),before=structuredClone(p);expect(()=>applyLandscapePond(p,{...command,center:[50,0,0]})).toThrow(/beyond the terrain/);expect(()=>applyLandscapePond(p,{...command,radius:2})).toThrow(/resolution is too coarse/);const high=updateLandscapeLayer(p,'pond',{water:{...p.landscape!.layers[0]!.water!,level:6}}),highBefore=structuredClone(high);expect(()=>applyLandscapePond(high,command)).toThrow(/Water level is too high/);expect(high).toEqual(highBefore);expect(p).toEqual(before);
+ });
+ it('keeps terrain unchanged for erase and separates water strength from the full terrain grade',()=>{
+  const p=fixture(),small={...command,radius:6,bankWidth:4},next=applyLandscapePond(p,small),erased=applyLandscapePond(next,{...small,mode:'erase'});expect(erased.terrain).toBe(next.terrain);expect(erased.terrain.heights).toEqual(next.terrain.heights);
+  const partial=applyLandscapePond(p,{...small,strength:.5});expect(partial.terrain.heights).toEqual(next.terrain.heights);
+ });
+ it('persists the exact graded terrain and explicit shoreline through repository reopen',async()=>{const next=applyLandscapePond(fixture(),command),files=await packWorldRepository(next);expect(await unpackWorldRepository(read(files))).toEqual(next);});
+ it('rejects grading coupled to another water body and excessive grid work atomically',()=>{
+  const p=createLandscapeLayer(fixture(),{kind:'water',id:'other'});p.landscape!.layers[1]!.boundary=[[15,0,-1],[17,0,-1],[17,0,1],[15,0,1]];const before=structuredClone(p);expect(()=>applyLandscapePond(p,command)).toThrow(/another water body/);expect(p).toEqual(before);
+  const dense=fixture();dense.terrain=createTerrain(128,128,257);dense.terrain.heights.fill(5);const denseBefore=structuredClone(dense);expect(()=>applyLandscapePond(dense,{...command,radius:25,bankWidth:10})).toThrow(/grading is too complex/);expect(dense).toEqual(denseBefore);
+ });
+});
+
+describe('graded ponds above an existing sea',()=>{
+ const island=()=>{const p=createLandscapeLayer(createWorld(),{kind:'water',id:'pond'});p.terrain=createTerrain(128,128,129);p.terrain.heights.fill(10);p.water={level:0,waveAmplitude:.3,waveSpeed:1,extent:128};p.landscape!.layers[0]!.water!.level=8;return p;};
+ const command={layerId:'pond',center:[0,0,0] as [number,number,number],radius:12,irregularity:0,bankWidth:6,bedDepth:6,mode:'replace' as const};
+ it('admits a dry island pond when both the original and candidate triangles stay above the wave maximum',()=>{const p=island(),before=structuredClone(p),next=applyLandscapePond(p,command);expect(sampleTerrain(next.terrain,0,0)).toBe(2);expect(next.water).toEqual(p.water);expect(p).toEqual(before);});
+ it('rejects original or candidate bed exposure atomically',()=>{const p=island(),before=structuredClone(p);expect(()=>applyLandscapePond(p,{...command,bedDepth:7.7})).toThrow(/sea bed or shoreline/);expect(p).toEqual(before);const original=island();original.terrain.heights[64*129+64]=.3;const originalBefore=structuredClone(original);expect(()=>applyLandscapePond(original,command)).toThrow(/sea bed or shoreline/);expect(original).toEqual(originalBefore);});
+ it('also rejects a low unchanged neighbour in an incident-triangle halo',()=>{const p=island();p.terrain.heights[64*129+83]=.3;const before=structuredClone(p);expect(()=>applyLandscapePond(p,command)).toThrow(/sea bed or shoreline/);expect(p).toEqual(before);});
+});
+
+describe('graded shoreline terrain support and dry envelope proof',()=>{
+ const fixture=()=>{const p=createLandscapeLayer(createWorld(),{kind:'water',id:'pond'});p.terrain.heights.fill(10);return p;};
+ const command={layerId:'pond',center:[.37,0,.63] as [number,number,number],radius:7,irregularity:.6,bankWidth:6,bedDepth:2,mode:'replace' as const};
+ it('keeps the default small organic shoreline dry on an offset two-metre grid',()=>{const next=applyLandscapePond(fixture(),command),boundary=next.landscape!.layers[0]!.boundary!;let minimum=Infinity;for(let i=0;i<boundary.length;i++){const a=boundary[i]!,b=boundary[(i+1)%boundary.length]!;for(let j=0;j<=256;j++){const t=j/256;minimum=Math.min(minimum,sampleTerrain(next.terrain,a[0]+(b[0]-a[0])*t,a[2]+(b[2]-a[2])*t));}}expect(minimum).toBeGreaterThan(.20);});
+ it('rejects the former coarse-grid deep island pond when its envelope dips below its level',()=>{const p=fixture();p.water={level:0,waveAmplitude:.3,waveSpeed:1,extent:128};p.landscape!.layers[0]!.water!.level=8;const before=structuredClone(p);expect(()=>applyLandscapePond(p,{...command,center:[0,0,0],radius:12,irregularity:0,bedDepth:6})).toThrow(/outer shoreline underwater \(minimum 7.839m\)/);expect(p).toEqual(before);});
+ it('rejects a deep bed that wets the outer envelope despite meeting the two-grid-step rule',()=>{const p=fixture(),before=structuredClone(p);expect(()=>applyLandscapePond(p,{...command,bedDepth:40})).toThrow(/outer shoreline underwater/);expect(p).toEqual(before);});
+ it('protects another lake in the one-cell support beyond stored changed vertices',()=>{const p=fixture();p.features=[{id:'nearby',name:'Nearby lake',kind:'lake',points:[[19,0,-1],[21,0,-1],[21,0,1],[19,0,1]],elevation:1,width:1}];const before=structuredClone(p);expect(()=>applyLandscapePond(p,{...command,center:[0,0,0],radius:12,irregularity:0})).toThrow(/existing lake/);expect(p).toEqual(before);});
+});

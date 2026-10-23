@@ -155,7 +155,7 @@ export default function LandscapePanel({
                   enabled: true,
                   mode: 'paint',
                   layerId: next.landscape!.layers.at(-1)!.id,
-                  shape: kind === 'water' ? 'area' : 'brush',
+                  shape: kind === 'water' ? 'pond' : 'brush',
                 });
                 return next;
               })
@@ -170,7 +170,14 @@ export default function LandscapePanel({
           <li key={l.id} style={{ margin: '7px 0' }}>
             <button
               className={layer?.id === l.id ? 'chosen' : ''}
-              onClick={() => onTool({ ...tool, layerId: l.id, enabled: true })}
+              onClick={() =>
+                onTool({
+                  ...tool,
+                  layerId: l.id,
+                  enabled: true,
+                  shape: l.kind === 'water' ? 'pond' : tool.shape === 'pond' ? 'brush' : tool.shape,
+                })
+              }
             >
               {l.name}
             </button>
@@ -383,11 +390,17 @@ export default function LandscapePanel({
               Gesture
               <select
                 aria-label="Gesture"
-                value={tool.shape}
-                onChange={(e) => onTool({ ...tool, shape: e.target.value as 'brush' | 'area' })}
+                value={layer.kind === 'water' ? 'pond' : tool.shape}
+                onChange={(e) => onTool({ ...tool, shape: e.target.value as LandscapeTool['shape'] })}
               >
-                <option value="brush">Brush stroke</option>
-                <option value="area">Closed boundary</option>
+                {layer.kind === 'water' ? (
+                  <option value="pond">Organic pond · drag radius</option>
+                ) : (
+                  <>
+                    <option value="brush">Brush stroke</option>
+                    <option value="area">Closed boundary</option>
+                  </>
+                )}
               </select>
             </label>
             <label>
@@ -402,7 +415,49 @@ export default function LandscapePanel({
                 <option value="erase">Erase / clearing</option>
               </select>
             </label>
-            {number('Brush radius', tool.radius, 0.25, 100, 0.25, (v) => onTool({ ...tool, radius: v }))}
+            {layer.kind === 'water' && (
+              <>
+                {number('Shoreline irregularity', tool.irregularity, 0, 1, 0.05, (v) =>
+                  onTool({ ...tool, irregularity: v }),
+                )}
+                <label>
+                  <input
+                    type="checkbox"
+                    aria-label="Grade sloping banks"
+                    checked={tool.gradeBanks}
+                    onChange={(e) => onTool({ ...tool, gradeBanks: e.target.checked })}
+                  />{' '}
+                  Grade sloping banks and shallow bed
+                </label>
+                {tool.gradeBanks && (
+                  <>
+                    {number('Bank width', tool.bankWidth, 0.5, 50, 0.5, (v) =>
+                      onTool({ ...tool, bankWidth: v }),
+                    )}
+                    {number('Bed depth', tool.bedDepth, 0.25, 20, 0.25, (v) =>
+                      onTool({ ...tool, bedDepth: v }),
+                    )}
+                    <p>
+                      The bank slopes through the shoreline into the bed. Keep the water below surrounding
+                      ground; use a wider bank for a coarse terrain grid. Replacing a pond grades its new
+                      location and keeps earlier earthworks.
+                    </p>
+                  </>
+                )}
+                <p>
+                  Drag from the pond centre to size a rounded shoreline. Zero irregularity makes a circle.
+                  Water appears only below its level.
+                </p>
+              </>
+            )}
+            {number(
+              layer.kind === 'water' ? 'Initial pond radius' : 'Brush radius',
+              tool.radius,
+              0.25,
+              100,
+              0.25,
+              (v) => onTool({ ...tool, radius: v }),
+            )}
             {number('Coverage strength', tool.strength, 0, 1, 0.05, (v) => onTool({ ...tool, strength: v }))}
             {number('Edge falloff', tool.falloff, 0, 1, 0.05, (v) => onTool({ ...tool, falloff: v }))}
             <button

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import * as T from 'three';
-import { createWorld, createTerrain, validateWorld } from '../src/domain/world';
+import { createWorld, createTerrain, validateWorld, sampleTerrain } from '../src/domain/world';
 import type { WorldProject } from '../src/domain/world';
 import {
   createLandscapeLayer,
@@ -85,19 +85,25 @@ test('landscape gestures preserve one stroke undo, closed fill, clearing and por
   expect(coverage(clearing)).toBeLessThan(coverage(filled));
   await page.getByRole('button', { name: '+ water', exact: true }).click();
   await expect(panel.getByLabel('Operation', { exact: true })).toHaveValue('paint');
+  await panel.getByLabel('Grade sloping banks', { exact: true }).uncheck();
   await panel.getByLabel('Water level', { exact: true }).fill('16');
-  for (const p of [
-    [0.6, 0.46],
-    [0.7, 0.46],
-    [0.7, 0.59],
-    [0.6, 0.59],
-  ])
-    await click(p[0]!, p[1]!);
-  await page.keyboard.press('Enter');
+  await expect(panel.getByLabel('Gesture', { exact: true })).toHaveValue('pond');
+  await panel.getByLabel('Shoreline irregularity', { exact: true }).fill('0.7');
+  const waterBefore = await saveBlob(page);
+  await page.mouse.move(box.x + box.width * 0.64, box.y + box.height * 0.5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.72, box.y + box.height * 0.5, { steps: 10 });
+  await page.mouse.up();
+  const pond = await saveBlob(page);
+  expect(pond.landscape!.layers.at(-1)!.boundary!.length).toBeGreaterThanOrEqual(16);
+  await page.getByTitle('Undo (Ctrl+Z)').click();
+  expect(await saveBlob(page)).toEqual(waterBefore);
+  await page.getByTitle('Redo (Ctrl+Y)').click();
+  expect(await saveBlob(page)).toEqual(pond);
   await panel.getByRole('button', { name: 'Stop painting', exact: true }).click();
   const final = await saveBlob(page);
   expect(validateWorld(final).errors).toEqual([]);
-  expect(final.landscape!.layers.at(-1)!.boundary).toHaveLength(4);
+  expect(final.landscape!.layers.at(-1)!.boundary!.length).toBeGreaterThanOrEqual(16);
   await openProject(page, final);
   expect(await saveBlob(page)).toEqual(final);
   await page.screenshot({ path: info.outputPath('landscape-painting.png') });
@@ -218,4 +224,152 @@ test('delayed embedded texture cannot affect a newly opened world', async ({ pag
   const result = await saveBlob(page);
   expect(result.landscape!.images).toEqual([]);
   expect(result.landscape!.materials.every((m) => !m.imageRef)).toBe(true);
+});
+
+test('organic pond cancellation and circular setting preserve reliable save and reopen', async ({ page }) => {
+  test.setTimeout(90000);
+  const p = createWorld('Round pond fixture');
+  p.terrain = createTerrain(64, 64, 17);
+  p.terrain.heights.fill(0);
+  await page.goto('/');
+  await openProject(page, p);
+  await page.getByTitle('Terrain', { exact: true }).click();
+  await page.getByTitle('Top view').click();
+  await page.getByRole('button', { name: '+ water', exact: true }).click();
+  const panel = page.getByRole('region', { name: 'Landscape painting' });
+  await panel.getByLabel('Grade sloping banks', { exact: true }).uncheck();
+  await panel.getByLabel('Water level', { exact: true }).fill('2');
+  await panel.getByLabel('Shoreline irregularity', { exact: true }).fill('0');
+  const before = await saveBlob(page),
+    box = (await page.locator('.viewport canvas').first().boundingBox())!;
+  const centre = { x: box.x + box.width * 0.5, y: box.y + box.height * 0.5 };
+  await page.mouse.move(centre.x, centre.y);
+  await page.mouse.down();
+  await page.mouse.move(centre.x + box.width * 0.08, centre.y, { steps: 8 });
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  expect(await saveBlob(page)).toEqual(before);
+  await page.mouse.move(centre.x, centre.y);
+  await page.mouse.down();
+  await page.mouse.move(centre.x + box.width * 0.08, centre.y, { steps: 8 });
+  await page.mouse.up();
+  const final = await saveBlob(page),
+    boundary = final.landscape!.layers.at(-1)!.boundary!;
+  expect(boundary.length).toBeGreaterThanOrEqual(16);
+  const cx = boundary.reduce((sum, point) => sum + point[0], 0) / boundary.length;
+  const cz = boundary.reduce((sum, point) => sum + point[2], 0) / boundary.length;
+  const radii = boundary.map((point) => Math.hypot(point[0] - cx, point[2] - cz));
+  expect(Math.max(...radii) - Math.min(...radii)).toBeLessThan(1e-6);
+  expect(validateWorld(final).errors).toEqual([]);
+  await openProject(page, final);
+  expect(await saveBlob(page)).toEqual(final);
+});
+
+test('pond preview rejects invalid radii and off-terrain release without stale water', async ({ page }) => {
+  test.setTimeout(120000);
+  const p = createWorld('Pond draft safety');
+  p.terrain = createTerrain(64, 64, 17);
+  p.terrain.heights.fill(0);
+  await page.goto('/');
+  await openProject(page, p);
+  await page.getByTitle('Terrain', { exact: true }).click();
+  await page.getByTitle('Top view').click();
+  await page.getByRole('button', { name: '+ water', exact: true }).click();
+  const panel = page.getByRole('region', { name: 'Landscape painting' });
+  await panel.getByLabel('Grade sloping banks', { exact: true }).uncheck();
+  await panel.getByLabel('Water level', { exact: true }).fill('2');
+  await panel.getByLabel('Shoreline irregularity', { exact: true }).fill('.8');
+  const box = (await page.locator('.viewport canvas').first().boundingBox())!;
+  const camera = new T.PerspectiveCamera(42, box.width / box.height, 0.1, 12000);
+  camera.position.set(0, 95, 0.01);
+  camera.up.set(0, 0, -1);
+  camera.lookAt(0, 3, 0);
+  camera.updateMatrixWorld();
+  const screen = (x: number, z: number) => {
+    const v = new T.Vector3(x, 0, z).project(camera);
+    return { x: box.x + (v.x * 0.5 + 0.5) * box.width, y: box.y + (0.5 - v.y * 0.5) * box.height };
+  };
+  const waterVertices = () =>
+    page.evaluate(async () => {
+      const fiber = await import('/node_modules/.vite/deps/@react-three_fiber.js');
+      let count = 0;
+      fiber._roots
+        .get(document.querySelector('.viewport canvas'))
+        .store.getState()
+        .scene.traverse(
+          (node: { geometry?: { getAttribute: (name: string) => { count: number } | undefined } }) => {
+            if (node.geometry?.getAttribute('waterLevel'))
+              count += node.geometry.getAttribute('position')!.count;
+          },
+        );
+      return count;
+    });
+  const centre = screen(0, 0),
+    outsideOutline = screen(30, 0),
+    valid = screen(8, 0);
+  await page.mouse.move(centre.x, centre.y);
+  await page.mouse.down();
+  await expect.poll(waterVertices, { timeout: 15000 }).toBeGreaterThan(0);
+  await page.mouse.move(outsideOutline.x, outsideOutline.y, { steps: 5 });
+  await expect(panel.getByRole('alert')).toContainText('beyond the terrain');
+  await expect.poll(waterVertices, { timeout: 15000 }).toBe(0);
+  await page.mouse.move(valid.x, valid.y, { steps: 5 });
+  await expect.poll(waterVertices, { timeout: 15000 }).toBeGreaterThan(0);
+  await expect(panel.getByRole('alert')).toHaveCount(0);
+  await page.mouse.up();
+  const accepted = await saveBlob(page);
+  expect(accepted.landscape!.layers.at(-1)!.boundary!.length).toBeGreaterThanOrEqual(16);
+  await page.mouse.move(centre.x, centre.y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width + 30, box.y + box.height * 0.5, { steps: 5 });
+  await expect(panel.getByRole('alert')).toContainText('back onto terrain');
+  await page.mouse.up();
+  expect(await saveBlob(page)).toEqual(accepted);
+});
+
+test('graded pond saves a sloping bank and shallow bed in one undo step', async ({ page }) => {
+  test.setTimeout(120000);
+  const p = createWorld('Sloping pond banks');
+  p.terrain = createTerrain(64, 64, 33);
+  p.terrain.heights.fill(0);
+  await page.goto('/');
+  await openProject(page, p);
+  await page.getByTitle('Terrain', { exact: true }).click();
+  await page.getByTitle('Top view').click();
+  await page.getByRole('button', { name: '+ water', exact: true }).click();
+  const panel = page.getByRole('region', { name: 'Landscape painting' });
+  await expect(panel.getByLabel('Grade sloping banks', { exact: true })).toBeChecked();
+  await panel.getByLabel('Water level', { exact: true }).fill('-1');
+  await panel.getByLabel('Shoreline irregularity', { exact: true }).fill('0');
+  await panel.getByLabel('Bank width', { exact: true }).fill('6');
+  await panel.getByLabel('Bed depth', { exact: true }).fill('2');
+  const before = await saveBlob(page),
+    box = (await page.locator('.viewport canvas').first().boundingBox())!;
+  const camera = new T.PerspectiveCamera(42, box.width / box.height, 0.1, 12000);
+  camera.position.set(0, 95, 0.01);
+  camera.up.set(0, 0, -1);
+  camera.lookAt(0, 3, 0);
+  camera.updateMatrixWorld();
+  const screen = (x: number, z: number) => {
+    const v = new T.Vector3(x, 0, z).project(camera);
+    return [box.x + (v.x * 0.5 + 0.5) * box.width, box.y + (0.5 - v.y * 0.5) * box.height] as const;
+  };
+  await page.mouse.move(...screen(0, 0));
+  await page.mouse.down();
+  await page.mouse.move(...screen(12, 0), { steps: 8 });
+  await page.mouse.up();
+  const final = await saveBlob(page);
+  expect(final.terrain.heights).not.toEqual(before.terrain.heights);
+  const profile = [20, 15, 12, 10, 8, 0].map((x) => sampleTerrain(final.terrain, x, 0));
+  expect(profile[0]).toBeCloseTo(0, 5);
+  for (let i = 1; i < profile.length; i++) expect(profile[i]).toBeLessThan(profile[i - 1]!);
+  expect(profile[2]).toBeGreaterThan(-1);
+  expect(profile[3]).toBeLessThan(-1);
+  expect(profile.at(-1)).toBeCloseTo(-3, 4);
+  await page.getByTitle('Undo (Ctrl+Z)').click();
+  expect(await saveBlob(page)).toEqual(before);
+  await page.getByTitle('Redo (Ctrl+Y)').click();
+  expect(await saveBlob(page)).toEqual(final);
+  await openProject(page, final);
+  expect(await saveBlob(page)).toEqual(final);
 });

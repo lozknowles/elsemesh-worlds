@@ -4,11 +4,20 @@ import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as T from 'three';
 import type { WorldProject, Vec3 } from '../domain/world';
-import { applyLandscapeBrush, applyLandscapeArea } from '../domain/landscape';
+import {
+  applyLandscapeBrush,
+  applyLandscapeArea,
+  createLandscapePondBoundary,
+  applyLandscapePond,
+} from '../domain/landscape';
 export type LandscapeTool = {
   enabled: boolean;
   layerId: string;
-  shape: 'brush' | 'area';
+  shape: 'brush' | 'area' | 'pond';
+  irregularity: number;
+  gradeBanks: boolean;
+  bankWidth: number;
+  bedDepth: number;
   mode: 'paint' | 'replace' | 'erase';
   radius: number;
   strength: number;
@@ -40,7 +49,13 @@ export default function LandscapeGesture({
   });
   const boundary = useRef<Vec3[]>([]),
     [points, setPoints] = useState<Vec3[]>([]),
-    stroke = useRef<{ base: WorldProject; points: Vec3[]; id: number } | null>(null),
+    stroke = useRef<{
+      base: WorldProject;
+      points: Vec3[];
+      id: number;
+      tool: LandscapeTool;
+      pond?: { center: Vec3; radius: number; irregularity: number; onTerrain: boolean };
+    } | null>(null),
     raf = useRef(0);
   const reset = () => {
     boundary.current = [];
@@ -82,6 +97,7 @@ export default function LandscapeGesture({
       v = new T.Vector2();
     const hit = (e: PointerEvent): Vec3 | null => {
       const r = canvas.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
       v.set(((e.clientX - r.left) / r.width) * 2 - 1, 1 - ((e.clientY - r.top) / r.height) * 2);
       ray.setFromCamera(v, camera);
       const surfaces: T.Object3D[] = [];
@@ -91,16 +107,47 @@ export default function LandscapeGesture({
       const h = ray.intersectObjects(surfaces, false)[0];
       return h ? [h.point.x, h.point.y, h.point.z] : null;
     };
+    const applyStroke = (s: NonNullable<typeof stroke.current>) => {
+      if (!s.pond) return applyLandscapeBrush(s.base, { ...s.tool, points: s.points });
+      if (!s.pond.onTerrain) throw Error('Move the pointer back onto terrain before releasing the pond.');
+      const outline = createLandscapePondBoundary(s.pond.center, s.pond.radius, s.pond.irregularity);
+      // Reject the whole outline at world edges; clipping individual points creates flat shores.
+      if (
+        outline.some(
+          (p) => Math.abs(p[0]) >= s.base.terrain.width / 2 || Math.abs(p[2]) >= s.base.terrain.depth / 2,
+        )
+      )
+        throw Error('Pond extends beyond the terrain. Drag a smaller radius or start farther from the edge.');
+      if (s.tool.gradeBanks)
+        return applyLandscapePond(s.base, {
+          layerId: s.tool.layerId,
+          center: s.pond.center,
+          radius: s.pond.radius,
+          irregularity: s.pond.irregularity,
+          bankWidth: s.tool.bankWidth,
+          bedDepth: s.tool.bedDepth,
+          strength: s.tool.strength,
+          mode: s.tool.mode,
+        });
+      return applyLandscapeArea(s.base, {
+        layerId: s.tool.layerId,
+        boundary: outline,
+        strength: s.tool.strength,
+        mode: s.tool.mode,
+      });
+    };
     const preview = () => {
       raf.current = 0;
       const s = stroke.current,
         c = latest.current;
       if (!s) return;
       try {
-        const next = applyLandscapeBrush(s.base, { ...c.tool, points: s.points });
+        const next = applyStroke(s);
         preflightLandscape(next);
         c.onDraft(next);
+        c.onError('');
       } catch (e) {
+        c.onDraft(null);
         c.onError((e as Error).message);
       }
     };
@@ -120,7 +167,16 @@ export default function LandscapeGesture({
         c.onBoundary(boundary.current.length);
         return;
       }
-      stroke.current = { base: c.project, points: [p], id: e.pointerId };
+      stroke.current = {
+        base: c.project,
+        points: [p],
+        id: e.pointerId,
+        tool: { ...c.tool },
+        ...(c.tool.shape === 'pond'
+          ? { pond: { center: p, radius: c.tool.radius, irregularity: c.tool.irregularity, onTerrain: true } }
+          : {}),
+      };
+      if (stroke.current.pond) setPoints(createLandscapePondBoundary(p, c.tool.radius, c.tool.irregularity));
       canvas.setPointerCapture(e.pointerId);
       raf.current = requestAnimationFrame(preview);
     };
@@ -129,6 +185,24 @@ export default function LandscapeGesture({
       if (!s || e.pointerId !== s.id) return;
       e.stopImmediatePropagation();
       const p = hit(e);
+      if (s.pond) s.pond.onTerrain = !!p;
+      if (!p && s.pond) {
+        cancelAnimationFrame(raf.current);
+        raf.current = 0;
+        setPoints([]);
+        latest.current.onDraft(null);
+        latest.current.onError('Move the pointer back onto terrain before releasing the pond.');
+        return;
+      }
+      if (p && s.pond) {
+        s.pond.radius = Math.max(
+          0.25,
+          Math.min(100, Math.hypot(p[0] - s.pond.center[0], p[2] - s.pond.center[2])),
+        );
+        setPoints(createLandscapePondBoundary(s.pond.center, s.pond.radius, s.pond.irregularity));
+        if (!raf.current) raf.current = requestAnimationFrame(preview);
+        return;
+      }
       if (
         p &&
         s.points.length < 2048 &&
@@ -147,15 +221,18 @@ export default function LandscapeGesture({
       stroke.current = null;
       if (canvas.hasPointerCapture(s.id)) canvas.releasePointerCapture(s.id);
       c.onDraft(null);
+      setPoints([]);
       if (commit)
         try {
-          c.onCommit(applyLandscapeBrush(s.base, { ...c.tool, points: s.points }));
+          c.onCommit(applyStroke(s));
+          c.onError('');
         } catch (e) {
           c.onError((e as Error).message);
         }
     };
     const up = (e: PointerEvent) => {
       if (e.pointerId === stroke.current?.id) {
+        if (stroke.current.pond && !hit(e)) stroke.current.pond.onTerrain = false;
         e.stopImmediatePropagation();
         end(true);
       }
@@ -192,7 +269,7 @@ export default function LandscapeGesture({
       window.removeEventListener('blur', cancelled);
       window.removeEventListener('keydown', key);
     };
-  }, [tool.enabled, gl, camera, scene]);
+  }, [tool.enabled, tool.layerId, tool.shape, gl, camera, scene]);
   const line = useMemo(
     () =>
       points.length

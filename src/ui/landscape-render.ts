@@ -6,6 +6,7 @@ import * as T from 'three';
 import type { WorldProject } from '../domain/world';
 import {
   assertLandscapeDerivedBudget,
+  landscapeWaterHasCompleteCoverage,
   renderedLandscapeTreeSeed,
   createLandscapeSampler,
   admitLandscapeProject,
@@ -238,6 +239,7 @@ export function landscapeWaterGeometry(p: WorldProject) {
   };
   for (const layer of p.landscape?.layers ?? []) {
     if (!layer.visible || layer.kind !== 'water' || !layer.boundary || !layer.water) continue;
+    const completeCoverage = landscapeWaterHasCompleteCoverage(p, layer);
     const parts = buildFeatureGeometry(
       {
         id: layer.id,
@@ -253,6 +255,13 @@ export function landscapeWaterGeometry(p: WorldProject) {
       const a = part.geometry.getAttribute('position');
       for (let i = 0; i < a.count; i += 3) {
         const triangle: Vec3[] = [0, 1, 2].map((n) => [a.getX(i + n), a.getY(i + n), a.getZ(i + n)] as Vec3);
+        if (completeCoverage) {
+          for (const vertex of triangle) {
+            positions.push(vertex[0], layer.water.level, vertex[2]);
+            levels.push(layer.water.level);
+          }
+          continue;
+        }
         const minX = Math.floor(Math.min(...triangle.map((v) => v[0])) + p.terrain.width / 2),
           maxX = Math.floor(Math.max(...triangle.map((v) => v[0])) + p.terrain.width / 2),
           minZ = Math.floor(Math.min(...triangle.map((v) => v[2])) + p.terrain.depth / 2),
