@@ -2,17 +2,20 @@ import { MAX_PROJECT_BYTES, PROJECT_SCHEMA, LEGACY_PROJECT_SCHEMA, validateWorld
 import type { WorldProject } from './world';
 
 export const LEGACY_WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/1';
-export const WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/2';
+export const PREVIOUS_WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/2';
+export const WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/3';
 export const WORLD_ENGINE_CONTRACT = 'elsemesh.worlds.runtime/1';
-export const WORLD_CAPABILITIES = ['project/2', 'terrain', 'objects', 'hierarchy', 'features', 'neon-sign', 'computer', 'geography', 'terrain-imagery', 'weather'] as const;
+export const WORLD_CAPABILITIES = ['project/2', 'terrain', 'objects', 'hierarchy', 'features', 'neon-sign', 'computer', 'geography', 'terrain-imagery', 'weather', 'portal/1', 'water/1', 'retro-terminal/1'] as const;
 export type WorldProvenance = { sourceWorldId?: string; sourceLocation?: string; sourceCommit?: string; sourceDigest?: string };
 export type WorldPackOptions = { attribution?: { license?: string; authors: string[]; source?: string }; provenance?: WorldProvenance };
-export type WorldRepositoryManifest = { schema: string; version: number; projectSchema: string; engine: { commit: string; compatibility?: string; contract?: string; requires?: string[] }; snapshot: string; components: Record<Role, FileReference>; world?: WorldProject['metadata']; regions?: { regionId: string; name: string; scene: { snapshot: string } }[]; attribution?: WorldPackOptions['attribution']; provenance?: WorldProvenance };
+export type WorldRepositoryManifest = { schema: string; version: number; projectSchema: string; engine: { commit: string; compatibility?: string; contract?: string; requires?: string[] }; snapshot: string; components: Record<LegacyRole, FileReference> & Partial<Record<'connections', FileReference>>; world?: WorldProject['metadata']; regions?: { regionId: string; name: string; scene: { snapshot: string } }[]; attribution?: WorldPackOptions['attribution']; provenance?: WorldProvenance };
 export const WORLD_REPOSITORY_MANIFEST = 'world.json';
 export const WORLD_REPOSITORY_MANIFEST_LIMIT = 64 * 1024;
 export const ENGINE_REFERENCE = '95719848d5ffa4428b57c75c272483e1c2113a72';
-const roles = ['metadata', 'terrain', 'objects', 'features', 'environment', 'spawn', 'geography', 'assets'] as const;
+const legacyRoles = ['metadata', 'terrain', 'objects', 'features', 'environment', 'spawn', 'geography', 'assets'] as const;
+const roles = [...legacyRoles, 'connections'] as const;
 type Role = typeof roles[number];
+type LegacyRole = typeof legacyRoles[number];
 type FileReference = { path: string; sha256: string; bytes: number };
 export type RepositoryReader = (path: string, maxBytes: number) => Promise<Uint8Array>;
 const encoder = new TextEncoder();
@@ -39,8 +42,8 @@ function reference(value: unknown, expectedPath?: string): FileReference {
   return { path: value.path, sha256: value.sha256, bytes: value.bytes as number };
 }
 
-async function snapshotDigest(components: Record<Role, FileReference>): Promise<string> {
-  return repositoryDigest(json(Object.fromEntries(roles.map(role => [role, { sha256: components[role].sha256, bytes: components[role].bytes }]))));
+async function snapshotDigest(components: Record<LegacyRole, FileReference> & Partial<Record<'connections', FileReference>>): Promise<string> {
+  return repositoryDigest(json(Object.fromEntries(roles.filter(role => components[role]).map(role => [role, { sha256: components[role]!.sha256, bytes: components[role]!.bytes }]))));
 }
 
 function validateProject(value: unknown): WorldProject {
@@ -83,16 +86,18 @@ export async function packWorldRepository(project: WorldProject, options: WorldP
     geography: project.geography ?? null,
     terrainImagery: imagery ? { ...imagery, dataUrl: undefined, file: await binary(imagery.dataUrl, 'imagery', imagery.dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg') } : null,
   };
-  const values: Record<Role, unknown> = { metadata: project.metadata, terrain: project.terrain, objects: project.objects, features: project.features ?? [], environment: project.environment, spawn: project.spawn, geography, assets };
+  const extended = project.portals !== undefined || project.water !== undefined || project.terminals !== undefined;
+  const activeRoles = extended ? roles : legacyRoles;
+  const values: Record<Role, unknown> = { metadata: project.metadata, terrain: project.terrain, objects: project.objects, features: project.features ?? [], environment: project.environment, spawn: project.spawn, geography, assets, connections: { ...(project.portals !== undefined ? { portals: project.portals } : {}), ...(project.water !== undefined ? { water: project.water } : {}), ...(project.terminals !== undefined ? { terminals: project.terminals } : {}) } };
   const components = {} as Record<Role, FileReference>;
   const contents = new Map<Role, Uint8Array>();
-  for (const role of roles) {
+  for (const role of activeRoles) {
     const bytes = json(values[role]); contents.set(role, bytes);
     components[role] = { path: '', sha256: await repositoryDigest(bytes), bytes: bytes.byteLength };
   }
   const snapshot = await snapshotDigest(components);
-  for (const role of roles) { components[role].path = `snapshots/${snapshot}/${role}.json`; files.set(components[role].path, contents.get(role)!); }
-  const manifest: WorldRepositoryManifest = { schema: WORLD_REPOSITORY_SCHEMA, version: 2, projectSchema: PROJECT_SCHEMA, engine: { commit: ENGINE_REFERENCE, contract: WORLD_ENGINE_CONTRACT, requires: requiredWorldCapabilities(project) }, snapshot, components, world: project.metadata, regions: [{ regionId: project.metadata.regionId, name: project.metadata.name, scene: { snapshot } }], attribution: options.attribution ?? { authors: [] }, ...(options.provenance ? { provenance: options.provenance } : {}) };
+  for (const role of activeRoles) { components[role].path = `snapshots/${snapshot}/${role}.json`; files.set(components[role].path, contents.get(role)!); }
+  const manifest: WorldRepositoryManifest = { schema: extended ? WORLD_REPOSITORY_SCHEMA : PREVIOUS_WORLD_REPOSITORY_SCHEMA, version: extended ? 3 : 2, projectSchema: PROJECT_SCHEMA, engine: { commit: ENGINE_REFERENCE, contract: WORLD_ENGINE_CONTRACT, requires: requiredWorldCapabilities(project) }, snapshot, components, world: project.metadata, regions: [{ regionId: project.metadata.regionId, name: project.metadata.name, scene: { snapshot } }], attribution: options.attribution ?? { authors: [] }, ...(options.provenance ? { provenance: options.provenance } : {}) };
   validateManifestMetadata(manifest);
   files.set('README.md', encoder.encode('# Player world content repository\n\nOpen this folder in ElseMesh Worlds using Open world repository. The builder validates hashes and hydrated content before loading. world.json selects an immutable snapshot; previous snapshots are retained. To edit JSON by hand, import the edited content through tooling that recomputes the snapshot and file hashes.\n\nThe engine reference is ' + ENGINE_REFERENCE + '. This is provenance only: loading this repository in the original game runtime is unverified. No engine source is included.\n\nAsset source and licence metadata are preserved in the assets and geography JSON. This repository grants no new rights to those assets. Choose a licence appropriate to your own content before publishing.\n\nUse ordinary Git for this bounded repository. Git LFS pointer files are not supported by the folder importer; actual binary content must be present.\n'));
   files.set('.gitattributes', encoder.encode('* text=auto\n*.json text eol=lf\n*.glb binary\n*.png binary\n*.jpg binary\n'));
@@ -110,7 +115,8 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
   validateManifestMetadata(raw);
   const manifest = raw as WorldRepositoryManifest;
   const components = {} as Record<Role, FileReference>;
-  for (const role of roles) components[role] = reference(manifest.components[role], `snapshots/${manifest.snapshot}/${role}.json`);
+  const activeRoles = manifest.version === 3 ? roles : legacyRoles;
+  for (const role of activeRoles) components[role] = reference(manifest.components[role], `snapshots/${manifest.snapshot}/${role}.json`);
   if (await snapshotDigest(components) !== manifest.snapshot) throw new Error('Snapshot identifier does not match its components.');
   let total = manifestBytes.byteLength;
   const cache = new Map<string, Uint8Array>();
@@ -125,7 +131,7 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
     total += bytes.byteLength; cache.set(ref.path, bytes); return bytes;
   };
   const values = {} as Record<Role, unknown>;
-  for (const role of roles) values[role] = parse(await verified(components[role]));
+  for (const role of activeRoles) values[role] = parse(await verified(components[role]));
   if (!Array.isArray(values.assets) || values.assets.length > 128 || !object(values.geography)) throw new Error('Invalid repository asset/geography components.');
   // Count descriptors, not unique binary paths: two asset entries hydrate into
   // two data URL fields even when the underlying GLB file is shared. Reject the
@@ -149,7 +155,10 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
     if (!ref.path.startsWith('imagery/')) throw new Error('Terrain imagery must use an imagery path.');
     imageryPlan = { metadata, ref, mediaType: ref.path.endsWith('.png') ? 'image/png' : 'image/jpeg' };
   }
+  const connections = manifest.version === 3 ? values.connections : {};
+  if (!object(connections) || Object.keys(connections).some(key => !['portals','water','terminals'].includes(key))) throw new Error('Invalid repository connections component.');
   const candidate = {
+    ...connections,
     schema: manifest.projectSchema, metadata: values.metadata, terrain: values.terrain,
     objects: values.objects, features: values.features, environment: values.environment,
     spawn: values.spawn, assets: assetPlans.map(({ metadata }) => ({ ...metadata, dataUrl: '' })),
@@ -174,7 +183,7 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
   }
   if (imageryPlan && candidate.terrainImagery) candidate.terrainImagery.dataUrl = await hydrate(imageryPlan.ref, imageryPlan.mediaType);
   const project = validateProject(candidate);
-  if (manifest.version === 2) {
+  if (manifest.version >= 2) {
     if (Object.keys(project.metadata).some(key => manifest.world?.[key as keyof WorldProject['metadata']] !== project.metadata[key as keyof WorldProject['metadata']]) || manifest.regions![0]!.regionId !== project.metadata.regionId) throw new Error('Manifest identity does not match scene metadata.');
     if (requiredWorldCapabilities(project).some(capability => !manifest.engine.requires!.includes(capability))) throw new Error('Manifest omits a capability required by scene content.');
   }
@@ -186,6 +195,9 @@ export function requiredWorldCapabilities(project: WorldProject): string[] {
   const capabilities = new Set<string>(['project/2', 'terrain', 'objects']);
   if (project.objects.some(o => o.kind === 'group' || o.parentId)) capabilities.add('hierarchy');
   for (const kind of ['neon-sign', 'computer']) if (project.objects.some(o => o.kind === kind)) capabilities.add(kind);
+  if (project.portals?.length) capabilities.add('portal/1');
+  if (project.water) capabilities.add('water/1');
+  if (project.terminals?.length) capabilities.add('retro-terminal/1');
   if (project.features?.length) capabilities.add('features');
   if (project.geography) capabilities.add('geography');
   if (project.terrainImagery) capabilities.add('terrain-imagery');
@@ -195,13 +207,13 @@ export function requiredWorldCapabilities(project: WorldProject): string[] {
 
 function validateManifestMetadata(raw: unknown): asserts raw is WorldRepositoryManifest {
   rejectExecutableFields(raw);
-  if (!object(raw) || ![WORLD_REPOSITORY_SCHEMA, LEGACY_WORLD_REPOSITORY_SCHEMA].includes(raw.schema as string) || ![PROJECT_SCHEMA, LEGACY_PROJECT_SCHEMA].includes(raw.projectSchema as typeof PROJECT_SCHEMA) || !object(raw.engine) || typeof raw.snapshot !== 'string' || !hashPattern.test(raw.snapshot) || !object(raw.components) || Object.keys(raw.components).length !== roles.length) throw new Error('Unsupported or invalid world repository manifest.');
+  if (!object(raw) || ![WORLD_REPOSITORY_SCHEMA, PREVIOUS_WORLD_REPOSITORY_SCHEMA, LEGACY_WORLD_REPOSITORY_SCHEMA].includes(raw.schema as string) || ![PROJECT_SCHEMA, LEGACY_PROJECT_SCHEMA].includes(raw.projectSchema as typeof PROJECT_SCHEMA) || !object(raw.engine) || typeof raw.snapshot !== 'string' || !hashPattern.test(raw.snapshot) || !object(raw.components) || Object.keys(raw.components).length !== (raw.schema === WORLD_REPOSITORY_SCHEMA ? roles.length : legacyRoles.length)) throw new Error('Unsupported or invalid world repository manifest.');
   if (raw.schema === LEGACY_WORLD_REPOSITORY_SCHEMA) {
     if (raw.version !== 1 || typeof raw.engine.commit !== 'string' || !/^[a-f0-9]{40}$/.test(raw.engine.commit) || raw.engine.compatibility !== 'reference-only-runtime-unverified') throw new Error('Invalid legacy engine provenance.');
     return;
   }
   if (Object.keys(raw).some(k => !['schema','version','projectSchema','engine','snapshot','components','world','regions','attribution','provenance'].includes(k)) || Object.keys(raw.engine).some(k => !['commit','contract','requires'].includes(k))) throw new Error('Unknown manifest field or engine requirement.');
-  if (raw.version !== 2 || raw.projectSchema !== PROJECT_SCHEMA || raw.engine.contract !== WORLD_ENGINE_CONTRACT || typeof raw.engine.commit !== 'string' || !/^[a-f0-9]{40}$/.test(raw.engine.commit) || !Array.isArray(raw.engine.requires) || raw.engine.requires.length > WORLD_CAPABILITIES.length || new Set(raw.engine.requires).size !== raw.engine.requires.length || raw.engine.requires.some(c => !(WORLD_CAPABILITIES as readonly unknown[]).includes(c))) throw new Error('Unsupported engine contract or required capability.');
+  if ((raw.schema === WORLD_REPOSITORY_SCHEMA ? raw.version !== 3 : raw.version !== 2) || raw.projectSchema !== PROJECT_SCHEMA || raw.engine.contract !== WORLD_ENGINE_CONTRACT || typeof raw.engine.commit !== 'string' || !/^[a-f0-9]{40}$/.test(raw.engine.commit) || !Array.isArray(raw.engine.requires) || raw.engine.requires.length > WORLD_CAPABILITIES.length || new Set(raw.engine.requires).size !== raw.engine.requires.length || raw.engine.requires.some(c => !(WORLD_CAPABILITIES as readonly unknown[]).includes(c))) throw new Error('Unsupported engine contract or required capability.');
   if (!object(raw.world) || !['worldId','regionId','name','description'].every(k => typeof (raw.world as Record<string, unknown>)[k] === 'string') || !Array.isArray(raw.regions) || raw.regions.length !== 1 || !object(raw.regions[0]) || raw.regions[0].regionId !== raw.world.regionId || raw.regions[0].name !== raw.world.name || !object(raw.regions[0].scene) || raw.regions[0].scene.snapshot !== raw.snapshot) throw new Error('Invalid world or region identity/scene. This engine supports one region per repository.');
   if (Object.keys(raw.world).some(k => !['worldId','regionId','name','description'].includes(k)) || ['worldId','regionId'].some(k => !(raw.world as Record<string,string>)[k]?.trim() || (raw.world as Record<string,string>)[k]!.length > 200)) throw new Error('World and region identifiers must be nonempty bounded strings.');
   if (!object(raw.attribution) || !Array.isArray(raw.attribution.authors) || raw.attribution.authors.length > 64 || raw.attribution.authors.some(a => typeof a !== 'string' || a.length > 200) || [raw.attribution.license,raw.attribution.source].some(v => v !== undefined && (typeof v !== 'string' || v.length > 2000))) throw new Error('Invalid attribution metadata.');

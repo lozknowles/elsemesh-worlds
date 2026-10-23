@@ -4,17 +4,17 @@ Run `node scripts/build-world-engine-contract.mjs --target=<engine>/src/world-ru
 
 ## Boundaries
 
-Source loading uses parseGitHubWorldLocation, resolveGitHubWorldSource and loadWorldSource. Public GitHub refs resolve once to a full commit; local and remote readers share bounded, digest-checked repository validation. Legacy v1 reads do not rewrite input; explicit packing emits v2.
+Source loading uses parseGitHubWorldLocation, resolveGitHubWorldSource and loadWorldSource. Public GitHub refs resolve once to a full commit; local and remote readers share bounded, digest-checked repository validation. Legacy v1/v2 reads do not rewrite input; explicit packing emits v2 for basic projects or v3 when [authored connections](portal-world-format.md) are present.
 
 Conversion exports Three namespaces T and Three, shared geometry builders, hierarchy transforms, static GLB admission, material slots and assetPrimitiveGroups. Actual engine scene, GPU, textures and materials stay in the actual engine. No copied editor engine or preview code enters this bundle.
 
-Admission uses describeRuntimeWorld for normalized data and admitFederatedRuntimeWorld with installed runtime signature and region verifiers. World data cannot grant authority. The host must visibly reject requirements it does not implement. Exported software functions alone do not establish host capabilities.
+Admission uses describeRuntimeWorld for normalized data and admitFederatedRuntimeWorld with installed runtime signature and region verifiers. World data cannot grant authority. The host must visibly reject requirements it does not implement. Exported software functions alone do not establish host capabilities. The bundle exports validated portal declarations and shared portal transforms/sweep geometry; the host owns views, landing clearance, authorization and traversal. Water and retro terminal declarations likewise require the corresponding host implementation.
 
 The browser private neon client is installed software. It creates nonextractable browser CryptoKeys locally; no keys or backend code are bundled. Runtime connection intent and exact world/sign binding remain host responsibilities.
 
 ## Conversion limits
 
-Static admitted GLB meshes preserve source transforms and material slots. The existing native converter supports base colour textures and vertex colours; normal, ORM, occlusion and emissive texture maps are omitted. Shared admission rejects skinning and morph targets. Geography metadata, imagery and weather must only be advertised when implemented in the actual host.
+Static admitted GLB meshes preserve source transforms and material slots. The existing native converter supports base colour textures and vertex colours; normal, ORM, occlusion and emissive texture maps are omitted. Shared authored-asset admission rejects skinning and morph targets. `BuiltinCharacterGLTFLoader` is a separate installed character loader export; it does not relax authored-asset admission. Geography metadata, imagery and weather must only be advertised when implemented in the actual host.
 
 ## Licensing
 

@@ -1,3 +1,7 @@
+import PortalPanel from './PortalPanel';
+import PortalShapes from './newPortalShape';
+import { createEditorPortal } from './portal-editing';
+import type { WorldPortal } from '../domain/portal';
 import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Grid, OrbitControls, TransformControls } from '@react-three/drei';
@@ -56,7 +60,7 @@ import RepositoryPanel from './RepositoryPanel';
 import type { createGeographicTerrain, TerrainImagery } from '../domain/geography';
 
 type Tool = 'select' | 'translate' | 'rotate' | 'scale';
-type FrameRequest = { kind: 'world' | 'selected'; revision: number };
+type FrameRequest = { kind: 'world' | 'selected' | 'portal'; portalId?: string; revision: number };
 type Brush = 'raise' | 'lower' | 'flatten' | 'smooth' | 'paint' | 'vertices';
 const palettes = ['#a8b87b', '#cf956c', '#9dabb9', '#d8c36e', '#779e9a', '#d7d4c8'];
 const terrainColors = [
@@ -473,6 +477,8 @@ function Scene({
   viewPreset,
   draftFeature,
   selectedFeatureId,
+  selectedPortalId,
+  onSelectPortal,
   onSelectFeature,
   onTerrainPoint,
   snapEnabled,
@@ -502,6 +508,8 @@ function Scene({
   viewPreset: 'perspective' | 'top';
   draftFeature: DrawnFeature | null;
   selectedFeatureId: string | null;
+  selectedPortalId: string | null;
+  onSelectPortal: (id: string) => void;
   onSelectFeature: (id: string) => void;
   onTerrainPoint?: (point: Vec3) => void;
   snapEnabled: boolean;
@@ -518,7 +526,9 @@ function Scene({
     const included = frameRequest.kind === 'selected' ? subtreeIds(project.objects,selectedIds) : null;
     const matrices = resolveWorldMatrices(project.objects);
     const bounds = new THREE.Box3();
-    for (const object of project.objects) {
+    const framedPortal=frameRequest.kind==='portal'?project.portals?.find(p=>p.id===frameRequest.portalId):undefined;
+    if(framedPortal)bounds.set(new THREE.Vector3(-framedPortal.width/2,-framedPortal.height/2,-.15),new THREE.Vector3(framedPortal.width/2,framedPortal.height/2,.15)).applyMatrix4(new THREE.Matrix4().makeRotationY(framedPortal.yaw).setPosition(...framedPortal.position));
+    for (const object of framedPortal ? [] : project.objects) {
       if (object.kind === 'group' || (included && !included.has(object.id)) || !effectiveObjectState(project.objects,object.id).visible) continue;
       bounds.union(objectLocalBounds(project,object).applyMatrix4(matrices.get(object.id)!));
     }
@@ -527,7 +537,7 @@ function Scene({
     const vertical = THREE.MathUtils.degToRad(camera.fov);
     const horizontal = 2*Math.atan(Math.tan(vertical/2)*camera.aspect);
     const distance = Math.max(4,sphere.radius/Math.sin(Math.min(vertical,horizontal)/2)*1.15);
-    const direction = camera.position.clone().sub(orbitRef.current.target).normalize();
+    const direction = framedPortal ? new THREE.Vector3(Math.sin(framedPortal.yaw),.15,Math.cos(framedPortal.yaw)).normalize() : camera.position.clone().sub(orbitRef.current.target).normalize();
     if (!direction.lengthSq()) direction.set(1,1,1).normalize();
     camera.position.copy(sphere.center).addScaledVector(direction,distance);
     orbitRef.current.target.copy(sphere.center);
@@ -618,6 +628,7 @@ function Scene({
           onTerrainPoint={onTerrainPoint}
         />
         <DrawnFeatures project={project} draft={draftFeature} selectedId={selectedFeatureId} onSelect={onSelectFeature} editing={!preview} />
+        {!preview && <PortalShapes project={project} selectedId={selectedPortalId} onSelect={onSelectPortal}/>}
         {renderObjects()}
       </Suspense>
       <OrbitControls
@@ -679,6 +690,8 @@ export default function App() {
   const [terrainMaterial, setTerrainMaterial] = useState(0);
   const [draftFeature, setDraftFeature] = useState<DrawnFeature | null>(null);
   const [selectedFeatureId, setSelectedFeatureId] = useState<string | null>(null);
+  const [selectedPortalId,setSelectedPortalId] = useState<string|null>(null);
+  const [portalNotice,setPortalNotice] = useState('');
   const [featureWidth, setFeatureWidth] = useState(4);
   const [featureElevation, setFeatureElevation] = useState(5);
   const [waterfallDrop, setWaterfallDrop] = useState(8);
@@ -919,6 +932,28 @@ export default function App() {
     undoStack.current = [];
     redoStack.current = [];
     message('New world created');
+  }
+  function selectPortal(id:string) { setSelectedPortalId(id);setSelectedId(null);setPanel('objects');setPortalNotice('');setFrameRequest(previous=>({kind:'portal',portalId:id,revision:(previous?.revision??0)+1})); }
+  function addPortal() {
+    try {
+      const latest=projectRef.current,x=latest.spawn.position[0],z=latest.spawn.position[2]-4;
+      const portal=createEditorPortal(latest,[x,sampleTerrain(latest.terrain,x,z)+1.25,z]);
+      commitObjectCommand({...latest,portals:[...(latest.portals??[]),portal]});selectPortal(portal.id);
+    } catch(error) {setPortalNotice(error instanceof Error?error.message:'Could not create portal.');}
+  }
+  function updatePortal(portal:WorldPortal) {
+    try {
+      const latest=projectRef.current;
+      if(!latest.portals?.some(p=>p.id===portal.id))throw new Error('This portal is no longer in the current world.');
+      commitObjectCommand({...latest,portals:latest.portals.map(p=>p.id===portal.id?portal:p)});setPortalNotice('');
+    } catch(error) {setPortalNotice(error instanceof Error?error.message:'Could not update portal.');}
+  }
+  function deletePortal(id:string) {
+    try {
+      const latest=projectRef.current,dependent=latest.portals?.find(p=>p.id!==id&&p.destination.worldId===latest.metadata.worldId&&p.destination.regionId===latest.metadata.regionId&&p.destination.portalId===id);
+      if(dependent)throw new Error('Repoint '+dependent.name+' before deleting its destination portal.');
+      commitObjectCommand({...latest,portals:(latest.portals??[]).filter(p=>p.id!==id)});setSelectedPortalId(null);setPortalNotice('');
+    } catch(error) {setPortalNotice(error instanceof Error?error.message:'Could not delete portal.');}
   }
   function commitObjectCommand(next: WorldProject) {
     const result = validateWorld(next);
@@ -1401,7 +1436,7 @@ export default function App() {
         </aside>
         <aside className="left-panel">
           <div hidden={panel !== 'objects'}><PrivateNeonSession worldId={project.metadata.worldId} signIds={privateSignIds} onLoadPrivateWorld={loadPrivateWorld} onRuntime={receivePrivateRuntime} onControl={receivePrivateControl}/></div>
-          {panel === 'objects' && <><section className="interactive-objects" aria-label="Interactive objects"><h3>Interactive Objects</h3><button onClick={addNeonSign}>Neon Sign</button><button onClick={addComputer}>World Computer</button><p className="library-note">Editable 3D lettering with local preview effects and power toggle.</p></section><CataloguePanel busy={assetBusy || !!pendingPlacement} onAdd={(entry) => void beginCataloguePlacement(entry)} /></>}
+          {panel === 'objects' && <><section className="interactive-objects" aria-label="Interactive objects"><h3>Interactive Objects</h3><button onClick={addNeonSign}>Neon Sign</button><button onClick={addComputer}>World Computer</button><button onClick={addPortal}>Portal opening</button><p className="library-note">Editable 3D lettering with local preview effects and power toggle.</p></section><PortalPanel project={project} selectedId={selectedPortalId} onSelect={selectPortal} onAdd={addPortal} onUpdate={updatePortal} onDelete={deletePortal} notice={portalNotice}/><CataloguePanel busy={assetBusy || !!pendingPlacement} onAdd={(entry) => void beginCataloguePlacement(entry)} /></>}
           {panel === 'scene' && <SceneExplorer project={project} selectedIds={selectedIds} onSelect={selectObject} onAdd={() => addObject('box')} onTerrain={() => setPanel('terrain')}
             onVisible={id => mutateObject(id,{ visible: !project.objects.find(object => object.id === id)!.visible })}
             onLock={toggleObjectLock} onGroup={() => groupSelection(false)} onUngroup={ungroupSelection} onGroupAll={() => groupSelection(true)} onCopy={copySelection} onPaste={pasteSelection} />}
@@ -1868,6 +1903,8 @@ export default function App() {
                 snapStep={snapStep}
                 draftFeature={panel === 'pen' && !preview ? draftFeature : null}
                 selectedFeatureId={selectedFeatureId}
+                selectedPortalId={selectedPortalId}
+                onSelectPortal={selectPortal}
                 onSelectFeature={selectFeature}
                 onTerrainPoint={!preview && ((panel === 'pen' && draftFeature) || (panel === 'assets' && placingTree)) ? terrainPoint : undefined}
               />

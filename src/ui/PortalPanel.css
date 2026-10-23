@@ -1,0 +1,27 @@
+.portal-panel { margin: 18px 14px; padding-top: 16px; border-top: 1px solid #34404b; }
+.portal-panel h3 { display:flex; justify-content:space-between; gap:8px; margin:0 0 10px; }
+.portal-panel h3 small { font-size:11px; font-weight:normal; opacity:.7; }
+.portal-note,.portal-warning { font-size:11px; line-height:1.5; margin:9px 0; }
+.portal-note { opacity:.78; }
+.portal-warning { color:#ffca9b; padding:8px; border:1px solid #805435; border-radius:5px; }
+.portal-list { display:grid; gap:5px; margin:12px 0; }
+.portal-list button { display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:4px; }
+.portal-list button.chosen { outline:1px solid #e3c783; }
+.portal-list small { opacity:.7; font-size:10px; }
+.portal-form { display:grid; gap:10px; }
+.portal-panel label { display:flex; flex-direction:column; gap:5px; min-width:0; font-size:11px; }
+.portal-panel input { min-width:0; width:100%; box-sizing:border-box; padding:7px; border:1px solid #43505c; border-radius:4px; background:#18232d; color:#e4e9ed; font:inherit; }
+.portal-panel input[type=color] { height:30px; padding:2px; }
+.portal-panel .portal-check { flex-direction:row; align-items:center; }
+.portal-panel .portal-check input { width:auto; }
+.portal-fields,.portal-coordinates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+.portal-coordinates { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.portal-panel h4 { font-size:12px; margin:10px 0 2px; }
+.portal-identity { font-size:10px; overflow-wrap:anywhere; opacity:.65; margin:0; }
+.portal-game { margin-top:18px; border-top:1px solid #34404b; padding-top:5px; }
+.portal-game a { display:block; margin:10px 0; color:#a7d8ff; }
+
+.portal-panel button { padding:8px 10px; background:#26332d; border:1px solid #536354; color:#e6dfc8; border-radius:4px; font:inherit; font-size:11px; cursor:pointer; }
+.portal-panel button:disabled { opacity:.45; cursor:default; }
+.portal-panel button:hover { background:#344439; }
+.portal-panel .delete-button { margin-top:10px; background:#3a2723; border-color:#724a3f; }

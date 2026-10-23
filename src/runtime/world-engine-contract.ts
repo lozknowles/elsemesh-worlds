@@ -31,3 +31,7 @@ export function assetPrimitiveGroups(child: import('three').Mesh) {
  });
 }
 export * from '../domain/authored-runtime';
+export * from '../domain/portal';
+
+// Installed avatar rendering; authored GLB admission remains static and unchanged.
+export { GLTFLoader as BuiltinCharacterGLTFLoader } from 'three/addons/loaders/GLTFLoader.js';

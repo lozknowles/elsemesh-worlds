@@ -1,3 +1,6 @@
+import { validateWorldConnections } from './portal';
+import type { WorldPortal, WorldWater, RetroTerminal } from './portal';
+export type { WorldPortal, WorldWater, RetroTerminal } from './portal';
 import { validateComputer, MAX_COMPUTERS } from './computer';
 import type { ComputerConfig } from './computer';
 import { neonTriangleCount, MAX_WORLD_NEON_TRIANGLES } from './neon-geometry';
@@ -82,6 +85,9 @@ export type WorldProject = {
   terrainImagery?: TerrainImagery;
   objects: EditorObject[];
   features?: DrawnFeature[];
+  portals?: WorldPortal[];
+  water?: WorldWater;
+  terminals?: RetroTerminal[];
   spawn: { position: Vec3; yaw: number };
   environment: { sunAzimuth: number; sunElevation: number; fog: number; skyColor: string; timeOfDay?: number; cloudCoverage?: number; mistDensity?: number; mistSpeed?: number; mistHeight?: number; weather?: 'clear' | 'rain' | 'storm'; rainIntensity?: number; windSpeed?: number; weatherSeed?: number };
   assets: WorldAsset[];
@@ -246,6 +252,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
     errors.push('Projects may contain at most 2,000 scene objects.');
   if (p.geography !== undefined) errors.push(...validateGeography(p.geography, p.terrain));
   if (p.terrainImagery !== undefined) errors.push(...validateTerrainImagery(p.terrainImagery, p.geography));
+  errors.push(...validateWorldConnections(p));
   const assetIds = new Set(Array.isArray(p.assets) ? p.assets.map((asset) => asset?.id) : []);
   const ids = new Set<string>();
   for (const [index, object] of (Array.isArray(p.objects) ? p.objects : []).entries()) {
