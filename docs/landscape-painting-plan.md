@@ -58,3 +58,40 @@ Architect reviewed the final source and found the previous material issues resol
 The added guard exposed a real unsupported combination: a coarse two-metre grid with a six-metre-deep bowl could interpolate the nominal dry outline below the water. That example is now an atomic rejection test. The same physical island pond on a one-metre grid passes. Typical off-centre seven-metre organic ponds with six-metre banks and two-metre beds remain admitted; their measured dry-envelope margin exceeds0.21m. No profile tuning was used to hide the failing case.
 
 Primary accepted source completion with remaining delivery conditions: full six-test UI regression against the frozen source, a clean contract export into ElseMesh and local runtime checks, visible descending banks/clearing/pointer in the final recording, exact final Save/Open, verified D Downloads files, and authorized ordinary GitHub pushes with CI skipped. The initial ungraded recording is supplementary first-draft footage; the final refinement must demonstrate the graded bank.
+
+
+## Pond picking completion follow-up
+
+Trigger: the architect completion gate found graded preview terrain feeding back into raycast-derived pond radius, including perspective Top view. Architect PLAN gate approved detached immutable terrain picking over a fixed plane, requiring capture before preview, fail-closed missing terrain, partial-construction cleanup, no live fallback, and cancellation on committed project replacement. Primary decision: fix this defect before completion.
+
+Pond pointerdown snapshots terrain geometry and world transforms for CPU raycasting; movement and release use that snapshot while graded drafts render independently. Release, cancel, layer/shape/tool changes, committed project replacement, blur and unmount dispose cloned geometry without disposing borrowed scene materials. A second pointer cannot replace the active stroke, and the final commit checks captured base identity against the latest project.
+
+Acceptance requires actual raycast checks of an off-centre depressed basin with raised graded banks, Top and oblique perspectives, immediate/delayed previews, immutable geometry/transforms and idempotent disposal; existing invalid-preview/off-terrain/undo/reopen regression checks remain required. Preparation occurred only under ignored evidence during frozen-source recording. The primary explicitly unfroze source after recording closed and authorized application. Five focused picking checks, lint and TypeScript/production build passed; full unit/browser acceptance is tracked below.
+
+## Camera demonstration no-progress gate
+
+Trigger: two actual Top-view orbit attempts did not show bank descent. Architect source review confirmed that Top view sets camera up to -Z and OrbitControls follows that polar frame; Frame world preserves the viewing direction. The static PERSPECTIVE toolbar label is not proof of camera orientation.
+
+Primary decision: use a camera-only checkpoint through the Perspective button, restoring Y-up, then verify vertical trunks, foreshortening and visibly descending ground before any further long recording. No additional terrain-grading edits follow from the camera evidence. Camera acceptance remains pending the later video check.
+
+## Unit-suite timeout no-progress gate
+
+The first full unit run and a subsequent isolated build-complete run with two workers both passed the five new picking checks and 190 tests overall, but the unchanged weather finite-drop geometry test exceeded its default five-second timeout. Both original logs are preserved as `unit-all.log` and `unit-all-bounded.log` under the ignored picking-fix preparation evidence directory. No weather source or test timeout was changed. This repeated signature was reported to the primary before any further unit attempt, requesting the architect no-progress gate. Lint and the TypeScript/production build passed; independent browser regression proceeds while that gate is reviewed.
+
+Architect findings: the unchanged weather-only test executes 410,400 matcher assertions across 24 configurations. The repeated observed durations were 8.698 seconds with parallel work and 5.510 seconds with two workers, both exceeding the default 5-second budget without an assertion failure. Primary decision: after browser regression, run one isolated diagnostic with one worker and a 15,000 ms CLI test timeout. If it passes, run the final full suite with two workers and the same 15,000 ms CLI timeout. This changes no weather implementation, test source, or timeout configuration; retain both earlier failures and disclose the time-budget correction.
+
+The isolated unchanged weather diagnostic passed in 4,403 ms (Vitest 4.68 s; process wall time 5.83 s). The final full suite passed all 191 tests with two workers and the explicitly documented 15,000 ms CLI timeout. The two original five-second failures remain preserved.
+
+## Browser coordinate comparison gate
+
+The first eight-test browser run passed all six existing scenarios. Both new perspective timing comparisons reached exact boundary equality but differed by approximately 0.0000004 to 0.0000017 metres. The architect approved one test-only correction: normalize projected screen coordinates to shared integer CSS pixels before both input paths, including pointerdown, retain exact boundary and terrain equality, and observe actual delivered client coordinates. Native coordinate quantization is a hypothesis until those observations agree. Primary decision: make that bounded harness correction, run the two new cases, then all eight if they pass. If equality still fails, compare canvas bounds and camera matrices before any further correction; no production picking changes are justified by this evidence.
+
+The delivered-coordinate observer directly proved native Y-coordinate quantization: requested 576.3354378670166 became 576.33544921875, and requested 583.0619618087153 became 583.0619506835938. The initial harness normalization edit rounded X but accidentally left Y fractional, which the observer rejected before boundary comparison. Completing the already approved shared X/Y normalization retains all exact equality assertions.
+
+## Immutable pond picking qualification
+
+The final serial browser run passed all eight scenarios: the six existing regression cases and both new Top/oblique timing cases. The new checks wait for changed rendered terrain geometry before each delayed move, compare actual delivered pointerdown/final-move coordinates, and require exact saved boundary and terrain-height equality. They also preserve the active stroke against another pointer and prevent an old drag from overwriting a newly opened project. No geometric tolerance was introduced. The focused normalized run passed both cases before the complete final rerun.
+
+The five CPU picking tests passed, including real raycasts against an off-centre depressed basin whose banks are raised by the actual grading command, live geometry/world-transform independence, one-time clone disposal without material disposal, construction-failure cleanup and absent-terrain rejection. The 257-grid snapshot took 3.670 ms in the focused HP run, 6.600 ms during the first concurrent run, 4.181 ms in the bounded run, and 4.053 ms in the final full run. These are CPU snapshot observations on HP, not physical-client responsiveness or a frame-rate claim. Full final unit acceptance is 191/191 with the documented 15,000 ms CLI timeout; lint and TypeScript/production build passed. Vite retains its existing large-chunk warning.
+
+Exact logs are retained under ignored .local-evidence/landscape-video-20261023/picking-fix-prep: unit-focused.log, unit-all.log, unit-all-bounded.log, weather-diagnostic.log, unit-all-final.log, lint.log, lint-final.log, build.log, e2e-all.log, e2e-timing-normalized.log, e2e-timing-normalized-xy.log and e2e-all-final.log. Earlier timeout and test-harness failures are preserved. The primary owns the final architect completion gate, final client build/export, camera demonstration acceptance and release; this worker made no commit or push.

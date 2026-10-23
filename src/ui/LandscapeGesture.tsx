@@ -1,4 +1,5 @@
 import { preflightLandscape } from './landscape-render';
+import { freezeLandscapeTerrainPicking } from './landscape-picking';
 /* eslint-disable react-hooks/set-state-in-effect -- A cancelled pointer transaction must clear its transient scene preview. */
 import { useEffect, useRef, useState, useMemo, useLayoutEffect } from 'react';
 import { useThree } from '@react-three/fiber';
@@ -54,7 +55,13 @@ export default function LandscapeGesture({
       points: Vec3[];
       id: number;
       tool: LandscapeTool;
-      pond?: { center: Vec3; radius: number; irregularity: number; onTerrain: boolean };
+      pond?: {
+        center: Vec3;
+        radius: number;
+        irregularity: number;
+        onTerrain: boolean;
+        picking: ReturnType<typeof freezeLandscapeTerrainPicking>;
+      };
     } | null>(null),
     raf = useRef(0);
   const reset = () => {
@@ -95,11 +102,18 @@ export default function LandscapeGesture({
     const canvas = gl.domElement,
       ray = new T.Raycaster(),
       v = new T.Vector2();
-    const hit = (e: PointerEvent): Vec3 | null => {
+    const hit = (
+      e: PointerEvent,
+      picking?: ReturnType<typeof freezeLandscapeTerrainPicking>,
+    ): Vec3 | null => {
       const r = canvas.getBoundingClientRect();
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
       v.set(((e.clientX - r.left) / r.width) * 2 - 1, 1 - ((e.clientY - r.top) / r.height) * 2);
       ray.setFromCamera(v, camera);
+      if (picking) {
+        const p = picking.hit(ray);
+        return p ? [p.x, p.y, p.z] : null;
+      }
       const surfaces: T.Object3D[] = [];
       scene.traverse((o) => {
         if (o.userData.placementSurface === 'terrain') surfaces.push(o);
@@ -154,7 +168,7 @@ export default function LandscapeGesture({
     const originalTabIndex = canvas.getAttribute('tabindex');
     canvas.tabIndex = 0;
     const down = (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || stroke.current) return;
       const p = hit(e);
       if (!p) return;
       canvas.focus({ preventScroll: true });
@@ -167,13 +181,30 @@ export default function LandscapeGesture({
         c.onBoundary(boundary.current.length);
         return;
       }
+      let picking: ReturnType<typeof freezeLandscapeTerrainPicking> | undefined;
+      if (c.tool.shape === 'pond') {
+        try {
+          picking = freezeLandscapeTerrainPicking(scene);
+        } catch (error) {
+          c.onError((error as Error).message);
+          return;
+        }
+      }
       stroke.current = {
         base: c.project,
         points: [p],
         id: e.pointerId,
         tool: { ...c.tool },
-        ...(c.tool.shape === 'pond'
-          ? { pond: { center: p, radius: c.tool.radius, irregularity: c.tool.irregularity, onTerrain: true } }
+        ...(picking
+          ? {
+              pond: {
+                center: p,
+                radius: c.tool.radius,
+                irregularity: c.tool.irregularity,
+                onTerrain: true,
+                picking,
+              },
+            }
           : {}),
       };
       if (stroke.current.pond) setPoints(createLandscapePondBoundary(p, c.tool.radius, c.tool.irregularity));
@@ -184,7 +215,7 @@ export default function LandscapeGesture({
       const s = stroke.current;
       if (!s || e.pointerId !== s.id) return;
       e.stopImmediatePropagation();
-      const p = hit(e);
+      const p = hit(e, s.pond?.picking);
       if (s.pond) s.pond.onTerrain = !!p;
       if (!p && s.pond) {
         cancelAnimationFrame(raf.current);
@@ -219,10 +250,11 @@ export default function LandscapeGesture({
       cancelAnimationFrame(raf.current);
       raf.current = 0;
       stroke.current = null;
+      s.pond?.picking.dispose();
       if (canvas.hasPointerCapture(s.id)) canvas.releasePointerCapture(s.id);
       c.onDraft(null);
       setPoints([]);
-      if (commit)
+      if (commit && c.project === s.base)
         try {
           c.onCommit(applyStroke(s));
           c.onError('');
@@ -232,7 +264,8 @@ export default function LandscapeGesture({
     };
     const up = (e: PointerEvent) => {
       if (e.pointerId === stroke.current?.id) {
-        if (stroke.current.pond && !hit(e)) stroke.current.pond.onTerrain = false;
+        if (stroke.current.pond && !hit(e, stroke.current.pond.picking))
+          stroke.current.pond.onTerrain = false;
         e.stopImmediatePropagation();
         end(true);
       }
@@ -269,7 +302,7 @@ export default function LandscapeGesture({
       window.removeEventListener('blur', cancelled);
       window.removeEventListener('keydown', key);
     };
-  }, [tool.enabled, tool.layerId, tool.shape, gl, camera, scene]);
+  }, [cancel, project, tool.enabled, tool.layerId, tool.shape, gl, camera, scene]);
   const line = useMemo(
     () =>
       points.length

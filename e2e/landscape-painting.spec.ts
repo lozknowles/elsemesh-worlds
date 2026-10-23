@@ -373,3 +373,163 @@ test('graded pond saves a sloping bank and shallow bed in one undo step', async 
   await openProject(page, final);
   expect(await saveBlob(page)).toEqual(final);
 });
+
+for (const view of ['top', 'oblique'] as const) {
+  test('pond radius ignores graded preview timing in ' + view, async ({ page }) => {
+    test.setTimeout(120000);
+    const p = createWorld('Immutable pond picks');
+    p.terrain = createTerrain(128, 128, 129);
+    p.terrain.heights = p.terrain.heights.map((_, i) =>
+      Math.hypot((i % 129) - 64 - 4, Math.floor(i / 129) - 64 - 3) < 11 ? -1 : 5,
+    );
+    await page.goto('/');
+    // Install before painting registers its capture handlers, so we observe delivered coordinates.
+    await page.evaluate(() => {
+      const state = window as unknown as { pondDelivered: Record<string, { x: number; y: number }> };
+      state.pondDelivered = {};
+      const record = (event: PointerEvent) => {
+        if (event.pointerId === 1) state.pondDelivered[event.type] = { x: event.clientX, y: event.clientY };
+      };
+      window.addEventListener('pointerdown', record, true);
+      window.addEventListener('pointermove', record, true);
+    });
+    await openProject(page, p);
+    await page.getByTitle('Terrain', { exact: true }).click();
+    if (view === 'top') await page.getByTitle('Top view').click();
+    await page.getByRole('button', { name: '+ water', exact: true }).click();
+    const panel = page.getByRole('region', { name: 'Landscape painting' });
+    await panel.getByLabel('Water level', { exact: true }).fill('0');
+    await panel.getByLabel('Shoreline irregularity', { exact: true }).fill('0');
+    await panel.getByLabel('Bank width', { exact: true }).fill('6');
+    await panel.getByLabel('Bed depth', { exact: true }).fill('2');
+    const before = await saveBlob(page);
+    const box = (await page.locator('.viewport canvas').first().boundingBox())!;
+    const camera = new T.PerspectiveCamera(42, box.width / box.height, 0.1, 12000);
+    if (view === 'top') {
+      camera.position.set(0, 95, 0.01);
+      camera.up.set(0, 0, -1);
+    } else camera.position.set(82, 65, 88);
+    camera.lookAt(0, 2, 0);
+    camera.updateMatrixWorld();
+    const screen = (x: number, y: number, z: number) => {
+      const v = new T.Vector3(x, y, z).project(camera);
+      return {
+        x: Math.round(box.x + (v.x * 0.5 + 0.5) * box.width),
+        y: Math.round(box.y + (0.5 - v.y * 0.5) * box.height),
+      };
+    };
+    const positions = [screen(4, -1, 3), screen(-4, -1, 3), screen(-6, -1, 3), screen(-8, 5, 3)];
+    await page.mouse.move(positions[0]!.x, positions[0]!.y);
+    await page.mouse.down();
+    // All moves in one JS task: no preview frame can occur between them.
+    await page.evaluate((positions) => {
+      for (let i = 1; i < positions.length; i++) {
+        const at = positions[i]!;
+        window.dispatchEvent(
+          new PointerEvent('pointermove', {
+            clientX: at.x,
+            clientY: at.y,
+            pointerId: 1,
+            button: 0,
+            buttons: 1,
+            bubbles: true,
+          }),
+        );
+      }
+      const at = positions.at(-1)!;
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: at.x,
+          clientY: at.y,
+          pointerId: 1,
+          button: 0,
+          bubbles: true,
+        }),
+      );
+    }, positions);
+    await page.mouse.up();
+    const received = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { pondDelivered: Record<string, { x: number; y: number }> }).pondDelivered,
+      );
+    const immediateDelivered = await received();
+    expect(immediateDelivered.pointerdown).toEqual(positions[0]);
+    expect(immediateDelivered.pointermove).toEqual(positions.at(-1));
+    const immediate = await saveBlob(page);
+    expect(immediate.terrain.heights).not.toEqual(before.terrain.heights);
+    expect(immediate.terrain.heights.some((h, i) => h > before.terrain.heights[i]! + 0.1)).toBe(true);
+    await page.getByTitle('Undo (Ctrl+Z)').click();
+    expect(await saveBlob(page)).toEqual(before);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    );
+    const renderedTerrainSignature = () =>
+      page.evaluate(async () => {
+        const fiber = await import('/node_modules/.vite/deps/@react-three_fiber.js');
+        let sum = 0;
+        fiber._roots
+          .get(document.querySelector('.viewport canvas'))
+          .store.getState()
+          .scene.traverse(
+            (node: {
+              userData: { placementSurface?: string };
+              geometry?: { getAttribute: (name: string) => { count: number; getY: (i: number) => number } };
+            }) => {
+              if (node.userData.placementSurface !== 'terrain') return;
+              const positions = node.geometry!.getAttribute('position');
+              for (let i = 0; i < positions.count; i++) sum += positions.getY(i);
+            },
+          );
+        return sum;
+      });
+    await page.mouse.move(positions[0]!.x, positions[0]!.y);
+    await page.mouse.down();
+    await page.evaluate((at) => {
+      const canvas = document.querySelector('.viewport canvas')!;
+      canvas.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: at.x,
+          clientY: at.y,
+          pointerId: 99,
+          button: 0,
+          buttons: 1,
+          bubbles: true,
+        }),
+      );
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: at.x,
+          clientY: at.y,
+          pointerId: 99,
+          button: 0,
+          bubbles: true,
+        }),
+      );
+    }, positions[1]!);
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    );
+    for (const at of positions.slice(1)) {
+      const previousGeometry = await renderedTerrainSignature();
+      await page.mouse.move(at.x, at.y);
+      await expect.poll(renderedTerrainSignature, { timeout: 15000 }).not.toBe(previousGeometry);
+      await expect(panel.getByRole('alert')).toHaveCount(0);
+    }
+    await page.mouse.up();
+    const delayedDelivered = await received();
+    expect(delayedDelivered).toEqual(immediateDelivered);
+    const delayed = await saveBlob(page);
+    expect(delayed.landscape!.layers.at(-1)!.boundary).toEqual(immediate.landscape!.layers.at(-1)!.boundary);
+    expect(delayed.terrain.heights).toEqual(immediate.terrain.heights);
+    // Replacing the committed project during a drag must never resurrect its old base.
+    await page.mouse.move(positions[0]!.x, positions[0]!.y);
+    await page.mouse.down();
+    await page.mouse.move(positions[1]!.x, positions[1]!.y);
+    await openProject(page, before);
+    await page.mouse.up();
+    expect(await saveBlob(page)).toEqual(before);
+  });
+}

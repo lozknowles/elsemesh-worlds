@@ -36,3 +36,6 @@ The explicit boundary is a dry outer envelope. The terrain descends through the 
 The whole bank must fit inside the terrain and leave space around other water bodies, including the supporting terrain triangles. Height samples outside the grading ring remain identical; interpolation can affect adjacent triangles within one cell. Existing sea bounds alone do not prohibit a high island pond: original and resulting supporting terrain must both remain above the sea's maximum wave height. Existing wet shores and beds are protected by atomic rejection.
 
 The grade edits ordinary terrain heights. Project saves and independent repository snapshots preserve those heights, water boundary, level and waves together; normal terrain rendering, walking and collision consumers receive the same data.
+
+
+Pond drags pick against a snapshot of the terrain at pointerdown. Graded bank and bed previews therefore cannot change the radius for the same pointer position, including perspective Top view. Releasing or cancelling discards that snapshot. Opening a project, undoing, or otherwise replacing the committed project cancels the active drag.
