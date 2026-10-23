@@ -18,6 +18,7 @@ export function describeRuntimeWorld(input: unknown) {
   });
   return {
     worldId: project.metadata.worldId, regionId: project.metadata.regionId,
+    traffic: project.traffic ? structuredClone(project.traffic) : undefined,
     project, spawn: structuredClone(project.spawn), boxes,
     terrain: { heightAt: (x: number, z: number) => sampleTerrain(project.terrain, x, z) },
     // Interaction identifiers travel as authored data; authority remains external.

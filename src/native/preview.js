@@ -77,7 +77,7 @@ async function rebuild(value) {
   const nextAssetDiagnostics=[];
   const objectMatrices=resolveWorldMatrices(value.objects);
   for(const object of value.objects.filter(o=>effectiveObjectState(value.objects,o.id).visible)) {
-    if(object.kind==='tree'||object.kind==='group')continue;
+    if(object.kind==='tree'||object.kind==='group'||object.collisionOnly)continue;
     const item=new N.Group(); item.userData.editorObjectId=object.id; item.matrixAutoUpdate=false; item.matrix.fromArray(objectMatrices.get(object.id).elements);
     const c=object.color;
     if(object.kind==='computer') {

@@ -39,3 +39,5 @@ export { GLTFLoader as BuiltinCharacterGLTFLoader } from 'three/addons/loaders/G
 export * from '../domain/landscape';
 
 export {landscapePartTint,landscapeInstanceTint,bakeLandscapeAtlas,threeAtlas,installLandscapeShader,landscapeChunks,sceneryParts,landscapeWaterGeometry,updateLandscapeWater} from '../ui/landscape-render';
+
+export * from '../domain/road-traffic';

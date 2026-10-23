@@ -269,6 +269,7 @@ function TerrainMesh({
 
 function Shape({ object, asset }: { object: EditorObject; asset?: WorldProject['assets'][number] }) {
   const common = { castShadow: true, receiveShadow: true };
+  if (object.collisionOnly) return <mesh><boxGeometry args={[1.6,1.6,1.6]} /><meshBasicMaterial color="#f0bc68" wireframe /></mesh>;
   if (object.kind === 'computer' && object.computer) return <ComputerShape id={object.id} screenColor={object.computer.screenColor}/>;
   if (object.kind === 'neon-sign' && object.neon) return <NeonSign id={object.id} config={object.neon}/>;
   if (object.kind === 'glb') return <ImportedAsset asset={asset} overrides={object.materialOverrides} />;
@@ -326,6 +327,7 @@ function WorldEntity({
   snapEnabled,
   snapStep,
   locked,
+  showCollision,
   children,
 }: {
   object: EditorObject;
@@ -334,6 +336,7 @@ function WorldEntity({
   tool: Tool;
   select: (additive?: boolean) => void;
   locked: boolean;
+  showCollision: boolean;
   children?: ReactNode;
   moved: (object: EditorObject) => boolean;
   snapEnabled: boolean;
@@ -356,7 +359,7 @@ function WorldEntity({
           if (!locked) select(event.shiftKey);
         }}
       >
-        {object.kind !== 'group' && <Shape object={object} asset={asset} />}
+        {object.kind !== 'group' && (!object.collisionOnly || showCollision) && <Shape object={object} asset={asset} />}
         {children}
         {selected && (
           <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -589,7 +592,7 @@ function Scene({
   const renderObjects = (parentId?: string, ancestorLocked = false): ReactNode => (childMap.get(parentId) ?? []).map(object => {
     const locked = ancestorLocked || !!object.locked;
     return <WorldEntity key={object.id} object={object} asset={project.assets.find(asset => asset.id === object.assetId)}
-      selected={selectedIds.includes(object.id)} tool={object.id === selectedId ? tool : 'select'} locked={locked || blocked.has(object.id)}
+      selected={selectedIds.includes(object.id)} showCollision={!preview && selectedIds.includes(object.id)} tool={object.id === selectedId ? tool : 'select'} locked={locked || blocked.has(object.id)}
       snapEnabled={snapEnabled} snapStep={snapStep} select={additive => selectObject(object.id, additive)}
       moved={next => {
         if (locked || blocked.has(object.id)) return false;
