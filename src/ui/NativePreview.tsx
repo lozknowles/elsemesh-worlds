@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useEffect, useRef, useState } from 'react';
 import type { NeonRuntimeState } from './NeonRuntime';
 import type { WorldProject } from '../domain/world';
@@ -54,7 +55,7 @@ export default function NativePreview({ project, onChange, onClose, neonRuntime,
     { key: 'windSpeed', label: 'Weather wind speed', min: 0, max: 30, step: .5, value: project.environment.windSpeed ?? 6, unit: 'm/s' },
   ];
   return <div className="native-preview">
-    <iframe ref={frame} src="/native-preview.html" title="ElseMesh native WebGPU preview" />
+    <iframe ref={frame} src={`${import.meta.env.BASE_URL}native-preview.html`} title="ElseMesh native WebGPU preview" />
     <div className="native-controls">
       <div><b>ELSEMESH GRAPHICS</b><button onClick={onClose}>Back to editor ×</button></div>
       <div className="native-navigation-actions"><button onClick={() => navigate('overview')}>Overview</button><button onClick={() => navigate('spawn')}>Return to spawn</button><button onClick={() => navigate('recenter')}>Recenter</button></div>

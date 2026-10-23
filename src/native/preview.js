@@ -1,3 +1,4 @@
+import {buildNativeLandscape} from './NativeLandscape.js';
 import * as T from 'three';
 import { resolveWorldMatrices, effectiveObjectState } from '../domain/object-hierarchy.ts';
 import * as N from '../vendor/elsemesh/engine/index.js';
@@ -49,8 +50,9 @@ function addPart(group, geo, color, position=[0,0,0], rotation=[0,0,0]) {
   const item=mesh(geo,color); item.position.fromArray(position); item.rotation.set(...rotation); group.add(item);
 }
 function disposeWorld(group) {
-  const materials=new Set();
-  group.traverse(node=>{node.geometry?.dispose();if(node.material) materials.add(node.material);node.userData.disposeAssetTextures?.();node.userData.disposeTerrainImagery?.();});
+  const materials=new Set(),geometries=new Set();
+  group.traverse(node=>{if(node.geometry)geometries.add(node.geometry);if(node.material) materials.add(node.material);node.userData.disposeAssetTextures?.();node.userData.disposeTerrainImagery?.();node.userData.disposeLandscape?.();});
+  geometries.forEach(geometry=>geometry.dispose());
   materials.forEach(material=>{if(!material.userData.sharedBuilderTreeMaterial)material.dispose();});
 }
 async function rebuild(value) {
@@ -110,6 +112,7 @@ async function rebuild(value) {
   }
   const nextForest=buildNativeForest(value.objects,engine.camera.position);group.add(nextForest);
   group.add(buildNativeFeatures(value,nativeGeometry));
+  let landscape;try{landscape=await buildNativeLandscape(value,nativeGeometry);}catch(error){disposeWorld(group);throw error;}group.add(landscape);group.userData.landscapeStats=landscape.userData.landscapeStats;
   if(token!==revision) { disposeWorld(group); return; }
   if(world) { engine.scene.remove(world);disposeWorld(world); }
   world=group;forest=nextForest;engine.scene.add(world);
@@ -134,6 +137,7 @@ function setEnvironment() {
 }
 async function init() {
   engine=new Engine(document.querySelector('#native-root')); engine.maxOutputPixels=1000000; await engine.init();
+  if(GPU.limits.maxStorageTexturesPerShaderStage<5)throw new Error(`Native sky preview requires 5 storage textures per shader stage; this adapter supports ${GPU.limits.maxStorageTexturesPerShaderStage}. Use the editor WebGL preview on this device.`);
   engine.meshRenderer.syncPipelines=true;
   atmosphere=new Atmosphere(engine); sky=new Sky(atmosphere); clouds=new SkyProClouds(engine,atmosphere); await clouds.ready; sky.clouds=clouds;
   environment=new Environment(engine,engine.scene,sky,128);
@@ -150,6 +154,7 @@ async function init() {
       GPU.beginFrame(); G.time.value=time; G.dt.value=dt; G.exposure.value=0.55; // pristine App.js default
       const navigationState = navigation.update(dt);
       if (time >= nextNavigationReport) { send('elsemesh-native-navigation-state', { navigation: navigationState }); nextNavigationReport = time + 0.25; }
+      world?.traverse(node=>node.userData.updateLandscape?.(time));
       const previousTreeStats=forest?.userData.treePreviewStats();
       forest?.userData.updateTreeLOD(time,engine.camera.position);
       if(forest && forest.userData.treePreviewStats()!==previousTreeStats)send('elsemesh-native-quality',{trees:forest.userData.treePreviewStats(),renderPixels:engine.width*engine.height});
@@ -169,7 +174,7 @@ async function init() {
       const computers=[];world?.traverse(node=>{if(node.userData.computerParts)computers.push({id:node.userData.editorObjectId,parts:node.userData.computerParts});});
       const neons=[];world?.traverse(node=>{if(node.userData.neonState)neons.push(node.userData.neonState);});
       const hierarchyMatrices={};world?.traverse(node=>{if(node.userData.editorObjectId)hierarchyMatrices[node.userData.editorObjectId]=Array.from(node.matrixWorld.elements);});
-      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
+      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,landscape:world?.userData.landscapeStats,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
       if(engine.frame===2) send('elsemesh-native-rendered');
     } catch(error) { engine.stop(); report(`Native preview failed: ${error.message}`); console.error(error); send('elsemesh-native-error',{message:error.message}); }
   });
@@ -181,7 +186,7 @@ window.addEventListener('message',e=>{
   if(e.data?.type==='elsemesh-native-navigation') { navigation?.command(e.data); if(['overview','spawn','recenter'].includes(e.data.action)) engine?.canvas.focus(); return; }
   if(e.data?.type!=='elsemesh-native-project') return;
   const next=e.data.project;
-  const changed=!project || JSON.stringify([project.terrain,project.objects,project.assets,project.features,project.geography,project.terrainImagery])!==JSON.stringify([next.terrain,next.objects,next.assets,next.features,next.geography,next.terrainImagery]);
+  const changed=!project || JSON.stringify([project.terrain,project.objects,project.assets,project.features,project.geography,project.terrainImagery,project.landscape])!==JSON.stringify([next.terrain,next.objects,next.assets,next.features,next.geography,next.terrainImagery,next.landscape]);
   navigation?.setProject(next);
   project=next; if(changed) void rebuild(project).catch(error=>report(`Scene import failed: ${error.message}`));
 });

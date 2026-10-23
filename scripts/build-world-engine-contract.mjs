@@ -10,7 +10,7 @@ if(!arg)throw new Error('Usage: node scripts/build-world-engine-contract.mjs --t
 const target=resolve(arg.slice(9));
 const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8'}).trim();
 const commit=git('rev-parse','HEAD');
-const dirty=!!git('status','--porcelain','--','src/domain','src/runtime/world-engine-contract.ts','src/ui/asset-admission.ts','scripts/build-world-engine-contract.mjs','package-lock.json','docs/world-engine-contract.md');
+const dirty=!!git('status','--porcelain','--','src/domain','src/runtime/world-engine-contract.ts','src/ui/asset-admission.ts','src/ui/landscape-render.ts','scripts/build-world-engine-contract.mjs','package-lock.json','docs/world-engine-contract.md');
 if(dirty&&!process.argv.includes('--allow-dirty'))throw new Error('Commit shared software before final export; --allow-dirty is prototype only.');
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const result=await build({absWorkingDir:root,entryPoints:['src/runtime/world-engine-contract.ts'],bundle:true,preserveSymlinks:true,format:'esm',platform:'browser',target:'es2022',write:false,metafile:true,legalComments:'eof',charset:'utf8'});

@@ -1,0 +1,54 @@
+# Landscape data and pure commands
+
+## Formats and compatibility
+
+Landscape content opts a project into `elsemesh.worlds.project/3` and a content repository into `elsemesh.world-repository/4`. Its manifest requires `project/3` and `landscape/1`; its immutable snapshot adds `landscape.json` after the existing nine roles. Existing projects without landscape retain project/2 and repository/2 or /3 exports. Project/1 migration and repository/1 reads remain supported. Reading does not write or migrate repository files.
+
+Landscape player exports use `elsemesh.player-world/3` with the two capabilities. `validatePlayerWorldPackage` validates the package schema, exact capability set, axes/units and embedded project; consumers should use it. accepting landscape through an older package/schema is not supported. `validateWorld` rejects mismatched project schema/content, executable fields and unsupported layer/material properties. The shared runtime contract exports these pure operations; it contains no world-authored executable code.
+
+`Landscape` contains version 1, ordered materials, embedded image descriptors, ordered layers, and persistent generated-ID tombstones. Layer IDs are stable independent of ordering. Ground layers select one material; vegetation layers select one scattering rule; water layers select a level/wave rule and one simple polygon. Multiple ponds use multiple water layers. A water layer is one body: replacing its closed outline replaces that entire body/mask; ground/vegetation replace remains footprint-local. Boundaries contain implicit closing edges, with no repeated terminal point required.
+
+## Coverage, materials and assets
+
+A mask uses one-metre cells and sparse 16 by 16 tiles. Tile keys `tx:tz` are nonnegative, indexed from the terrain minimum corner (`-width/2`, `-depth/2`); values are integer coverage 0..255. All-zero tiles are omitted. No stroke history is persisted. Before copying/scanning masks, an operation rejects clipped bounding boxes above 65,536 cells or 256 tiles, shared prospective tile growth above 256, and more than 4,194,304 cell-by-boundary/stroke-point evaluations. These conservative preflight bounds can reject a large sparse diagonal or highly detailed shape; split it into smaller gestures. Rejection preserves the original project. Whole strokes measure point-to-segment distance for continuous coverage; overlapping samples do not repeatedly accumulate strength. Paint takes the maximum coverage, erase attenuates it, and replace sets coverage to the requested weight only inside its footprint, preserving separate ground/vegetation patches outside. Lower ground layers and legacy terrain remain intact.
+
+Five stock materials are grass, soil, rock, gravel and sand; custom materials provide a name, hex colour, roughness, tiling and optional image reference. Images are embedded PNG/JPEG with exact SHA-256 identity and verified dimensions. Repository packing externalizes them to `landscape-images/<sha256>.png|jpg`; every reference and byte length is hashed and checked again on hydration. URLs, SVG, executable hooks and arbitrary material programs are rejected. Image ownership/licensing remains the author's responsibility; import grants no rights.
+
+The sampler's `groundAt` returns premultiplied RGB, opacity and ordered material contributions. A renderer can composite over the existing terrain base. Coverage quantization is intentional; no sub-metre claim is made.
+
+## Deterministic scenery and collision
+
+Scattering uses world-space spatial cells, a layer seed, deterministic jitter, density threshold and spacing priority. IDs are `landscape-instance:<layerId>@<cellX>,<cellZ>,0`. Density selects a subset of unchanged candidates. A two-cell neighbour halo participates in minimum-spacing arbitration even outside paint, so changing density or erasing coverage does not move surviving candidates; the conservative halo can leave gaps at a painted edge. Seed or spacing changes deliberately alter positions while retaining explicit promoted objects and tombstones.
+
+The five kinds are tree, shrub, grass, flower and rock. Each accepts an optional existing portable GLB asset ID, never a model URL. Elevation, terrain slope, path width/clearance, transformed building/solid GLB bounds, legacy water/lakes and visible landscape water constrain generated candidates. Explicit placements are never removed by these exclusions. Slope samples the existing terrain height function over one metre.
+
+`promoteLandscapeInstance(project,id)` accepts a current generated tree and returns one immutable project with a normal tree/GLB EditorObject, exact transform, stable origin, and its generated ID tombstoned. Editing/removing that explicit object uses the existing editor commands. The tombstone remains when masks or seeds change, preventing automatic reappearance in its original cell. Other generated kinds can be erased with `eraseGeneratedInstance`.
+
+`createLandscapeCollisionIndex(project,instances?)` returns shared conservative tree/rock shapes and a 16-metre-bin AABB query. Stock trees have a trunk cylinder, stock rocks a box, and custom assets a yaw-transformed bounds box. Shrubs/grass/flowers are decorative and non-solid. Generated model bounds are conservatively limited to 128 metres after maximum scale/yaw. Collision AABBs have a 128-metre side limit and the complete index is preflighted to at most 100,000 bin references before any bins are allocated. Exclusion indexes reject expansion above 100,000 path/building bin references before entering their bin loops. Admission builds the collision index once and returns it with generated instances. The helper does not alter legacy terrain or movement authority.
+
+## Bounded water
+
+`sampleLandscapeWater(project,x,z,time)` is canonical for authored water. A point must be in the simple boundary, painted coverage, and below the level. Wave amplitude tapers by shoreline distance, mask coverage and water depth. The same sine phase/level applies to rendering and interaction queries. Terrain at or above the level is dry. An erase can create dry holes through mask coverage. Water geometry must clip against polygon, mask and terrain and sample this helper; an unbounded global plane is not equivalent.
+
+## Public command surface
+
+- `ensureLandscape(project)` and `createLandscapeLayer(project,{id?,kind,name?})`.
+- `updateLandscapeLayer(project,id,patch)`, `reorderLandscapeLayers(project,ids)`; locked layers permit only unlocking until unlocked.
+- `addLandscapeMaterial`, `updateLandscapeMaterial`, `createLandscapeImage(dataUrl,name)`, `addLandscapeImage`.
+- `applyLandscapeBrush(project,{layerId,points,radius,strength,falloff,mode})` receives the whole stroke and returns one project for one undo entry.
+- `applyLandscapeArea(project,{layerId,boundary,strength?,mode})` uses the same paint/replace/erase coverage semantics.
+- `createLandscapeSampler`, `generateLandscapeInstances`, `promoteLandscapeInstance`, `eraseGeneratedInstance`, `createLandscapeCollisionIndex`, `sampleLandscapeWater`.
+
+`admitLandscapeProject(value)` is the import/commit boundary: it runs structural validation and generation once, returning the normal validation result plus `instances` and `collision` on success. Renderer `preflightLandscape` calls full admission, including collider-bin budgets, and caches only successful results. Publish only a successful result and reuse its instances; over-dense projects are rejected before renderer publication. Sampler construction does not run generation. Repository packing and player-package export run admission before producing any output; the strict Git checkpoint/clone path uses that same packer for historical content validation.
+
+Commands copy edited state, validate the result, and leave their input unchanged. UI/runtime owners must catch rejections and keep their previous accepted project. Storage/undo integration belongs to the caller.
+
+## Limits and evidence boundary
+
+Hard data limits: 16 materials, 16 layers, 16 images, 2 MiB per image, 4 MiB aggregate image bytes, 2048-pixel image side/4 megapixels, 256 total mask tiles/65,536 mask bytes, 2,048 stroke points, 512 boundary vertices, 100,000 generator candidates, 20,000 output instances and 20,000 tombstones. Existing 25 MiB project/repository budgets and 2,000 explicit-object limits remain. Masks/images are validated at admission; generator candidate/output limits reject when generation is requested. These are rejection limits, not measured responsive-rendering guarantees. The generator rejects excessive candidate/output allocations before returning output.
+
+The domain suite covers canonical SHA-256, immutable continuous brushes and erase, schema compatibility, strict masks/locked edits/polygons/assets, stable density subsets/spacing, five scenery kinds, promotion/tombstones, exclusions, shoreline waves, collision queries, portable image hashes/tampering, standalone package downgrade rejection, output/candidate caps, and repository/4 canonical pack/reopen. Existing world/repository/portal tests passed before integration (40 tests). The isolated Git test creates a new temporary content repository, saves v2 then v4, clones through the existing strict Git CLI, compares the exact project/generated instances, and reads the v2 historical snapshot. It never writes existing independent world repositories. `assertLandscapeDerivedBudget(project)` runs before generation/geometry allocation and is also part of `validateLandscape`/`validateWorld`: it estimates candidate coverage, water/lake/path edge work, terrain/polygon clipping, one-metre cell clipping and emitted water vertices without expanding terrain cells. Limits are 16,000,000 scenery work units, 64,000,000 water work units and 2,000,000 estimated water vertices. The estimate includes all visible water boundaries even when their masks are empty, because inspection/clipping still costs work. Water bounds use actual polygon triangulation bounding rectangles, a maximum five fan triangles after terrain/level clipping, and at most fifteen emitted vertices after each cell clip. These are conservative rejection budgets; smaller/coarser or simpler boundaries may be required even when actual geometry would be smaller. Ordinary projects without landscape take the constant zero-work path. Runtime water helpers must call the same assertion before allocating derived mesh data.
+
+Stock generated trees and promoted ordinary trees use `renderedLandscapeTreeSeed(instance)` (four fixed full original geometry variants). Promotion stores that exact seed and foliage colour, preserving transforms, geometry and authored tint; renderer owners must use the helper and full original foliage rather than a subset.
+
+Physical editor, native/WebGL rendering, picking, first-person collision/water and performance qualification require their separate integration evidence.

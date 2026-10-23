@@ -95,7 +95,7 @@ export async function loadWorldSource(source: WorldSource, options: SourceReques
     if (!commitPattern.test(source.commit)) throw new Error('World content must be pinned to a full Git commit.');
     const prefix = `https://raw.githubusercontent.com/${validated.owner}/${validated.repository}/${source.commit}/${validated.path ? validated.path + '/' : ''}`;
     read = (path, limit) => {
-      if (path !== WORLD_REPOSITORY_MANIFEST && !/^(snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets)\.json|assets\/[a-f0-9]{64}\.glb|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(path)) throw new Error('World content path is not allowed.');
+      if (path !== WORLD_REPOSITORY_MANIFEST && !/^(snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets|connections|landscape)\.json|assets\/[a-f0-9]{64}\.glb|landscape-images\/[a-f0-9]{64}\.(png|jpg)|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(path)) throw new Error('World content path is not allowed.');
       return boundedFetch(prefix + path, limit, options, 'application/octet-stream');
     };
     location = githubWorldSourceLocation(source);

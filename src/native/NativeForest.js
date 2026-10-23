@@ -26,11 +26,11 @@ function templateData(geometry) {
   const data={positions:Float32Array.from(geometry.getAttribute('position').array),normals:Float32Array.from(geometry.getAttribute('normal').array),indices:Array.from(geometry.index?.array??Array.from({length:geometry.getAttribute('position').count},(_,index)=>index))};geometry.dispose();return data;
 }
 function highPart(data){const geo=new BufferGeometry();geo.setAttribute('position',new BufferAttribute(new Float32Array(data.positions),3));geo.setIndex(data.indices);return templateData(geo);}
-function template(species,seed,detailed) {
-  const variant=(seed>>>0)%TREE_PREVIEW_POLICY.variantsPerSpecies,key=`${species}:${detailed?variant:'low'}`;
+function template(species,seed,detailed,exactOrigin=false) {
+  const variant=(seed>>>0)%TREE_PREVIEW_POLICY.variantsPerSpecies,key=`${species}:${detailed?(exactOrigin?'exact:'+seed:variant):'low'}`;
   if(templates.has(key))return templates.get(key);
   let value;
-  if(detailed){const full=createTreeGeometry(species,7319+variant*113);value={bark:highPart(full.bark),foliage:highPart(full.foliage)};}
+  if(detailed){const full=createTreeGeometry(species,exactOrigin?seed:7319+variant*113);value={bark:highPart(full.bark),foliage:highPart(full.foliage)};}
   else {
     const bark=new CylinderGeometry(.12,.24,species==='palm'?5.5:4,5);bark.translate(0,species==='palm'?2.75:2,0);
     let foliage;
@@ -56,7 +56,7 @@ function geometryFor(records,kind) {
   const p=new Vector3(),n=new Vector3();let offset=0;
   for(const record of records) {
     const data=record.template[kind],vertices=data.positions.length/3,transform=record.transform.elements;
-    const tint=new Color(kind==='bark'?(record.species==='palm'?'#897156':'#594633'):record.object.color);
+    const tint=new Color(kind==='bark'?(record.species==='palm'?'#897156':record.object.landscapeOrigin?'#66503a':'#594633'):record.object.color);
     local.set(data.positions,offset*3);phase.fill((((record.object.treeSeed??7319)>>>0)*.013)%(Math.PI*2),offset,offset+vertices);factor.fill(record.species==='palm'?1.4:record.species==='pine'?.65:1,offset,offset+vertices);
     for(let vertex=0;vertex<vertices;vertex++) {
       const source=vertex*3,target=(offset+vertex)*3;
@@ -78,7 +78,7 @@ export function buildNativeForest(sourceObjects,camera) {
   const meshes=materials().map(material=>{const mesh=new Mesh(new BufferGeometry(),material);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);return mesh;});
   let selected=new Set(),lastCamera=camera.clone(),lastCheck=-Infinity,stats;
   function rebuild(ids) {
-    const records=objects.map(object=>{const transform=new Matrix4().fromArray(object.worldMatrix);const species=object.treeSpecies??'broadleaf';return{object,species,transform,normal:new Matrix3().getNormalMatrix(transform),template:template(species,object.treeSeed??7319,ids.has(object.id))};});
+    const records=objects.map(object=>{const transform=new Matrix4().fromArray(object.worldMatrix);const species=object.treeSpecies??'broadleaf';return{object,species,transform,normal:new Matrix3().getNormalMatrix(transform),template:template(species,object.treeSeed??7319,ids.has(object.id),!!object.landscapeOrigin)};});
     let vertices=0,triangles=0;
     for(const [index,kind] of ['bark','foliage'].entries()){const geometry=geometryFor(records,kind);meshes[index].geometry.dispose();meshes[index].geometry=geometry;meshes[index].visible=objects.length>0;vertices+=geometry.getAttribute('position').count;triangles+=(geometry.index?.count??0)/3;}
     selected=ids;stats={sourceTrees:sourceObjects.filter(object=>object.kind==='tree'&&effectiveObjectState(sourceObjects,object.id).visible).length,renderedTrees:objects.length,highDetailTrees:ids.size,lowDetailTrees:objects.length-ids.size,vertices,triangles,batches:objects.length?2:0,cachedTemplates:templates.size,policy:TREE_PREVIEW_POLICY};

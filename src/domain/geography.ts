@@ -134,7 +134,7 @@ export function validateTerrainImagery(value: unknown, geography?: GeoReference)
   return errors;
 }
 
-function imageDimensions(bytes: Uint8Array, type: string): [number, number] {
+export function imageDimensions(bytes: Uint8Array, type: string): [number, number] {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (type === 'png') {
     if (bytes.length < 24 || view.getUint32(0) !== 0x89504e47 || view.getUint32(4) !== 0x0d0a1a0a || view.getUint32(12) !== 0x49484452) fail('Imagery PNG header is invalid.');

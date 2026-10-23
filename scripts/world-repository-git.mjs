@@ -11,7 +11,7 @@ const domain=await import(pathToFileURL(root+'/src/domain/world-repository.ts').
 const sha=b=>createHash('sha256').update(b).digest('hex'), oid=/^[a-f0-9]{40}$/;
 const legacyRoles=['metadata','terrain','objects','features','environment','spawn','geography','assets'];
 const controls=new Set(['README.md','.gitattributes','.gitignore']);
-const allowed=p=>/^snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets|connections)\.json$/.test(p)||/^(assets\/[a-f0-9]{64}\.glb|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(p);
+const allowed=p=>/^snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets|connections|landscape)\.json$/.test(p)||/^(assets\/[a-f0-9]{64}\.glb|landscape-images\/[a-f0-9]{64}\.(png|jpg)|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(p);
 const branchOK=b=>/^refs\/heads\/[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(b)&&!b.includes('..')&&!b.endsWith('/')&&!b.endsWith('.lock');
 function git(repo,args,input,extra={}){
  const env={...process.env};
@@ -64,7 +64,7 @@ async function walk(r,prefix='',budget={count:0}){
   if(++budget.count>4096)throw new Error('Repository file count limit exceeded.');
   const p=prefix?prefix+'/'+e.name:e.name;
   if(e.isSymbolicLink())throw new Error('Symlinks are forbidden.');
-  if(e.isDirectory()){if(!/^(snapshots|snapshots\/[a-f0-9]{64}|assets|imagery)$/.test(p))throw new Error('Unexpected directory.');out.push(...await walk(r,p,budget));}
+  if(e.isDirectory()){if(!/^(snapshots|snapshots\/[a-f0-9]{64}|assets|imagery|landscape-images)$/.test(p))throw new Error('Unexpected directory.');out.push(...await walk(r,p,budget));}
   else if(e.isFile())out.push(p);else throw new Error('Special files are forbidden.');
  }
  return out;
@@ -89,7 +89,7 @@ async function inspect(r,commit=null){
    if(controls.has(p)){if(!Buffer.from(canonical.get(p)).equals(b))throw new Error('Unexpected control file.');}
    else if(allowed(p)){
     if(commit){
-     if(/^(assets|imagery)\//.test(p)&&!p.includes(sha(b)))throw new Error('Historical binary hash mismatch.');
+     if(/^(assets|imagery|landscape-images)\//.test(p)&&!p.includes(sha(b)))throw new Error('Historical binary hash mismatch.');
      if(p.endsWith('.json'))JSON.parse(b.toString('utf8'));
     }
    }else throw new Error('Unexpected file; only validated world content may be checkpointed.');
@@ -105,14 +105,16 @@ async function inspect(r,commit=null){
  const referenced=new Set(['world.json',...controls]);
  for(const snapshot of new Set([...files.keys()].filter(p=>p.startsWith('snapshots/')).map(p=>p.split('/')[1]))){
   const extended=files.has('snapshots/'+snapshot+'/connections.json');
-  const roles=extended?[...legacyRoles,'connections']:legacyRoles;
+  const landscaped=files.has('snapshots/'+snapshot+'/landscape.json');
+  const roles=landscaped?[...legacyRoles,'connections','landscape']:extended?[...legacyRoles,'connections']:legacyRoles;
   const components={};
   for(const role of roles){const p='snapshots/'+snapshot+'/'+role+'.json',b=files.get(p);if(!b)throw new Error('Incomplete historical snapshot.');components[role]={path:p,sha256:sha(b),bytes:b.length};}
   const digest=sha(Buffer.from(JSON.stringify(Object.fromEntries(roles.map(role=>[role,{sha256:components[role].sha256,bytes:components[role].bytes}])),null,2)+'\n'));
   if(digest!==snapshot)throw new Error('Historical snapshot digest mismatch.');
   const metadata=JSON.parse(files.get(components.metadata.path).toString('utf8'));
-  const manifest={...state.manifest,schema:extended?domain.WORLD_REPOSITORY_SCHEMA:domain.PREVIOUS_WORLD_REPOSITORY_SCHEMA,version:extended?3:2,projectSchema:state.project.schema,snapshot,components,world:metadata,regions:[{regionId:metadata.regionId,name:metadata.name,scene:{snapshot}}],attribution:state.manifest.attribution??{authors:[]},engine:{commit:state.manifest.engine.commit,contract:domain.WORLD_ENGINE_CONTRACT,requires:[...domain.WORLD_CAPABILITIES]}};
-  await domain.inspectWorldRepository(async(p,max)=>{referenced.add(p);const b=p==='world.json'?Buffer.from(JSON.stringify(manifest)):files.get(p);if(!b||b.length>max)throw new Error('Invalid retained snapshot reference.');return b;});
+  const manifest={...state.manifest,schema:landscaped?domain.WORLD_REPOSITORY_SCHEMA:extended?domain.CONNECTION_WORLD_REPOSITORY_SCHEMA:domain.PREVIOUS_WORLD_REPOSITORY_SCHEMA,version:landscaped?4:extended?3:2,projectSchema:landscaped?'elsemesh.worlds.project/3':'elsemesh.worlds.project/2',snapshot,components,world:metadata,regions:[{regionId:metadata.regionId,name:metadata.name,scene:{snapshot}}],attribution:state.manifest.attribution??{authors:[]},engine:{commit:state.manifest.engine.commit,contract:domain.WORLD_ENGINE_CONTRACT,requires:[...domain.WORLD_CAPABILITIES]}};
+  const historicalState=await domain.inspectWorldRepository(async(p,max)=>{referenced.add(p);const b=p==='world.json'?Buffer.from(JSON.stringify(manifest)):files.get(p);if(!b||b.length>max)throw new Error('Invalid retained snapshot reference.');return b;});
+  if(snapshot!==state.manifest.snapshot)await domain.packWorldRepository(historicalState.project,{attribution:historicalState.manifest.attribution,provenance:historicalState.manifest.provenance});
  }
  if([...files.keys()].some(p=>!referenced.has(p)))throw new Error('Unreferenced binary payload is forbidden.');
  return{...state,files};

@@ -1,3 +1,7 @@
+import {validateLandscape,admitLandscapeProject} from './landscape';
+import {LANDSCAPE_PROJECT_SCHEMA} from './landscape-types';
+import type {Landscape,LandscapeOrigin} from './landscape-types';
+export {LANDSCAPE_PROJECT_SCHEMA} from './landscape-types';
 import { validateWorldConnections } from './portal';
 import type { WorldPortal, WorldWater, RetroTerminal } from './portal';
 export type { WorldPortal, WorldWater, RetroTerminal } from './portal';
@@ -14,12 +18,14 @@ import type { GeoReference, TerrainImagery } from './geography';
 export { inspectGlbJson } from './asset-glb';
 export const LEGACY_PROJECT_SCHEMA = 'elsemesh.worlds.project/1';
 export const PROJECT_SCHEMA = 'elsemesh.worlds.project/2';
+export const LANDSCAPE_PLAYER_WORLD_SCHEMA = 'elsemesh.player-world/3';
 export const PLAYER_WORLD_SCHEMA = 'elsemesh.player-world/2';
 export const MAX_TERRAIN_RESOLUTION = 257;
 export const MAX_PROJECT_BYTES = 25 * 1024 * 1024;
 
 export type PlayerWorldPackage = {
-  schema: typeof PLAYER_WORLD_SCHEMA;
+  schema: typeof PLAYER_WORLD_SCHEMA | typeof LANDSCAPE_PLAYER_WORLD_SCHEMA;
+  capabilities?: string[];
   units: 'metres';
   axes: 'right-handed-y-up-minus-z-forward';
   project: WorldProject;
@@ -68,6 +74,7 @@ export type EditorObject = {
   materialOverrides?: MaterialOverride[];
   treeSpecies?: 'broadleaf' | 'palm' | 'pine';
   treeSeed?: number;
+  landscapeOrigin?: LandscapeOrigin;
 };
 export type Terrain = {
   width: number;
@@ -78,9 +85,10 @@ export type Terrain = {
   materials: number[];
 };
 export type WorldProject = {
-  schema: typeof PROJECT_SCHEMA;
+  schema: typeof PROJECT_SCHEMA | typeof LANDSCAPE_PROJECT_SCHEMA;
   metadata: { name: string; description: string; worldId: string; regionId: string };
   terrain: Terrain;
+  landscape?: Landscape;
   geography?: GeoReference;
   terrainImagery?: TerrainImagery;
   objects: EditorObject[];
@@ -202,7 +210,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
     return { valid: false, errors: ['Project must be an object.'] };
   try { value = migrateWorldProject(value); } catch (error) { return { valid: false, errors: [(error as Error).message] }; }
   const p = value as Partial<WorldProject>;
-  if (p.schema !== PROJECT_SCHEMA) errors.push(`Unsupported project schema. Expected ${PROJECT_SCHEMA}.`);
+  if (p.schema !== PROJECT_SCHEMA && p.schema !== LANDSCAPE_PROJECT_SCHEMA) errors.push(`Unsupported project schema. Expected ${PROJECT_SCHEMA}.`);
   if (
     !p.metadata ||
     typeof p.metadata.name !== 'string' ||
@@ -217,6 +225,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
     typeof p.metadata.regionId !== 'string'
   )
     errors.push('World metadata is incomplete.');
+  if((p.schema===LANDSCAPE_PROJECT_SCHEMA)!==(p.landscape!==undefined))errors.push('Landscape content requires project/3; project/3 requires landscape/1 content.');
   const t = p.terrain;
   if (
     !t ||
@@ -253,6 +262,9 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   if (p.geography !== undefined) errors.push(...validateGeography(p.geography, p.terrain));
   if (p.terrainImagery !== undefined) errors.push(...validateTerrainImagery(p.terrainImagery, p.geography));
   errors.push(...validateWorldConnections(p));
+  errors.push(...validateLandscape(p as WorldProject));
+  if (!p.landscape && Array.isArray(p.objects) && p.objects.some((o:EditorObject)=>o.landscapeOrigin)) errors.push('Landscape origins require landscape/1.');
+  const pending:unknown[]=[p],inspected=new WeakSet<object>();while(pending.length){const value=pending.pop();if(value&&typeof value==='object'){if(inspected.has(value))continue;inspected.add(value);}if(Array.isArray(value)){for(const child of value)pending.push(child);}else if(value&&typeof value==='object')for(const [key,child]of Object.entries(value)){if(['script','scripts','hook','hooks','code','modules','extensions','onload','onupdate','__proto__','prototype','constructor'].includes(key.toLowerCase()))errors.push('Executable fields are unsupported project content.');if(child&&typeof child==='object')pending.push(child);}}
   const assetIds = new Set(Array.isArray(p.assets) ? p.assets.map((asset) => asset?.id) : []);
   const ids = new Set<string>();
   for (const [index, object] of (Array.isArray(p.objects) ? p.objects : []).entries()) {
@@ -383,7 +395,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       if (count === undefined || object.materialOverrides.some((entry) => !entry || entry.materialIndex >= count)) errors.push('A material override references a missing GLB material slot.');
     }
   }
-  if (p.terrainImagery !== undefined) {
+  if (p.terrainImagery !== undefined || p.landscape !== undefined) {
     try { if (new TextEncoder().encode(JSON.stringify(p)).byteLength > MAX_PROJECT_BYTES) errors.push('Projects with embedded imagery must fit the 25 MiB project limit.'); }
     catch { errors.push('Project imagery could not be serialized.'); }
   }
@@ -394,11 +406,26 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   return errors.length ? { valid: false, errors } : { valid: true, errors, project: { ...p, features: p.features ?? [] } as WorldProject };
 }
 
+/** Strict standalone package admission; never downgrades landscape to an older package schema. */
+export function validatePlayerWorldPackage(value:unknown):ReturnType<typeof validateWorld>{
+ const invalid=(message:string):ReturnType<typeof validateWorld>=>({valid:false,errors:[message]});
+ if(!value||typeof value!=='object'||Array.isArray(value))return invalid('Player world package must be an object.');
+ const p=value as Record<string,unknown>;
+ if(Object.keys(p).some(k=>!['schema','capabilities','units','axes','project'].includes(k))||p.units!=='metres'||p.axes!=='right-handed-y-up-minus-z-forward')return invalid('Unsupported player world package fields, units or axes.');
+ if(p.schema!==PLAYER_WORLD_SCHEMA&&p.schema!==LANDSCAPE_PLAYER_WORLD_SCHEMA)return invalid('Unsupported player world package schema.');
+ const result=validateWorld(p.project);if(!result.valid||!result.project)return result;
+ if(p.schema===LANDSCAPE_PLAYER_WORLD_SCHEMA){if(!result.project.landscape||!Array.isArray(p.capabilities)||p.capabilities.length!==2||new Set(p.capabilities).size!==2||!['project/3','landscape/1'].every(c=>(p.capabilities as unknown[]).includes(c)))return invalid('Unsupported or missing player world landscape capabilities.');}
+ else if(result.project.landscape||p.capabilities!==undefined)return invalid('Landscape requires player-world/3 capabilities.');
+ try{if(new TextEncoder().encode(JSON.stringify(value)).byteLength>MAX_PROJECT_BYTES)return invalid('Player world package exceeds the 25 MiB limit.');}catch{return invalid('Player world package is not serializable.');}
+ return result;
+}
+
 export function createPlayerWorldPackage(value: unknown): PlayerWorldPackage {
-  const result = validateWorld(value);
+  const result = admitLandscapeProject(value);
   if (!result.valid || !result.project) throw new Error(result.errors[0] ?? 'Project is invalid.');
   const packageFile: PlayerWorldPackage = {
-    schema: PLAYER_WORLD_SCHEMA,
+    schema: result.project.landscape ? LANDSCAPE_PLAYER_WORLD_SCHEMA : PLAYER_WORLD_SCHEMA,
+    ...(result.project.landscape?{capabilities:['project/3','landscape/1']}:{}),
     units: 'metres',
     axes: 'right-handed-y-up-minus-z-forward',
     project: result.project,

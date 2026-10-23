@@ -35,3 +35,7 @@ export * from '../domain/portal';
 
 // Installed avatar rendering; authored GLB admission remains static and unchanged.
 export { GLTFLoader as BuiltinCharacterGLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+export * from '../domain/landscape';
+
+export {landscapePartTint,landscapeInstanceTint,bakeLandscapeAtlas,threeAtlas,installLandscapeShader,landscapeChunks,sceneryParts,landscapeWaterGeometry,updateLandscapeWater} from '../ui/landscape-render';

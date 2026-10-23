@@ -1,3 +1,9 @@
+import LandscapePanel from './LandscapePanel';
+import LandscapeScenery from './LandscapeScenery';
+import LandscapeGesture from './LandscapeGesture';
+import type {LandscapeTool} from './LandscapeGesture';
+import {bakeLandscapeAtlas,threeAtlas,installLandscapeShader,preflightLandscape} from './landscape-render';
+import {createLandscapeCollisionIndex,promoteLandscapeInstance} from '../domain/landscape';
 import PortalPanel from './PortalPanel';
 import PortalShapes from './newPortalShape';
 import { createEditorPortal } from './portal-editing';
@@ -16,6 +22,7 @@ import {
   sampleTerrain,
   sculptTerrain,
   validateWorld,
+  validatePlayerWorldPackage,
   MAX_PROJECT_BYTES,
 } from '../domain/world';
 import type { DrawnFeature, EditorObject, FeatureKind, PrimitiveKind, Vec3, WorldAsset, WorldProject } from '../domain/world';
@@ -149,6 +156,10 @@ function TerrainMesh({
     return result;
   }, [terrain, project.terrainImagery?.bounds, project.geography?.center]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  const [landscapeSurface,setLandscapeSurface]=useState<{atlas:NonNullable<Awaited<ReturnType<typeof bakeLandscapeAtlas>>>,textures:ReturnType<typeof threeAtlas>}|null>(null);
+  const landscapeAtlasProject=useRef(project);
+  useEffect(()=>{landscapeAtlasProject.current=project;},[project]);
+  useEffect(()=>{let disposed=false;let owned:ReturnType<typeof threeAtlas>|undefined;void bakeLandscapeAtlas(landscapeAtlasProject.current).then(atlas=>{if(disposed||!atlas){if(!disposed)setLandscapeSurface(null);return;}owned=threeAtlas(atlas);setLandscapeSurface({atlas,textures:owned});}).catch(error=>console.error('Landscape atlas:',error));return()=>{disposed=true;owned?.dispose();};},[project.landscape,project.terrain.width,project.terrain.depth]);
   const brushAt = (event: ThreeEvent<PointerEvent>) => {
     if (!editing) return;
     event.stopPropagation();
@@ -230,12 +241,13 @@ function TerrainMesh({
   return (
     <>
     <mesh geometry={geometry} userData={{ placementSurface: 'terrain' }} receiveShadow onPointerDown={brushAt} onClick={(event) => { if (onTerrainPoint && event.button === 0 && event.delta < 5) { event.stopPropagation(); onTerrainPoint([event.point.x, event.point.y, event.point.z]); } }}>
-      <meshStandardMaterial key={imageryTexture?.uuid ?? 'terrain-palette'} vertexColors map={imageryTexture} roughness={0.92} side={THREE.DoubleSide} customProgramCacheKey={() => 'geographic-imagery-v1'} onBeforeCompile={(shader) => {
+      <meshStandardMaterial key={(imageryTexture?.uuid ?? 'terrain-palette')+(landscapeSurface?.textures.color.uuid??'')} vertexColors map={imageryTexture} roughness={0.92} side={THREE.DoubleSide} customProgramCacheKey={() => 'geographic-imagery-landscape-v2-'+!!landscapeSurface} onBeforeCompile={(shader) => {
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '').replace('#include <color_fragment>', `#include <color_fragment>
           #ifdef USE_MAP
           float geographicCoverage=step(0.0,vMapUv.x)*step(vMapUv.x,1.0)*step(0.0,vMapUv.y)*step(vMapUv.y,1.0);
           diffuseColor.rgb=mix(diffuseColor.rgb,texture2D(map,vMapUv).rgb,geographicCoverage);
           #endif`);
+        if(landscapeSurface)installLandscapeShader(shader,landscapeSurface.textures,landscapeSurface.atlas,project);
       }} />
     </mesh>
     {editing && brush === 'vertices' && !onTerrainPoint && (
@@ -394,6 +406,7 @@ function PreviewCamera({
   const velocityY = useRef(0),grounded = useRef(false),pausedRef = useRef(paused);
   useEffect(()=>{pausedRef.current=paused;if(paused){keys.current.clear();document.exitPointerLock?.();}},[paused]);
   const colliders = useMemo(() => collisionWorldBounds(project), [project]);
+  const landscapeCollision=useMemo(()=>createLandscapeCollisionIndex(project),[project]);
   const yaw = useRef(project.spawn.yaw);
   const pitch = useRef(0);
   const [locked, setLocked] = useState(false);
@@ -445,7 +458,7 @@ function PreviewCamera({
     if(key.has('Space')&&grounded.current)velocityY.current=5.2;
     velocityY.current-=12*dt;
     const proposed:Vec3=[previous[0]+dir.x*speed*dt,previous[1]+velocityY.current*dt,previous[2]+dir.z*speed*dt];
-    const contact=resolvePlayerMotion({previous,position:proposed,velocityY:velocityY.current,colliders,terrainHeight:sampleTerrain(project.terrain,proposed[0],proposed[2]),terrainHeightAt:(x,z)=>sampleTerrain(project.terrain,x,z)});
+    const contact=resolvePlayerMotion({previous,position:proposed,velocityY:velocityY.current,colliders:[...colliders,...landscapeCollision.query([Math.min(previous[0],proposed[0])-.3,proposed[1]-1.65,Math.min(previous[2],proposed[2])-.3],[Math.max(previous[0],proposed[0])+.3,proposed[1]+.15,Math.max(previous[2],proposed[2])+.3]).map(shape=>({object:{collision:'solid'} as EditorObject,bounds:new THREE.Box3(new THREE.Vector3(...shape.min),new THREE.Vector3(...shape.max))}))],terrainHeight:sampleTerrain(project.terrain,proposed[0],proposed[2]),terrainHeightAt:(x,z)=>sampleTerrain(project.terrain,x,z)});
     camera.position.fromArray(contact.position);velocityY.current=contact.velocityY;grounded.current=contact.grounded;
     camera.rotation.order = 'YXZ';
     camera.rotation.set(pitch.current, yaw.current, 0);
@@ -460,6 +473,9 @@ function PreviewCamera({
 
 function Scene({
   project,
+  landscapeGesture,
+  landscapePainting,
+  onPromoteLandscape,
   selectedId,
   selectedIds,
   selectObject,
@@ -487,6 +503,9 @@ function Scene({
   onMoveObject,
   frameRequest,
 }: {
+  landscapeGesture?: ReactNode;
+  landscapePainting: boolean;
+  onPromoteLandscape: (id:string)=>void;
   frameRequest: FrameRequest | null;
   project: WorldProject;
   selectedId: string | null;
@@ -618,7 +637,7 @@ function Scene({
       <Suspense fallback={null}>
         <TerrainMesh
           project={project}
-          editing={terrainEditing || !!onTerrainPoint}
+          editing={!landscapePainting && (terrainEditing || !!onTerrainPoint)}
           brush={brush}
           radius={radius}
           strength={strength}
@@ -627,6 +646,8 @@ function Scene({
           onDragging={setTerrainDragging}
           onTerrainPoint={onTerrainPoint}
         />
+        {landscapeGesture}
+        <LandscapeScenery project={project} onPromote={!preview&&!landscapePainting?onPromoteLandscape:undefined}/>
         <DrawnFeatures project={project} draft={draftFeature} selectedId={selectedFeatureId} onSelect={onSelectFeature} editing={!preview} />
         {!preview && <PortalShapes project={project} selectedId={selectedPortalId} onSelect={onSelectPortal}/>}
         {renderObjects()}
@@ -634,7 +655,7 @@ function Scene({
       <OrbitControls
         ref={orbitRef}
         makeDefault
-        enabled={!preview && !terrainDragging && !placementActive}
+        enabled={!preview && !terrainDragging && !placementActive && !landscapePainting}
         target={orbitTarget}
         maxPolarAngle={Math.PI * 0.49}
         minDistance={4}
@@ -670,6 +691,7 @@ export default function App() {
   const projectRef = useRef(project);
   const setProjectRaw = useCallback((candidate: WorldProject) => {
     const next=candidate;
+    preflightLandscape(next);
     if(openComputerIdRef.current&&!next.objects.some(object=>object.id===openComputerIdRef.current&&object.kind==='computer')){openComputerIdRef.current=null;setOpenComputerId(null);}
     projectRef.current = next;
     setProjectState(next);
@@ -685,6 +707,9 @@ export default function App() {
   const clipboard = useRef<{ project: WorldProject; ids: string[] } | null>(null);
   const [tool, setTool] = useState<Tool>('select');
   const [brush, setBrush] = useState<Brush>('raise');
+  const [landscapeTool,setLandscapeTool]=useState<LandscapeTool>({enabled:false,layerId:'',shape:'brush',mode:'paint',radius:8,strength:1,falloff:.5});
+  const [landscapeDraft,setLandscapeDraft]=useState<WorldProject|null>(null);
+  const [landscapeFinish,setLandscapeFinish]=useState(0),[landscapeCancel,setLandscapeCancel]=useState(0),[landscapeBoundary,setLandscapeBoundary]=useState(0),[landscapeError,setLandscapeError]=useState('');
   const [brushRadius, setBrushRadius] = useState(8);
   const [strength, setStrength] = useState(1.2);
   const [terrainMaterial, setTerrainMaterial] = useState(0);
@@ -771,6 +796,7 @@ export default function App() {
     const before = projectRef.current;
     const next = update(before);
     if (next === before) return;
+    preflightLandscape(next);
     undoStack.current = [...undoStack.current.slice(-39), before];
     redoStack.current = [];
     setProjectRaw(next);
@@ -786,6 +812,7 @@ export default function App() {
           workspaceRef.current=loaded;
           const result = validateWorld(loaded.project);
           if (result.valid && result.project) {
+            preflightLandscape(result.project);
             setProjectRaw(result.project);
           }
         }
@@ -1115,7 +1142,7 @@ export default function App() {
     }
     try {
       const candidate: unknown = JSON.parse(await file.text()),
-        result = validateWorld(candidate);
+        result = candidate&&typeof candidate==='object'&&'schema' in candidate&&String(candidate.schema).startsWith('elsemesh.player-world/')?validatePlayerWorldPackage(candidate):validateWorld(candidate);
       if (generation !== worldGeneration.current) return;
       if (!result.valid || !result.project) {
         message(result.errors[0] ?? 'Invalid project');
@@ -1125,8 +1152,8 @@ export default function App() {
       setSelectedId(null);
       setDraftFeature(null); setSelectedFeatureId(null); setPlacingTree(false);
       message('Project opened');
-    } catch {
-      message('Could not read this project file');
+    } catch (error) {
+      message(error instanceof Error?error.message:'Could not read this project file');
     }
   }
   async function loadWarehouseWorld() {
@@ -1510,6 +1537,7 @@ export default function App() {
           {panel === 'geo' && <GeoPanel getGeneration={() => worldGeneration.current} onApply={applyGeography} />}
           {panel === 'terrain' && (
             <>
+              <LandscapePanel getGeneration={()=>worldGeneration.current} project={project} tool={landscapeTool} onTool={setLandscapeTool} onChange={setProject} onFinish={()=>setLandscapeFinish(v=>v+1)} onCancel={()=>setLandscapeCancel(v=>v+1)} boundaryCount={landscapeBoundary} error={landscapeError} onError={setLandscapeError}/>
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">LANDSCAPE</span>
@@ -1523,6 +1551,7 @@ export default function App() {
                     key={name}
                     className={brush === name ? 'chosen' : ''}
                     onClick={() => {
+                      setLandscapeTool(t=>({...t,enabled:false}));
                       setBrush(name);
                       setTool('select');
                     }}
@@ -1880,7 +1909,10 @@ export default function App() {
             >
               <NeonRuntimeContext.Provider value={{states:effectiveNeonRuntime,worldHour:privateSessionActive?privateSnapshot!.worldHour:project.environment.timeOfDay ?? 14,serverOffsetMs:privateSessionActive?privateClockOffset:0}}>
               <Scene
-                project={privateRenderProject}
+                project={landscapeDraft??privateRenderProject}
+                landscapePainting={panel==='terrain'&&!preview&&landscapeTool.enabled}
+                landscapeGesture={<LandscapeGesture project={privateRenderProject} tool={{...landscapeTool,enabled:panel==='terrain'&&!preview&&!pendingPlacement&&landscapeTool.enabled}} onDraft={setLandscapeDraft} onCommit={next=>setProject(()=>next)} onError={setLandscapeError} finish={landscapeFinish} cancel={landscapeCancel} onBoundary={setLandscapeBoundary}/>}
+                onPromoteLandscape={id=>{try{setProject(p=>{const next=promoteLandscapeInstance(p,id);const object=next.objects.find(o=>o.landscapeOrigin?.generatedId===id);if(object){setSelectedId(object.id);setTool('translate');}return next;});}catch(e){setLandscapeError((e as Error).message);}}}
                 frameRequest={frameRequest}
                 selectedId={selectedId}
                 selectedIds={selectedIds}
@@ -1974,7 +2006,7 @@ export default function App() {
             <span>METRES</span>
             <span className="status-spacer" />
             <span>
-              WORLD SCHEMA&nbsp; <b>v2</b>
+              WORLD SCHEMA&nbsp; <b>{project.landscape?'v3':'v2'}</b>
             </span>
             <span>
               {nativePreview ? 'NATIVE GRAPHICS' : 'EDITOR PREVIEW'}&nbsp; <b>{nativePreview ? 'ELSEMESH WEBGPU' : 'THREE.JS WEBGL'}</b>
