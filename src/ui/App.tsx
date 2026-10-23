@@ -1129,11 +1129,18 @@ export default function App() {
       message(result.errors[0] ?? 'Project is invalid');
       return;
     }
-    download(
-      `${project.metadata.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.emw`,
-      JSON.stringify(current, null, 2),
-    );
-    message('Project file downloaded');
+    try {
+      // New semantics need explicit capabilities so older readers fail closed.
+      const content=current.traffic||current.objects.some(object=>object.collisionOnly)
+        ? createPlayerWorldPackage(current) : current;
+      download(
+        `${project.metadata.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.emw`,
+        JSON.stringify(content, null, 2),
+      );
+      message('Project file downloaded');
+    } catch (error) {
+      message(error instanceof Error ? error.message : 'Could not save this project');
+    }
   }
   async function openFile(file?: File) {
     if (!file) return;
