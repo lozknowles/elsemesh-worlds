@@ -293,6 +293,8 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       object.scale.some((n) => n <= 0 || n > 1000)
     )
       errors.push(`Object ${index + 1} has invalid properties or transforms.`);
+    if (!object || typeof object.visible !== 'boolean')
+      errors.push(`Object ${index + 1} must declare boolean visibility.`);
     if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb', 'group', 'neon-sign', 'computer'].includes(object.kind))
       errors.push(`Object ${index + 1} uses an unsupported type.`);
     if (object?.kind === 'glb' && (typeof object.assetId !== 'string' || !assetIds.has(object.assetId)))
