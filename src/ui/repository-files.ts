@@ -1,12 +1,14 @@
 import {
   packWorldRepository,
   repositoryDigest,
-  unpackWorldRepository,
   WORLD_REPOSITORY_MANIFEST,
   WORLD_REPOSITORY_MANIFEST_LIMIT,
 } from '../domain/world-repository';
 import type { RepositoryReader } from '../domain/world-repository';
 import type { WorldProject } from '../domain/world';
+import { loadWorldSource } from '../domain/world-source';
+import type { LoadedWorldSource } from '../domain/world-source';
+import type { WorldPackOptions } from '../domain/world-repository';
 
 interface RepositoryFileHandle {
   kind: 'file';
@@ -78,21 +80,25 @@ async function write(directory: RepositoryDirectoryHandle, path: string, bytes: 
   catch (error) { try { await stream.abort(); } catch { /* Preserve the original failure. */ } throw error; }
 }
 
-export async function openWorldRepositoryFolder(): Promise<{ project: WorldProject; binding: RepositoryBinding }> {
+export async function openWorldRepositoryFolder(): Promise<{ project: WorldProject; binding: RepositoryBinding; loaded: LoadedWorldSource }> {
   const handle = await pickDirectory(), read = reader(handle);
   const before = await read(WORLD_REPOSITORY_MANIFEST, WORLD_REPOSITORY_MANIFEST_LIMIT);
   const manifestHash = await repositoryDigest(before);
-  const project = await unpackWorldRepository(async (path, maxBytes) => path === WORLD_REPOSITORY_MANIFEST ? before : read(path, maxBytes));
+  const loaded = await loadWorldSource({kind:'local',label:handle.name,read:async (path, maxBytes) => path === WORLD_REPOSITORY_MANIFEST ? before : read(path, maxBytes)});
+  const project = loaded.project;
   const after = await read(WORLD_REPOSITORY_MANIFEST, WORLD_REPOSITORY_MANIFEST_LIMIT);
   if (await repositoryDigest(after) !== manifestHash) throw new Error('The world manifest changed while opening. Reopen the folder.');
-  return { project, binding: { handle, name: handle.name, manifestHash } };
+  // The initial load used a captured manifest for consistency. Future explicit
+  // update checks must read the current folder manifest rather than that capture.
+  loaded.source={kind:'local',label:handle.name,read};
+  return { project, loaded, binding: { handle, name: handle.name, manifestHash } };
 }
 
 /** Writes immutable content first and replaces only a recognized manifest last.
  * A failed save can leave unused content files; previous snapshots are retained.
  * Baseline checks detect intervening edits, but this is not a multi-writer lock.
  */
-export async function saveWorldRepositoryFolder(project: WorldProject, binding?: RepositoryBinding): Promise<RepositoryBinding> {
+export async function saveWorldRepositoryFolder(project: WorldProject, binding?: RepositoryBinding, options?: WorldPackOptions): Promise<RepositoryBinding> {
   // Directory permission must be requested synchronously from the UI gesture,
   // before hashing/packing yields to browser work.
   const handle = binding?.handle ?? await pickDirectory();
@@ -100,15 +106,17 @@ export async function saveWorldRepositoryFolder(project: WorldProject, binding?:
   const snapshot = structuredClone(project);
   const read = reader(handle), before = await optionalManifest(read), empty = !before && await isEmpty(handle);
   let baseline: string | undefined;
+  let packOptions = options;
   if (before) {
     baseline = await repositoryDigest(before);
     if (binding && binding.manifestHash !== baseline) throw new Error('This world repository changed on disk. Reopen it before saving.');
     // Recognition includes validating all existing referenced content. An
     // unrelated world.json is never sufficient authority to replace it.
-    const existingProject = await unpackWorldRepository(async (path, maxBytes) => path === WORLD_REPOSITORY_MANIFEST ? before : read(path, maxBytes));
-    if (existingProject.metadata.worldId !== snapshot.metadata.worldId) throw new Error('This folder belongs to a different world. Choose an empty folder or open that repository first.');
+    const existing = await loadWorldSource({kind:'local',label:handle.name,read:async (path,maxBytes)=>path===WORLD_REPOSITORY_MANIFEST?before:read(path,maxBytes)});
+    packOptions ??= {attribution:existing.manifest.attribution,provenance:existing.manifest.provenance};
+    if (existing.project.metadata.worldId !== snapshot.metadata.worldId) throw new Error('This folder belongs to a different world. Choose an empty folder or open that repository first.');
   } else if (binding || !empty) throw new Error('Choose an empty folder or a valid existing world repository. Unrelated folder contents will not be overwritten.');
-  const files = await packWorldRepository(snapshot);
+  const files = await packWorldRepository(snapshot, packOptions);
   for (const [path, bytes] of files) {
     if (path === WORLD_REPOSITORY_MANIFEST || (!empty && generatedFiles.has(path))) continue;
     let existing: Uint8Array | undefined;

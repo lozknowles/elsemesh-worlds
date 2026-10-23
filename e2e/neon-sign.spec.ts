@@ -49,8 +49,26 @@ test('delayed preset import cannot mutate a changed world or selection',async({p
  await page.evaluate(()=>{
   const original=File.prototype.text;const host=window as unknown as {releaseNeonRead?:()=>void};File.prototype.text=async function(){const text=await original.call(this);if(this.name==='delayed.neon.json')await new Promise<void>(resolve=>{host.releaseNeonRead=resolve;});return text;};
  });
- await page.getByLabel('Import neon preset',{exact:true}).setInputFiles({name:'delayed.neon.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(prefab))});await page.getByRole('button',{name:'New world',exact:true}).click();await page.evaluate(()=>(window as unknown as {releaseNeonRead:()=>void}).releaseNeonRead());
- await expect(page.getByText('Neon preset import cancelled because the world or selection changed.',{exact:true})).toBeVisible();expect((await save(page)).objects).toHaveLength(0);
+ await expect(page.locator('.save-state')).toContainText('Saved');
+ // Hold a real IndexedDB writer so outgoing workspace recovery cannot finish.
+ // Import cancellation must occur at New-world intent, before this barrier ends.
+ await page.evaluate(()=>new Promise<void>((resolve,reject)=>{
+  const request=indexedDB.open('elsemesh-worlds');request.onerror=()=>reject(request.error);
+  request.onsuccess=()=>{const db=request.result,tx=db.transaction('workspaces','readwrite'),store=tx.objectStore('workspaces');let held=true,started=false;
+   (window as unknown as {releaseWorkspaceSave:()=>void}).releaseWorkspaceSave=()=>{held=false;};
+   const keepAlive=()=>{const read=store.get('test-recovery-barrier');read.onsuccess=()=>{if(!started){started=true;resolve();}if(held)keepAlive();else db.close();};};keepAlive();
+  };
+ }));
+ try{
+  await page.getByLabel('Import neon preset',{exact:true}).setInputFiles({name:'delayed.neon.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(prefab))});
+  await expect.poll(()=>page.evaluate(()=>typeof (window as unknown as {releaseNeonRead?:()=>void}).releaseNeonRead)).toBe('function');
+  await page.getByRole('button',{name:'New world',exact:true}).click();
+  await page.evaluate(()=>(window as unknown as {releaseNeonRead:()=>void}).releaseNeonRead());
+  await expect(page.getByText('Neon preset import cancelled because the world or selection changed.',{exact:true})).toBeVisible();
+  const outgoing=await save(page);expect(outgoing.objects).toHaveLength(1);expect(outgoing.objects[0]?.neon?.text).toBe('THE RED LION');
+ }finally{await page.evaluate(()=>(window as unknown as {releaseWorkspaceSave:()=>void}).releaseWorkspaceSave());}
+ await expect(page.locator('header')).toContainText('Untitled world');
+ expect((await save(page)).objects).toHaveLength(0);
 });
 
 test('same world with added or missing sign IDs cannot activate a private snapshot',async({page})=>{

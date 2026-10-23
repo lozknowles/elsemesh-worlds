@@ -28,9 +28,11 @@ See docs/user-guide.md, docs/world-format.md, docs/asset-inventory.md, docs/tree
 
 ## World repositories
 
-Choose **World repository** to open or save a separate content folder in Edge or Chrome. Each player can maintain that folder in their own GitHub repository. Models and imagery are separate binary files, settings are JSON, and the root manifest selects an immutable snapshot. The builder needs no GitHub credentials. Commit/push with GitHub Desktop or Git. See [world repository guide](docs/world-repositories.md) for workflow, conflict handling and compatibility limits.
+Open **World repository** for independent content folders, commit-pinned public GitHub sources, explicit update checks, copies and forks. World identity, local workspace, repository location, content digest and runtime session are separate. Local drafts save before deliberate repository snapshots; Git checkpoints and pushes are explicit operations. The source loader never runs world scripts or repository hooks.
 
-Release 1.0 is verified locally on hpubuntu; GitHub CI is not used for this release. The retained workflow is not a release gate. Native browser scenarios are local headed Edge qualification and some require the separately supplied Hope Valley data; they are not claimed by Linux CI. World repository folder-picker and interrupted-write acceptance have not yet been independently exercised.
+See [format and compatibility](docs/world-repository-format.md), [Git checkpoint workflow](docs/world-repository-git.md), [runtime adapter](docs/world-runtime-adapter.md), and [shared engine contract](docs/world-engine-contract.md). The original folder format remains readable; migration writes a separate repository without replacing the source project. Ordinary Git is supported within the bounded asset budget; LFS pointer files must be hydrated before loading.
+
+The actual ElseMesh repository has a separate repository-world entry using its installed native engine and player. The shared validated contract is generated from an exact editor revision; world content contains no engine implementation. Existing island initialization remains available as the legacy game route. Full extraction of every procedural legacy-island system into editable data is outside this increment.
 
 
 ## Experimental private sign world

@@ -21,3 +21,6 @@ public/worlds/*
 !public/worlds/warehouse/warehouse.emw
 
 .local-evidence/
+
+# Dependency directory may be a local shared installation symlink.
+node_modules

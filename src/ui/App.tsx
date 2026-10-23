@@ -15,7 +15,9 @@ import {
   MAX_PROJECT_BYTES,
 } from '../domain/world';
 import type { DrawnFeature, EditorObject, FeatureKind, PrimitiveKind, Vec3, WorldAsset, WorldProject } from '../domain/world';
-import { loadSavedProject, saveProject as persistProject } from '../domain/persistence';
+import { createWorkspace, loadWorkspace, saveWorkspace, listWorkspaces } from '../domain/persistence';
+import type { Workspace, WorkspaceBase } from '../domain/persistence';
+import { runtimePresentation, adoptRuntimeSettings } from '../domain/authored-runtime';
 import NativePreview from './NativePreview';
 import CataloguePanel from './CataloguePanel';
 import SceneExplorer from './SceneExplorer';
@@ -565,7 +567,7 @@ function Scene({
         return onMoveObject(next);
       }}>{renderObjects(object.id, locked)}</WorldEntity>;
   });
-  const onSculpt = useCallback((next: WorldProject) => setProject(() => next), [setProject]);
+  const onSculpt = useCallback((next: WorldProject) => setProject(authored => ({...authored,terrain:next.terrain})), [setProject]);
   return (
     <>
       <color attach="background" args={[project.environment.skyColor]} />
@@ -656,10 +658,7 @@ export default function App() {
   const [project, setProjectState] = useState<WorldProject>(() => createWorld('Northwind test world'));
   const projectRef = useRef(project);
   const setProjectRaw = useCallback((candidate: WorldProject) => {
-    const snapshot=privateSnapshotRef.current;
-    const matches=privateNeonMatchesWorld(snapshot,candidate.metadata.worldId,candidate.objects.filter(object=>object.kind==='neon-sign').map(object=>object.id));
-    const accepted=matches&&snapshot?new Map(snapshot.signs.map(sign=>[sign.id,sign.config])):null;
-    const next=accepted&&snapshot?{...candidate,environment:{...candidate.environment,timeOfDay:snapshot.worldHour},objects:candidate.objects.map(object=>{const config=accepted.get(object.id);return config&&object.kind==='neon-sign'?{...object,neon:structuredClone(config),color:config.color}:object;})}:candidate;
+    const next=candidate;
     if(openComputerIdRef.current&&!next.objects.some(object=>object.id===openComputerIdRef.current&&object.kind==='computer')){openComputerIdRef.current=null;setOpenComputerId(null);}
     projectRef.current = next;
     setProjectState(next);
@@ -712,22 +711,13 @@ export default function App() {
   const privateSnapshotRef = useRef<PrivateNeonSnapshot|null>(null),privateControlRef = useRef<PrivateNeonControl|null>(null),privateWorldId = useRef<string|null>(null);
   const privateSignIds = project.objects.filter(object => object.kind === 'neon-sign').map(object => object.id);
   const privateSessionActive = privateNeonMatchesWorld(privateSnapshot,project.metadata.worldId,privateSignIds);
-  const privateWorldHour=privateSessionActive?privateSnapshot!.worldHour:undefined;
-  const privateRenderProject=useMemo(() => privateWorldHour===undefined?project:{...project,environment:{...project.environment,timeOfDay:privateWorldHour}}, [project,privateWorldHour]);
+  const privateRenderProject=useMemo(() => runtimePresentation(project, privateSnapshot), [project,privateSnapshot]);
   const effectiveNeonRuntime: Record<string,NeonRuntimeState> = privateSessionActive ? Object.fromEntries(privateSnapshot!.signs.map(sign => [sign.id,{powered:sign.powered,effectStart:0,effectStartMs:privateSnapshot!.effectStart,config:sign.config}])) : neonRuntime;
   const receivePrivateRuntime = useCallback((snapshot: PrivateNeonSnapshot|null,offsetMs: number) => {
     privateSnapshotRef.current=snapshot;setPrivateSnapshot(snapshot);setPrivateClockOffset(offsetMs);
     if (!privateNeonMatchesWorld(snapshot,projectRef.current.metadata.worldId,projectRef.current.objects.filter(object => object.kind === 'neon-sign').map(object => object.id)) || !snapshot) return;
     privateWorldId.current=snapshot.worldId;setPrivateLoadedWorldId(snapshot.worldId);
-    const accepted=new Map(snapshot.signs.map(sign => [sign.id,sign.config])),latest=projectRef.current;
-    const objects=latest.objects.map(object => {
-      const config=accepted.get(object.id);
-      return config && object.kind === 'neon-sign' && JSON.stringify(config) !== JSON.stringify(object.neon) ? {...object,neon:structuredClone(config),color:config.color} : object;
-    });
-    if (objects.every((object,index) => object === latest.objects[index]) && latest.environment.timeOfDay === snapshot.worldHour) return;
-    const result=validateWorld({...latest,objects,environment:{...latest.environment,timeOfDay:snapshot.worldHour}});
-    if(result.valid && result.project)setProjectRaw(result.project);
-  }, [setProjectRaw]);
+  }, []);
   const receivePrivateControl = useCallback((control: PrivateNeonControl|null) => {privateControlRef.current=control;}, []);
   const toggleRuntimeNeon = useCallback((id: string,time: number) => {
     const object = projectRef.current.objects.find(object => object.id === id);
@@ -754,6 +744,10 @@ export default function App() {
   const undoStack = useRef<WorldProject[]>([]);
   const redoStack = useRef<WorldProject[]>([]);
   const saveRevision = useRef(0);
+  const workspaceRef = useRef<Workspace | null>(null);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+  const workspaceVersions = useRef(new Map<string,Workspace>());
+  const [workspaceEntries,setWorkspaceEntries] = useState<Workspace[]>([]);
   const selected = objects.find((object) => object.id === selectedId) ?? null;
   const selectedLocked = selected ? [...subtreeIds(objects,[selected.id])].some(id => effectiveObjectState(objects,id).locked) : false;
   const selectedParentLocked = selected?.parentId ? effectiveObjectState(objects,selected.parentId).locked : false;
@@ -771,15 +765,18 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     worldGeneration.current++;
-    void loadSavedProject()
+    const startupGeneration=worldGeneration.current,startupProject=projectRef.current;
+    void loadWorkspace()
       .then((loaded) => {
         if (!alive) return;
-        if (loaded) {
-          const result = validateWorld(loaded);
+        if (loaded && startupGeneration===worldGeneration.current && startupProject===projectRef.current) {
+          workspaceRef.current=loaded;
+          const result = validateWorld(loaded.project);
           if (result.valid && result.project) {
             setProjectRaw(result.project);
           }
         }
+        void listWorkspaces().then(setWorkspaceEntries).catch(() => {});
         setHydrated(true);
       })
       .catch(() => {
@@ -797,14 +794,11 @@ export default function App() {
     const revision = Math.max(Date.now(), saveRevision.current + 1);
     saveRevision.current = revision;
     const id = window.setTimeout(() => {
-      void persistProject(current, revision)
-        .then(() => {
-          if (saveRevision.current === revision)
-            setSaved(`Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
-        })
-        .catch(() => {
-          if (saveRevision.current === revision) setSaved('Save failed — export a project file');
-        });
+      const workspace=workspaceRef.current ?? createWorkspace(current);
+      workspaceRef.current=workspace;
+      void queueWorkspaceSave(workspace,current).then(result=>{
+        if(saveRevision.current===revision)setSaved(result.conflict?'Conflicting edit retained as a separate recovery workspace':'Saved locally '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+      }).catch(()=>{if(saveRevision.current===revision)setSaved('Local save failed - export a project file');});
     }, 350);
     return () => window.clearTimeout(id);
   }, [current, hydrated]);
@@ -889,7 +883,6 @@ export default function App() {
     if (next.kind === 'waterfall') finishFeature(next); else setDraftFeature(next);
   }
   function undo() {
-    if (privateSessionActive) { message('Disconnect the private session before using Undo. Accepted server configuration is not undone locally.'); return; }
     const previous = undoStack.current.pop();
     if (!previous) return;
     redoStack.current.push(current);
@@ -897,7 +890,6 @@ export default function App() {
     message('Change undone');
   }
   function redo() {
-    if (privateSessionActive) { message('Disconnect the private session before using Redo.'); return; }
     const next = redoStack.current.pop();
     if (!next) return;
     undoStack.current.push(current);
@@ -910,9 +902,15 @@ export default function App() {
     setProject((p) => ({ ...p, objects: [...p.objects, object] }));
     setSelectedId(object.id);
   }
-  function newProject() {
+  async function newProject() {
+    // User intent invalidates imports immediately, while the outgoing draft is
+    // still being saved. A later world-switch intent supersedes this one.
     cancelAssetOperations();
+    const previous=projectRef.current,generation=worldGeneration.current;
+    try{await preserveCurrentWorkspace();}catch{message("Local recovery failed; export the current project before creating a world.");return;}
+    if(previous!==projectRef.current||generation!==worldGeneration.current)return;
     const fresh = createWorld('Untitled world');
+    workspaceRef.current=createWorkspace(fresh);
     setProjectRaw(fresh);
     setSelectedId(null);
     setPanel('world');
@@ -928,8 +926,9 @@ export default function App() {
     if (new TextEncoder().encode(JSON.stringify(next)).byteLength > MAX_PROJECT_BYTES) throw new Error('The project would exceed the 25 MiB limit.');
     setProject(() => result.project!);
   }
-  function loadPrivateWorld(snapshot: PrivateNeonSnapshot) {
-    if (!window.confirm('Load the matching private neon test world? Your current world is retained in Undo; disconnect the private session before restoring it.')) return;
+  async function loadPrivateWorld(snapshot: PrivateNeonSnapshot) {
+    const generation=worldGeneration.current,previous=projectRef.current;
+    if (!window.confirm('Load the matching private neon test world? Your current world is retained in a separate local workspace.')) return;
     try {
       const next=createWorld('Private neon test world');next.metadata.worldId=snapshot.worldId;
       next.metadata.description='Private server-authorised sign configuration and runtime power; object transforms remain local.';
@@ -940,7 +939,9 @@ export default function App() {
         const object:EditorObject={id:sign.id,name:'Shared sign '+(index+1),kind:'neon-sign',neon:structuredClone(sign.config),position:[cursor,1.65,0],rotation:[0,0,0],scale:[1,1,1],color:sign.config.color,visible:true,collision:'none'};
         cursor+=width+2;return object;
       });
-      cancelAssetOperations();commitObjectCommand(next);privateWorldId.current=snapshot.worldId;setPrivateLoadedWorldId(snapshot.worldId);
+      if(generation!==worldGeneration.current||previous!==projectRef.current)return;
+      if(!await openRepositoryProject(next,generation,{location:"private-demo:"+snapshot.serverId}))return;
+      privateWorldId.current=snapshot.worldId;setPrivateLoadedWorldId(snapshot.worldId);
       setSelectedId(next.objects[0]?.id??null);setPreview(false);setNativePreview(false);
       message('Private test world loaded. Enter preview and aim at the first sign to use E.');
     } catch(error) { message(error instanceof Error ? error.message : 'Could not load private world'); }
@@ -1085,9 +1086,7 @@ export default function App() {
         message(result.errors[0] ?? 'Invalid project');
         return;
       }
-      undoStack.current = [];
-      redoStack.current = [];
-      setProjectRaw(result.project);
+      if(!await openRepositoryProject(result.project,generation,{location:'file:'+file.name}))return;
       setSelectedId(null);
       setDraftFeature(null); setSelectedFeatureId(null); setPlacingTree(false);
       message('Project opened');
@@ -1111,7 +1110,7 @@ export default function App() {
         message('Your world changed while loading. Click Load warehouse world again.');
         return;
       }
-      if (!window.confirm('Load the warehouse with its portal and computer room? Your current world will be replaced and saved locally. Undo restores it; Save project keeps a separate file.')) return;
+      if (!window.confirm('Load the warehouse with its portal and computer room? Your current world will be retained in its local workspace. Save project keeps a separate file.')) return;
       const next: WorldProject = {
         ...result.project,
         metadata: {
@@ -1120,11 +1119,10 @@ export default function App() {
           regionId: `elsemesh.region:${crypto.randomUUID()}`,
         },
       };
-      cancelAssetOperations();
-      setProject(() => next);
+      if(!await openRepositoryProject(next,generation,{location:'starter:warehouse'}))return;
       setSelectedId(null); setSelectedFeatureId(null); setDraftFeature(null); setPlacingTree(false);
       setPreview(false); setNativePreview(false); setPanel('scene');
-      message(`Warehouse loaded: ${result.project.objects.length} editable components. Undo restores your previous world.`);
+      message(`Warehouse loaded: ${result.project.objects.length} editable components. Your previous world remains in local workspaces.`);
     } catch (error) {
       message(error instanceof Error ? error.message : 'Could not load the warehouse world.');
     } finally {
@@ -1152,15 +1150,39 @@ export default function App() {
     pendingAssetOperation.current = null;
     setAssetBusy(false);
   }
-  function openRepositoryProject(next: WorldProject, generation: number) {
+  function queueWorkspaceSave(workspace:Workspace,snapshot:WorldProject) {
+    const result=saveQueue.current.catch(()=>{}).then(async()=>{
+      const target=workspaceVersions.current.get(workspace.workspaceId)??workspace;
+      const result=await saveWorkspace(target,snapshot);
+      workspaceVersions.current.set(workspace.workspaceId,result.workspace);
+      if(workspaceRef.current?.workspaceId===workspace.workspaceId)workspaceRef.current=result.workspace;
+      setWorkspaceEntries(await listWorkspaces());
+      return result;
+    });
+    saveQueue.current=result;
+    return result;
+  }
+  async function preserveCurrentWorkspace() {
+    const snapshot=projectRef.current,workspace=workspaceRef.current??createWorkspace(snapshot);
+    workspaceRef.current=workspace;
+    await queueWorkspaceSave(workspace,snapshot);
+    return snapshot;
+  }
+  async function openRepositoryProject(next: WorldProject, generation: number, base?: WorkspaceBase, existing?: Workspace) {
     if (generation !== worldGeneration.current) return false;
     cancelAssetOperations();
+    const previous=projectRef.current,transitionGeneration=worldGeneration.current;
+    try {await preserveCurrentWorkspace();}
+    catch {message('Save the current world to a file before switching: local recovery storage is unavailable.');return false;}
+    if(transitionGeneration!==worldGeneration.current||previous!==projectRef.current)return false;
+    workspaceRef.current=existing ?? createWorkspace(next,base);
+    if(existing)workspaceVersions.current.set(existing.workspaceId,existing);
     setProjectRaw(next);
     undoStack.current = []; redoStack.current = [];
     setSelectedId(null); setSelectedFeatureId(null);
     setDraftFeature(null); setPlacingTree(false);
     setPreview(false); setNativePreview(false);
-    message('World repository opened');
+    message('World workspace opened');
     return true;
   }
   function applyGeography(crop: ReturnType<typeof createGeographicTerrain> & { terrainImagery?: TerrainImagery }, generation: number) {
@@ -1640,10 +1662,6 @@ export default function App() {
             </>
           )}
           <div hidden={panel !== 'world'}>
-            <RepositoryPanel getProject={() => projectRef.current} getGeneration={() => worldGeneration.current} onOpen={openRepositoryProject} />
-          </div>
-          {panel === 'world' && (
-            <>
               <div className="panel-heading">
                 <div>
                   <span className="eyebrow">PROJECT</span>
@@ -1653,6 +1671,7 @@ export default function App() {
               <div className="field-label">WORLD NAME</div>
               <input
                 className="wide-input"
+                aria-label="World name"
                 value={project.metadata.name}
                 onChange={(e) =>
                   setProject((p) => ({ ...p, metadata: { ...p.metadata, name: e.target.value } }))
@@ -1668,6 +1687,12 @@ export default function App() {
                 }
                 placeholder="Describe this world"
               />
+          <div hidden={panel !== 'world'}>
+            <RepositoryPanel getProject={() => projectRef.current} getGeneration={() => worldGeneration.current} getRepositoryOptions={() => workspaceRef.current?.base.repositoryOptions} onOpen={openRepositoryProject} />
+            <label>Local workspaces<select aria-label="Local workspaces" value={workspaceRef.current?.workspaceId ?? ''} onChange={event => {const id=event.target.value,generation=worldGeneration.current,before=projectRef.current;void loadWorkspace(id).then(async entry=>{if(entry&&generation===worldGeneration.current&&before===projectRef.current)await openRepositoryProject(entry.project,generation,entry.base,entry);}).catch(()=>message('Could not switch workspace; current work is retained.'));}}><option value="">Choose a saved workspace</option>{workspaceEntries.map(entry=><option key={entry.workspaceId} value={entry.workspaceId}>{entry.name} — {entry.base.location}{entry.recoveredFrom?' (recovery)':''}</option>)}</select></label>
+            {privateSessionActive && privateSnapshot?.role==='owner' && <button onClick={()=>{const checked=privateSnapshotRef.current;if(!checked)return;const expected={serverId:checked.serverId,epoch:checked.epoch,revision:checked.revision};if(!window.confirm('Adopt persistent sign configuration and world hour from server revision '+checked.revision+' into the authored world? This creates an undoable author edit. Runtime power is excluded.'))return;try{setProject(p=>adoptRuntimeSettings(p,privateSnapshotRef.current,expected));message('Server settings adopted into authored world');}catch(error){message(error instanceof Error?error.message:'Settings could not be adopted');}}}>Adopt server settings as author edit…</button>}
+          </div>
+
               <div className="field-label">WORLD ID</div>
               <div className="readonly-field">{project.metadata.worldId}</div>
               <div className="field-label">REGION ID</div>
@@ -1755,8 +1780,7 @@ export default function App() {
                   external world-package loader. Export remains provisional until that adapter is verified.
                 </p>
               </div>
-            </>
-          )}
+          </div>
         </aside>
         <main className="editor-main">
           <div className="viewport-toolbar">
@@ -1821,7 +1845,7 @@ export default function App() {
             >
               <NeonRuntimeContext.Provider value={{states:effectiveNeonRuntime,worldHour:privateSessionActive?privateSnapshot!.worldHour:project.environment.timeOfDay ?? 14,serverOffsetMs:privateSessionActive?privateClockOffset:0}}>
               <Scene
-                project={current}
+                project={privateRenderProject}
                 frameRequest={frameRequest}
                 selectedId={selectedId}
                 selectedIds={selectedIds}

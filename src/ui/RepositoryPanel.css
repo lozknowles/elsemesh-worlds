@@ -6,3 +6,6 @@
 .repository-panel summary { cursor: pointer; font-size: 13px; padding: 8px 0; }
 .repository-panel ol { padding-left: 20px; }
 .repository-folder { color: #dcc888; }
+
+.repository-panel input,.repository-panel select { box-sizing:border-box; width:100%; padding:8px; margin-top:5px; }
+.repository-actions label { font-size:12px; line-height:1.5; }

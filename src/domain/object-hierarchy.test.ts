@@ -23,7 +23,7 @@ describe('hierarchy repository compatibility',()=>{
   const read=async(path:string)=>{const bytes=files.get(path);if(!bytes)throw new Error('Missing file');return bytes;};
   expect((await unpackWorldRepository(read)).objects).toEqual(p.objects);
   const old=createWorld(),oldFiles=await packWorldRepository(old);
-  const manifest=JSON.parse(new TextDecoder().decode(oldFiles.get('world.json')!));manifest.projectSchema='elsemesh.worlds.project/1';oldFiles.set('world.json',new TextEncoder().encode(JSON.stringify(manifest)));
+  const manifest=JSON.parse(new TextDecoder().decode(oldFiles.get('world.json')!));manifest.schema='elsemesh.world-repository/1';manifest.version=1;manifest.engine={commit:'95719848d5ffa4428b57c75c272483e1c2113a72',compatibility:'reference-only-runtime-unverified'};delete manifest.world;delete manifest.regions;delete manifest.attribution;delete manifest.provenance;manifest.projectSchema='elsemesh.worlds.project/1';oldFiles.set('world.json',new TextEncoder().encode(JSON.stringify(manifest)));
   const restored=await unpackWorldRepository(async path=>oldFiles.get(path)!);expect(restored.schema).toBe(PROJECT_SCHEMA);expect(restored.metadata).toEqual(old.metadata);
  });
  it('ungroup rejects unrepresentable child shear without mutation',()=>{
