@@ -19,3 +19,12 @@ Static admitted GLB meshes preserve source transforms and material slots. The ex
 ## Licensing
 
 Three, esbuild and supplied font notices are copied beside the bundle. Editor authored software currently has no root LICENSE and is recorded as unspecified; no open source license is inferred.
+
+## Compressed source responses
+
+Source budgets count decoded content bytes. HTTP Content-Length is optional
+encoded transfer metadata, so it is checked for numeric syntax only. A missing
+Content-Encoding header does not establish identity encoding: CORS may hide it.
+The reader bounds each decoded stream chunk before storing it, cancels overflow,
+and retains request deadlines and repository expected-size/hash verification.
+This allows a valid tiny component to load when compression adds wire overhead.

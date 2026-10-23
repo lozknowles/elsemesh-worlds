@@ -1,5 +1,14 @@
 # ElseMesh Worlds 1.0
 
+**[Play the warehouse opening island](https://lozknowles.github.io/ElseMesh/)** ·
+[Original ElseMesh game](https://lozknowles.github.io/ElseMesh/legacy.html) ·
+[Published opening-world data](https://github.com/lozknowles/elsemesh-world-loz-opening-island)
+
+The public game opens a deliberately published, commit-pinned island snapshot.
+Editor saves remain local; publishing another snapshot is an explicit operation.
+The public snapshot is single-player until connected to an authorised multiplayer
+server. These links do not replace the editor’s preview of your current project.
+
 Standalone local browser world builder. Run `npm ci` then `npm run dev`; open http://127.0.0.1:5190/ in Edge. `npm run build`, `npm run lint`, `npm test`, and `npm run test:ui` provide build and checks.
 
 ## Authoring

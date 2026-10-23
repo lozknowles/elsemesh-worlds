@@ -43,7 +43,9 @@ async function boundedFetch(url: string, maxBytes: number, options: SourceReques
     const response = await (options.fetch ?? fetch)(url, { signal: controller.signal, redirect: 'error', credentials: 'omit', referrerPolicy: 'no-referrer', headers: { Accept: accept } });
     if (!response.ok || response.redirected || (response.url && response.url !== url)) throw new Error(`World source request failed (${response.status}); redirects are not permitted.`);
     const length = response.headers.get('content-length');
-    if (length !== null && (!/^\d+$/.test(length) || Number(length) > maxBytes)) throw new Error('World source response exceeds its byte limit.');
+    // Content-Length can describe compressed bytes; CORS may hide Content-Encoding.
+    // The decoded stream below is the authoritative content-size boundary.
+    if (length !== null && !/^\d+$/.test(length)) throw new Error('World source response length is invalid.');
     if (!response.body) throw new Error('World source response has no readable body.');
     reader = response.body.getReader();
     const chunks: Uint8Array[] = [];
