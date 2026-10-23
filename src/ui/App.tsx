@@ -17,6 +17,11 @@ import {
 import type { DrawnFeature, EditorObject, FeatureKind, PrimitiveKind, Vec3, WorldAsset, WorldProject } from '../domain/world';
 import { loadSavedProject, saveProject as persistProject } from '../domain/persistence';
 import NativePreview from './NativePreview';
+import CataloguePanel from './CataloguePanel';
+import CataloguePlacement from './CataloguePlacement';
+import type { PlacementHit } from './CataloguePlacement';
+import { fetchCatalogueModel, surfacePlacement, commitCataloguePlacement } from '../domain/object-catalogue';
+import type { CatalogueAsset } from '../domain/object-catalogue';
 import TreeShape from './TreeShape';
 import { TREE_SPECIES } from '../domain/trees';
 import DrawnFeatures from './DrawnFeatures';
@@ -200,7 +205,7 @@ function TerrainMesh({
   };
   return (
     <>
-    <mesh geometry={geometry} receiveShadow onPointerDown={brushAt} onClick={(event) => { if (onTerrainPoint && event.button === 0 && event.delta < 5) { event.stopPropagation(); onTerrainPoint([event.point.x, event.point.y, event.point.z]); } }}>
+    <mesh geometry={geometry} userData={{ placementSurface: 'terrain' }} receiveShadow onPointerDown={brushAt} onClick={(event) => { if (onTerrainPoint && event.button === 0 && event.delta < 5) { event.stopPropagation(); onTerrainPoint([event.point.x, event.point.y, event.point.z]); } }}>
       <meshStandardMaterial key={imageryTexture?.uuid ?? 'terrain-palette'} vertexColors map={imageryTexture} roughness={0.92} side={THREE.DoubleSide} customProgramCacheKey={() => 'geographic-imagery-v1'} onBeforeCompile={(shader) => {
         shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '').replace('#include <color_fragment>', `#include <color_fragment>
           #ifdef USE_MAP
@@ -298,6 +303,7 @@ function WorldEntity({
     <>
       <group
         ref={attach}
+        userData={{ placementSurface: 'object' }}
         position={object.position}
         rotation={object.rotation}
         scale={object.scale}
@@ -456,6 +462,7 @@ function Scene({
   onTerrainPoint,
   snapEnabled,
   snapStep,
+  placementActive,
 }: {
   project: WorldProject;
   selectedId: string | null;
@@ -469,6 +476,7 @@ function Scene({
   preview: boolean;
   terrainEditing: boolean;
   onExitPreview: () => void;
+  placementActive: boolean;
   objects: EditorObject[];
   viewPreset: 'perspective' | 'top';
   draftFeature: DrawnFeature | null;
@@ -590,7 +598,7 @@ function Scene({
       </Suspense>
       <OrbitControls
         makeDefault
-        enabled={!preview && !terrainDragging}
+        enabled={!preview && !terrainDragging && !placementActive}
         target={[0, project.geography ? sampleTerrain(project.terrain, 0, 0) : 3, 0]}
         maxPolarAngle={Math.PI * 0.49}
         minDistance={4}
@@ -659,7 +667,14 @@ export default function App() {
   const [saved, setSaved] = useState('Saved locally');
   const [toast, setToast] = useState('');
   const [warehouseBusy, setWarehouseBusy] = useState(false);
-  const [panel, setPanel] = useState<'scene' | 'assets' | 'terrain' | 'pen' | 'geo' | 'world'>('scene');
+  const [panel, setPanel] = useState<'scene' | 'assets' | 'objects' | 'terrain' | 'pen' | 'geo' | 'world'>('scene');
+  const [pendingPlacement, setPendingPlacement] = useState<{ entry: CatalogueAsset; asset: WorldAsset; generation: number; yaw: number } | null>(null);
+  const [placementHit, setPlacementHit] = useState<PlacementHit | null>(null);
+  const catalogueAbort = useRef<AbortController | null>(null);
+  const cataloguePlacementFailed = useCallback((reason: string) => {
+    setPendingPlacement(null); setPlacementHit(null); setToast(reason);
+    window.setTimeout(() => setToast(''), 4500);
+  }, []);
   const undoStack = useRef<WorldProject[]>([]);
   const redoStack = useRef<WorldProject[]>([]);
   const saveRevision = useRef(0);
@@ -717,6 +732,12 @@ export default function App() {
   }, [current, hydrated]);
   useEffect(() => {
     const key = (event: globalThis.KeyboardEvent) => {
+      if ((pendingPlacement || catalogueAbort.current) && !isTyping(event.target)) {
+        if (event.key === 'Escape') { event.preventDefault(); cancelAssetOperations(); message('Object placement cancelled'); return; }
+        if (event.key.toLowerCase() === 'r' && pendingPlacement) { event.preventDefault(); setPendingPlacement(p => p ? { ...p, yaw: p.yaw + Math.PI / 12 } : p); return; }
+        if (event.key === 'Enter' && pendingPlacement && placementHit) { event.preventDefault(); confirmCataloguePlacement(placementHit); return; }
+        return;
+      }
       if (event.key === 'Escape') {
         setDraftFeature(null);
         setPlacingTree(false);
@@ -936,6 +957,8 @@ export default function App() {
     }
   }
   function cancelAssetOperations() {
+    catalogueAbort.current?.abort(); catalogueAbort.current = null;
+    setPendingPlacement(null); setPlacementHit(null);
     worldGeneration.current++;
     pendingAssetOperation.current = null;
     setAssetBusy(false);
@@ -1001,6 +1024,36 @@ export default function App() {
     } finally {
       if (pendingAssetOperation.current === operation) { pendingAssetOperation.current = null; setAssetBusy(false); }
     }
+  }
+  async function beginCataloguePlacement(entry: CatalogueAsset) {
+    cancelAssetOperations();
+    const controller = new AbortController(); catalogueAbort.current = controller;
+    const generation = worldGeneration.current, operation = ++assetOperation.current;
+    pendingAssetOperation.current = operation; setAssetBusy(true);
+    setPreview(false); setNativePreview(false); setPlacingTree(false); setDraftFeature(null);
+    try {
+      const bytes = await fetchCatalogueModel(entry, controller.signal);
+      const asset = await admitGlb(bytes, { id: newId(), name: entry.name, source: entry.sourcePack.url + ' · catalogue ' + entry.id + ' · SHA256 ' + entry.sha256, license: entry.license.id + ' · ' + entry.license.attribution, prepared: true });
+      if (controller.signal.aborted || generation !== worldGeneration.current) return;
+      setSelectedId(null); setPendingPlacement({ entry, asset, generation, yaw: 0 });
+      message('Move over terrain or an object surface. Click to place; R rotates; Escape cancels.');
+    } catch (error) {
+      if (!controller.signal.aborted && generation === worldGeneration.current) message(error instanceof Error ? error.message : 'Model could not be prepared.');
+    } finally {
+      if (catalogueAbort.current === controller) catalogueAbort.current = null;
+      if (pendingAssetOperation.current === operation) { pendingAssetOperation.current = null; setAssetBusy(false); }
+    }
+  }
+  function confirmCataloguePlacement(hit: PlacementHit) {
+    if (!pendingPlacement || pendingPlacement.generation !== worldGeneration.current) return;
+    try {
+      const { entry, asset, yaw } = pendingPlacement;
+      const transform = surfacePlacement(asset, hit.point, yaw, entry.defaultScale);
+      const object: EditorObject = { id: newId(), name: entry.name, kind: 'glb', assetId: asset.id, ...transform, color: '#ffffff', visible: true, collision: 'solid' };
+      const next = commitCataloguePlacement(projectRef.current, asset, object);
+      setProject(() => next); setSelectedId(object.id); setSelectedFeatureId(null);
+      setPendingPlacement(null); setPlacementHit(null); message(entry.name + ' placed on ' + hit.surface);
+    } catch (error) { message(error instanceof Error ? error.message : 'Object placement failed.'); }
   }
   function placeProjectAsset(asset: WorldAsset) {
     try {
@@ -1107,6 +1160,7 @@ export default function App() {
           >
             ▦
           </button>
+          <button className={panel === 'objects' ? 'active' : ''} title="Objects" onClick={() => setPanel('objects')}>▦</button>
           <button
             className={panel === 'assets' ? 'active' : ''}
             title="Assets"
@@ -1135,6 +1189,7 @@ export default function App() {
           </div>
         </aside>
         <aside className="left-panel">
+          {panel === 'objects' && <CataloguePanel busy={assetBusy || !!pendingPlacement} onAdd={(entry) => void beginCataloguePlacement(entry)} />}
           {panel === 'scene' && (
             <>
               <div className="panel-heading">
@@ -1645,7 +1700,8 @@ export default function App() {
                 strength={strength}
                 material={terrainMaterial}
                 preview={preview}
-                terrainEditing={panel === 'terrain' && !preview}
+                placementActive={!!pendingPlacement}
+                terrainEditing={panel === 'terrain' && !preview && !pendingPlacement}
                 onExitPreview={exitPreview}
                 objects={objects}
                 viewPreset={viewPreset}
@@ -1656,7 +1712,9 @@ export default function App() {
                 onSelectFeature={selectFeature}
                 onTerrainPoint={!preview && ((panel === 'pen' && draftFeature) || (panel === 'assets' && placingTree)) ? terrainPoint : undefined}
               />
+              {pendingPlacement && <CataloguePlacement asset={pendingPlacement.asset} yaw={pendingPlacement.yaw} scale={pendingPlacement.entry.defaultScale} onHit={setPlacementHit} onConfirm={confirmCataloguePlacement} onError={cataloguePlacementFailed} />}
             </Canvas>
+            {pendingPlacement && <div className="placement-banner" role="status"><b>Place {pendingPlacement.entry.name}</b><div>{placementHit ? 'Surface: ' + placementHit.surface : 'Move over terrain or an object surface'} · R rotates · Escape cancels</div><button onClick={() => setPendingPlacement(p => p ? { ...p, yaw: p.yaw + Math.PI / 12 } : p)}>Rotate 15°</button><button disabled={!placementHit} onClick={() => { if (placementHit) confirmCataloguePlacement(placementHit); }}>Confirm placement</button><button onClick={cancelAssetOperations}>Cancel placement</button></div>}
             {preview ? (
               <>
                 <div className="preview-hud">

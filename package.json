@@ -9,7 +9,8 @@
     "preview": "vite preview --host 127.0.0.1 --port 5190",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "verify:catalogue": "node scripts/verify-object-catalogue.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

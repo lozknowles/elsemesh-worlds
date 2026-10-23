@@ -1,0 +1,933 @@
+{
+  "schema": "elsemesh.catalogue-inventory/1",
+  "commit": "7be9b573bc74f32ed766b44b3f46550d02ca83b5",
+  "packs": [
+    {
+      "id": "prototype-kit",
+      "name": "Prototype Kit",
+      "url": "https://kenney.nl/assets/prototype-kit",
+      "claimed": 145,
+      "admitted": 120,
+      "excluded": 25,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/prototype-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "platformer-kit",
+      "name": "Platformer Kit",
+      "url": "https://kenney.nl/assets/platformer-kit",
+      "claimed": 153,
+      "admitted": 140,
+      "excluded": 13,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/platformer-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "nature-kit",
+      "name": "Nature Kit",
+      "url": "https://kenney.nl/assets/nature-kit",
+      "claimed": 329,
+      "admitted": 329,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/nature-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "car-kit",
+      "name": "Car Kit",
+      "url": "https://kenney.nl/assets/car-kit",
+      "claimed": 50,
+      "admitted": 50,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/car-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "city-kit-commercial",
+      "name": "City Kit (Commercial)",
+      "url": "https://kenney.nl/assets/city-kit-commercial",
+      "claimed": 41,
+      "admitted": 41,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/city-kit-commercial",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "city-kit-suburban",
+      "name": "City Kit (Suburban)",
+      "url": "https://kenney.nl/assets/city-kit-suburban",
+      "claimed": 40,
+      "admitted": 40,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/city-kit-suburban",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "city-kit-roads",
+      "name": "City Kit (Roads)",
+      "url": "https://kenney.nl/assets/city-kit-roads",
+      "claimed": 95,
+      "admitted": 95,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/city-kit-roads",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "food-kit",
+      "name": "Food Kit",
+      "url": "https://kenney.nl/assets/food-kit",
+      "claimed": 200,
+      "admitted": 200,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/food-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "furniture-kit",
+      "name": "Furniture Kit",
+      "url": "https://kenney.nl/assets/furniture-kit",
+      "claimed": 140,
+      "admitted": 140,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/furniture-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "space-kit",
+      "name": "Space Kit",
+      "url": "https://kenney.nl/assets/space-kit",
+      "claimed": 153,
+      "admitted": 153,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/space-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "pirate-kit",
+      "name": "Pirate Kit",
+      "url": "https://kenney.nl/assets/pirate-kit",
+      "claimed": 72,
+      "admitted": 71,
+      "excluded": 1,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/pirate-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "castle-kit",
+      "name": "Castle Kit",
+      "url": "https://kenney.nl/assets/castle-kit",
+      "claimed": 76,
+      "admitted": 76,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/castle-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "tower-defense-kit",
+      "name": "Tower Defense Kit",
+      "url": "https://kenney.nl/assets/tower-defense-kit",
+      "claimed": 160,
+      "admitted": 160,
+      "excluded": 0,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/tower-defense-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "mini-dungeon",
+      "name": "Mini Dungeon",
+      "url": "https://kenney.nl/assets/mini-dungeon",
+      "claimed": 30,
+      "admitted": 25,
+      "excluded": 5,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/mini-dungeon",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "blaster-kit",
+      "name": "Blaster Kit",
+      "url": "https://kenney.nl/assets/blaster-kit",
+      "claimed": 40,
+      "admitted": 37,
+      "excluded": 3,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/blaster-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "graveyard-kit",
+      "name": "Graveyard Kit",
+      "url": "https://kenney.nl/assets/graveyard-kit",
+      "claimed": 91,
+      "admitted": 84,
+      "excluded": 7,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/graveyard-kit",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "cube-pets",
+      "name": "Cube Pets",
+      "url": "https://kenney.nl/assets/cube-pets",
+      "claimed": 24,
+      "admitted": 0,
+      "excluded": 24,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/cube-pets",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "mini-characters",
+      "name": "Mini Characters",
+      "url": "https://kenney.nl/assets/mini-characters",
+      "claimed": 26,
+      "admitted": 14,
+      "excluded": 12,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/mini-characters",
+        "source/LICENSE"
+      ]
+    },
+    {
+      "id": "blocky-characters",
+      "name": "Blocky Characters",
+      "url": "https://kenney.nl/assets/blocky-characters",
+      "claimed": 18,
+      "admitted": 0,
+      "excluded": 18,
+      "license": "CC0-1.0",
+      "licenceEvidence": [
+        "https://kenney.nl/support",
+        "https://kenney.nl/assets/blocky-characters",
+        "source/LICENSE"
+      ]
+    }
+  ],
+  "models": 1883,
+  "admitted": 1775,
+  "excluded": [
+    {
+      "id": "kenney:prototype-kit/animal-bison",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/animal-bison.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/animal-dog",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/animal-dog.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/animal-horse",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/animal-horse.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/button-floor-round-small",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/button-floor-round-small.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/button-floor-round",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/button-floor-round.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/button-floor-square-small",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/button-floor-square-small.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/button-floor-square",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/button-floor-square.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/door-garage",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/door-garage.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/door-rotate",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/door-rotate.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/door-sliding-double-round",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/door-sliding-double-round.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/door-sliding-double-wide",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/door-sliding-double-wide.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/door-sliding-double",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/door-sliding-double.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/door-sliding",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/door-sliding.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/figurine-cube-detailed",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/figurine-cube-detailed.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/figurine-cube",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/figurine-cube.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/figurine-large",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/figurine-large.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/figurine",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/figurine.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/indicator-round-a",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/indicator-round-a.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/indicator-round-b",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/indicator-round-b.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/indicator-round-c",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/indicator-round-c.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/indicator-round-d",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/indicator-round-d.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/indicator-round-e",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/indicator-round-e.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/indicator-round-f",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/indicator-round-f.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/lever-double",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/lever-double.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:prototype-kit/lever-single",
+      "pack": "prototype-kit",
+      "file": "packs/prototype-kit/lever-single.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/button-round",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/button-round.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/button-square",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/button-square.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/character-oobi",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/character-oobi.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/character-oodi",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/character-oodi.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/character-ooli",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/character-ooli.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/character-oopi",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/character-oopi.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/character-oozi",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/character-oozi.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/chest",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/chest.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/door-rotate-large",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/door-rotate-large.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/door-rotate",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/door-rotate.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/lever",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/lever.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/trap-spikes-large",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/trap-spikes-large.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:platformer-kit/trap-spikes",
+      "pack": "platformer-kit",
+      "file": "packs/platformer-kit/trap-spikes.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:pirate-kit/chest",
+      "pack": "pirate-kit",
+      "file": "packs/pirate-kit/chest.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-dungeon/character-human",
+      "pack": "mini-dungeon",
+      "file": "packs/mini-dungeon/character-human.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-dungeon/character-orc",
+      "pack": "mini-dungeon",
+      "file": "packs/mini-dungeon/character-orc.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-dungeon/chest",
+      "pack": "mini-dungeon",
+      "file": "packs/mini-dungeon/chest.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-dungeon/gate",
+      "pack": "mini-dungeon",
+      "file": "packs/mini-dungeon/gate.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-dungeon/trap",
+      "pack": "mini-dungeon",
+      "file": "packs/mini-dungeon/trap.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:blaster-kit/crate-medium",
+      "pack": "blaster-kit",
+      "file": "packs/blaster-kit/crate-medium.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:blaster-kit/crate-small",
+      "pack": "blaster-kit",
+      "file": "packs/blaster-kit/crate-small.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:blaster-kit/crate-wide",
+      "pack": "blaster-kit",
+      "file": "packs/blaster-kit/crate-wide.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/character-ghost",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/character-ghost.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/character-keeper",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/character-keeper.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/character-skeleton",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/character-skeleton.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/character-vampire",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/character-vampire.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/character-zombie",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/character-zombie.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/crypt-door",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/crypt-door.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:graveyard-kit/crypt-large-door",
+      "pack": "graveyard-kit",
+      "file": "packs/graveyard-kit/crypt-large-door.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-beaver",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-beaver.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-bee",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-bee.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-bunny",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-bunny.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-cat",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-cat.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-caterpillar",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-caterpillar.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-chick",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-chick.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-cow",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-cow.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-crab",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-crab.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-deer",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-deer.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-dog",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-dog.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-elephant",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-elephant.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-fish",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-fish.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-fox",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-fox.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-giraffe",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-giraffe.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-hog",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-hog.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-koala",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-koala.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-lion",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-lion.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-monkey",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-monkey.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-panda",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-panda.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-parrot",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-parrot.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-penguin",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-penguin.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-pig",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-pig.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-polar",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-polar.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:cube-pets/animal-tiger",
+      "pack": "cube-pets",
+      "file": "packs/cube-pets/animal-tiger.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-female-a",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-female-a.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-female-b",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-female-b.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-female-c",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-female-c.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-female-d",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-female-d.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-female-e",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-female-e.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-female-f",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-female-f.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-male-a",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-male-a.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-male-b",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-male-b.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-male-c",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-male-c.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-male-d",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-male-d.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-male-e",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-male-e.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:mini-characters/character-male-f",
+      "pack": "mini-characters",
+      "file": "packs/mini-characters/character-male-f.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:blocky-characters/character-a",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-a.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-b",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-b.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-c",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-c.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-d",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-d.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-e",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-e.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-f",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-f.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-g",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-g.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-h",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-h.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-i",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-i.glb",
+      "reason": "Use static GLB meshes without skinning or animation."
+    },
+    {
+      "id": "kenney:blocky-characters/character-j",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-j.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-k",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-k.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-l",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-l.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-m",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-m.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-n",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-n.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-o",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-o.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-p",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-p.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-q",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-q.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    },
+    {
+      "id": "kenney:blocky-characters/character-r",
+      "pack": "blocky-characters",
+      "file": "packs/blocky-characters/character-r.glb",
+      "reason": "Required extensions and compressed geometry/textures are unsupported."
+    }
+  ],
+  "sourceModelBytes": 67513420,
+  "admittedModelBytes": 54034072,
+  "interiors": 359,
+  "imageOnlyPacksExcluded": [
+    "ui-pack",
+    "ui-pack-rpg-expansion",
+    "fantasy-ui-borders"
+  ],
+  "thumbnailIdentity": "Source catalogue pairing and file hashes verified; semantic correspondence requires representative visual inspection."
+}
