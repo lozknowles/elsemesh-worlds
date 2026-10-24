@@ -68,6 +68,19 @@ async function boundedFetch(url: string, maxBytes: number, options: SourceReques
   }
 }
 
+/** Portable HTTP snapshots from this editor origin use the same verified repository loader. */
+export function sameOriginWorldSource(input: string, options: SourceRequestOptions & { origin?: string } = {}): LocalWorldSource {
+  const origin = new URL(options.origin ?? location.origin).origin;
+  if (!input.trim() || input.length > 2048 || input.includes('%') || input.includes('\\') || input.split('/').some(segment => segment === '.' || segment === '..')) throw new Error('Use a safe same-origin repository folder URL.');
+  const base = new URL(input.trim(), origin + '/');
+  if (!['http:', 'https:'].includes(base.protocol) || base.origin !== origin || base.username || base.password || base.search || base.hash || base.pathname.split('/').some(segment => segment && !/^[A-Za-z0-9._-]+$/.test(segment))) throw new Error('Repository URLs must use this editor origin without credentials, query or fragment.');
+  if (!base.pathname.endsWith('/')) base.pathname += '/';
+  return { kind: 'local', label: 'HTTP ' + base.href, read: (path, limit) => {
+    if (path !== WORLD_REPOSITORY_MANIFEST && !/^(snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets|connections|landscape)\.json|assets\/[a-f0-9]{64}\.glb|landscape-images\/[a-f0-9]{64}\.(png|jpg)|native-island\/[a-f0-9]{64}\.bin|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(path)) throw new Error('World content path is not allowed.');
+    return boundedFetch(base.href + path, limit, options, 'application/octet-stream');
+  } };
+}
+
 /** Resolve a moving ref once. All subsequent content requests use the returned full commit. */
 export async function resolveGitHubWorldSource(input: GitHubWorldLocation, options: SourceRequestOptions = {}): Promise<PinnedGitHubSource> {
   const location = validateLocation(input);
