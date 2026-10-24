@@ -1,3 +1,5 @@
+import { validateNativeIsland, assertNativeIslandStandaloneExport } from './native-island';
+import type { NativeIsland } from './native-island';
 import { validateObjectAccess } from './object-access';
 import type { ObjectAccessPolicy } from './object-access';
 import {validateRoadTraffic} from './road-traffic';
@@ -95,6 +97,7 @@ export type WorldProject = {
   metadata: { name: string; description: string; worldId: string; regionId: string };
   terrain: Terrain;
   landscape?: Landscape;
+  nativeIsland?: NativeIsland;
   geography?: GeoReference;
   terrainImagery?: TerrainImagery;
   objects: EditorObject[];
@@ -271,6 +274,8 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   if (p.geography !== undefined) errors.push(...validateGeography(p.geography, p.terrain));
   if (p.terrainImagery !== undefined) errors.push(...validateTerrainImagery(p.terrainImagery, p.geography));
   errors.push(...validateWorldConnections(p));
+  if(Object.prototype.hasOwnProperty.call(p,'nativeIsland')&&p.nativeIsland===undefined)errors.push('Invalid native island field.');
+  errors.push(...validateNativeIsland(p.nativeIsland));
   errors.push(...validateObjectAccess(p));
   if(Object.prototype.hasOwnProperty.call(p,'welcome')){
     const greeting=p.welcome as unknown;
@@ -427,7 +432,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
 
 /** Minimal explicit requirements for standalone package admission. */
 function playerWorldCapabilities(project:WorldProject):string[]{
- return ['object-access/1',...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
+ return ['object-access/1',...(project.nativeIsland?['native-island/1']:[]),...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
   ...(project.traffic?['port-traffic/1']:[]),
   ...(project.objects.some(o=>o.collisionOnly)?['collision-volumes/1']:[])];
 }
@@ -451,6 +456,7 @@ export function validatePlayerWorldPackage(value:unknown):ReturnType<typeof vali
 export function createPlayerWorldPackage(value: unknown): PlayerWorldPackage {
   const result = admitLandscapeProject(value);
   if (!result.valid || !result.project) throw new Error(result.errors[0] ?? 'Project is invalid.');
+  assertNativeIslandStandaloneExport(result.project);
   const packageFile: PlayerWorldPackage = {
     schema: result.project.landscape ? LANDSCAPE_PLAYER_WORLD_SCHEMA : PLAYER_WORLD_SCHEMA,
     ...(playerWorldCapabilities(result.project).length?{capabilities:playerWorldCapabilities(result.project)}:{}),

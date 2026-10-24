@@ -1,3 +1,4 @@
+import { assertNativeIslandStandaloneExport } from '../domain/native-island';
 import { effectiveObjectAccess, supportedObjectAccessActions, setObjectAccessActions } from '../domain/object-access';
 import LandscapePanel from './LandscapePanel';
 import LandscapeScenery from './LandscapeScenery';
@@ -1140,6 +1141,7 @@ export default function App() {
       return;
     }
     try {
+      assertNativeIslandStandaloneExport(current);
       // New semantics need explicit capabilities so older readers fail closed.
       const content=current.traffic||current.objects.some(object=>object.collisionOnly)
         ? createPlayerWorldPackage(current) : current;
@@ -1752,6 +1754,7 @@ export default function App() {
                   <h2>World settings</h2>
                 </div>
               </div>
+              {project.nativeIsland&&<section aria-label="Native island source"><h3>Native island source</h3><p>The editor shows a coarse editable terrain proxy. Native terrain, original vegetation and ocean resources are preserved separately and loaded on demand in ElseMesh graphics. Editing the proxy does not change those source resources.</p><p>Save repository snapshot or Save repository copy preserves the complete island. Standalone project files cannot contain its external resource closure. After restarting, reopen the source repository before previewing or saving native resources.</p></section>}
               <div className="field-label">WORLD NAME</div>
               <input
                 className="wide-input"

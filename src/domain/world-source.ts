@@ -1,3 +1,4 @@
+import { registerNativeIslandResourceReader } from './native-island';
 import { inspectWorldRepository, WORLD_REPOSITORY_MANIFEST, type RepositoryReader, type WorldPackOptions, type WorldRepositoryManifest } from './world-repository';
 import { validateWorld, type WorldProject } from './world';
 
@@ -6,7 +7,7 @@ export type PinnedGitHubSource = GitHubWorldLocation & { kind: 'github'; commit:
 export type LocalWorldSource = { kind: 'local'; read: RepositoryReader; label?: string };
 export type WorldSource = LocalWorldSource | PinnedGitHubSource;
 export type WorldSourceIdentity = { worldId: string; location: string; resolvedCommit?: string; contentDigest: string; sessionId: string };
-export type LoadedWorldSource = { project: WorldProject; manifest: WorldRepositoryManifest; identity: WorldSourceIdentity; source: WorldSource };
+export type LoadedWorldSource = { project: WorldProject; manifest: WorldRepositoryManifest; identity: WorldSourceIdentity; source: WorldSource; nativeIslandRead?: RepositoryReader };
 export type SourceRequestOptions = { fetch?: typeof fetch; timeoutMs?: number };
 const commitPattern = /^[a-f0-9]{40}$/;
 const segmentPattern = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
@@ -97,14 +98,15 @@ export async function loadWorldSource(source: WorldSource, options: SourceReques
     if (!commitPattern.test(source.commit)) throw new Error('World content must be pinned to a full Git commit.');
     const prefix = `https://raw.githubusercontent.com/${validated.owner}/${validated.repository}/${source.commit}/${validated.path ? validated.path + '/' : ''}`;
     read = (path, limit) => {
-      if (path !== WORLD_REPOSITORY_MANIFEST && !/^(snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets|connections|landscape)\.json|assets\/[a-f0-9]{64}\.glb|landscape-images\/[a-f0-9]{64}\.(png|jpg)|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(path)) throw new Error('World content path is not allowed.');
+      if (path !== WORLD_REPOSITORY_MANIFEST && !/^(snapshots\/[a-f0-9]{64}\/(metadata|terrain|objects|features|environment|spawn|geography|assets|connections|landscape)\.json|assets\/[a-f0-9]{64}\.glb|landscape-images\/[a-f0-9]{64}\.(png|jpg)|native-island\/[a-f0-9]{64}\.bin|imagery\/[a-f0-9]{64}\.(png|jpg))$/.test(path)) throw new Error('World content path is not allowed.');
       return boundedFetch(prefix + path, limit, options, 'application/octet-stream');
     };
     location = githubWorldSourceLocation(source);
     resolvedCommit = source.commit;
   }
   const loaded = await inspectWorldRepository(read);
-  return { ...loaded, source, identity: { worldId: loaded.project.metadata.worldId, location, ...(resolvedCommit ? { resolvedCommit } : {}), contentDigest: loaded.contentDigest, sessionId: crypto.randomUUID() } };
+  registerNativeIslandResourceReader(loaded.project,read);
+  return { ...loaded, source, ...(loaded.project.nativeIsland?{nativeIslandRead:read}:{}), identity: { worldId: loaded.project.metadata.worldId, location, ...(resolvedCommit ? { resolvedCommit } : {}), contentDigest: loaded.contentDigest, sessionId: crypto.randomUUID() } };
 }
 
 /** An update is a separately validated candidate; this function never alters an existing source or scene. */

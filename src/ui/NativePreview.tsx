@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+import { createNativeIslandResourceReader } from '../domain/native-island';
 import { useEffect, useRef, useState } from 'react';
 import type { NeonRuntimeState } from './NeonRuntime';
 import type { WorldProject } from '../domain/world';
@@ -13,6 +14,8 @@ export default function NativePreview({ project, onChange, onClose, neonRuntime,
   onClose: () => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const projectRef=useRef(project);projectRef.current=project;
+  const nativeReader=useRef<{island:WorldProject['nativeIsland'];read:ReturnType<typeof createNativeIslandResourceReader>}|null>(null);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState('Loading native WebGPU engine…');
   const audio = useRef<ReturnType<typeof createThunderAudio> | null>(null);
@@ -27,6 +30,15 @@ export default function NativePreview({ project, onChange, onClose, neonRuntime,
     const parentBlur = () => queueMicrotask(() => { if (document.activeElement !== frame.current) stopNavigation(); });
     const receive = (event: MessageEvent) => {
       if (event.origin !== location.origin || event.source !== frame.current?.contentWindow) return;
+      if(event.data?.type==='elsemesh-native-island-read'){
+        const {requestId,id}=event.data;
+        if(typeof requestId!=='string'||requestId.length>160||typeof id!=='string'||id.length>160)return;
+        const target=event.source as Window,requested=projectRef.current;
+        void Promise.resolve().then(()=>{if(nativeReader.current?.island!==requested.nativeIsland)nativeReader.current={island:requested.nativeIsland,read:createNativeIslandResourceReader(requested)};return nativeReader.current!.read(id);}).then(result=>{
+          if(requested.nativeIsland!==projectRef.current.nativeIsland)throw Error('Native island source changed while reading.');
+          target.postMessage({type:'elsemesh-native-island-resource',requestId,result},location.origin);
+        }).catch(error=>target.postMessage({type:'elsemesh-native-island-resource',requestId,error:error instanceof Error?error.message:'Native island resource unavailable'},location.origin));
+      }
       if (event.data?.type === 'elsemesh-native-ready') { setReady(true); setStatus('Native ElseMesh sky and clouds'); }
       if (event.data?.type === 'elsemesh-native-error') setStatus(event.data.message);
       if (event.data?.type === 'elsemesh-native-thunder') audio.current?.play();
