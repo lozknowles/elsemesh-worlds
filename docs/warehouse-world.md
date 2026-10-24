@@ -55,8 +55,8 @@ metadata and every embedded asset.
 
 ## Reusable props and Blender models
 
-The object library includes **Dining chair**, **Potted plant**, **C64 computer**,
-**BBC computer** and **Sun workstation**. Each is one placeable model with a
+The object library includes **Dining chair**, **Dining table**, four lounge and mezzanine table variants, **Potted plant**, **C64 computer**,
+**BBC computer** and **Sun workstation**. The chair and dining table default to a measured human-scale profile: a 0.48 m chair seat and 0.82 m table top. Each is one placeable model with a
 named child hierarchy and independently editable material slots. A chair has six
 components; a plant has ten; the computers have 84, 84 and 89 respectively.
 Computer prefabs include their case, CRT, screen, keyboard, keys, vents,
@@ -68,7 +68,7 @@ The preparation script records exact membership
 and source hashes in `public/assets/elsemesh/warehouse/provenance.json` and
 ships the MIT license alongside the models. All models have a bottom-centre
 pivot computed from their transformed geometry, keeping them easy to place on
-terrain or a desktop. The warehouse starter still retains its individual parts.
+terrain or a desktop. The warehouse starter still retains its original individual parts for editability. Exported player worlds can use these same furniture prefabs as content-addressed, portable assets, with solid collision and pinned source provenance.
 
 To bring in an object authored in Blender, select the required static objects,
 apply their scale, and export **glTF 2.0 → GLB (binary)** with materials and

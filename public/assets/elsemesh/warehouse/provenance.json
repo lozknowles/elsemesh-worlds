@@ -1,7 +1,7 @@
 {
   "source": "ElseMesh / src/world/PortalInteriorRecipe.js",
-  "sourceSha": "f91cabbd4bac784076095b73ac45ec1ffc5da9f0",
-  "recipeSha256": "efb73bea8e5e81cb7cccc6b8a5449c51b31137a73044d132b91dfaf499f1666c",
+  "sourceSha": "5f98498c59921310a8da3ef4d506737da270dfdf",
+  "recipeSha256": "e21bc0b34fc390cceb0f894e9ecedce58517289f0bd47cc231556b7b53e884cd",
   "license": "MIT; Copyright (c) 2026 DRG Software Solutions LLC",
   "prefabs": [
     {
@@ -40,6 +40,145 @@
         {
           "id": "warehouse:object:0737",
           "name": "chair leg"
+        }
+      ]
+    },
+    {
+      "id": "dining-table",
+      "name": "Dining table",
+      "bytes": 4352,
+      "components": 5,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        7,
+        0.03999999999999998,
+        -5
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:0727",
+          "name": "dining tabletop"
+        },
+        {
+          "id": "warehouse:object:0728",
+          "name": "table leg"
+        },
+        {
+          "id": "warehouse:object:0729",
+          "name": "table leg"
+        },
+        {
+          "id": "warehouse:object:0730",
+          "name": "table leg"
+        },
+        {
+          "id": "warehouse:object:0731",
+          "name": "table leg"
+        }
+      ]
+    },
+    {
+      "id": "large-nesting-table",
+      "name": "Large nesting table",
+      "bytes": 7368,
+      "components": 4,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -8.85,
+        0,
+        3.25
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:0555",
+          "name": "large nesting table"
+        },
+        {
+          "id": "warehouse:object:0557",
+          "name": "coffee table leg"
+        },
+        {
+          "id": "warehouse:object:0558",
+          "name": "coffee table leg"
+        },
+        {
+          "id": "warehouse:object:0559",
+          "name": "coffee table leg"
+        }
+      ]
+    },
+    {
+      "id": "small-nesting-table",
+      "name": "Small nesting table",
+      "bytes": 7248,
+      "components": 3,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -7.15,
+        0,
+        2.65
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:0556",
+          "name": "small nesting table"
+        },
+        {
+          "id": "warehouse:object:0560",
+          "name": "coffee table leg"
+        },
+        {
+          "id": "warehouse:object:0561",
+          "name": "coffee table leg"
+        }
+      ]
+    },
+    {
+      "id": "side-table",
+      "name": "Side table",
+      "bytes": 7020,
+      "components": 2,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -12.4,
+        0.020000000000000018,
+        4.6
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:0565",
+          "name": "side table top"
+        },
+        {
+          "id": "warehouse:object:0566",
+          "name": "side table stem"
+        }
+      ]
+    },
+    {
+      "id": "mezzanine-side-table",
+      "name": "Mezzanine side table",
+      "bytes": 7092,
+      "components": 2,
+      "materials": 2,
+      "pivot": "bottom centre of exact transformed source geometry",
+      "sourcePivot": [
+        -11.25,
+        3.5,
+        9.85
+      ],
+      "members": [
+        {
+          "id": "warehouse:object:1497",
+          "name": "mezzanine reading side table"
+        },
+        {
+          "id": "warehouse:object:1498",
+          "name": "mezzanine side table stem"
         }
       ]
     },
@@ -1172,5 +1311,5 @@
       ]
     }
   ],
-  "scope": "Computers contain case, screen, keyboard, individual keys, vents, cable, and Sun mouse/accent. Desks, desk-mounted nameplates, runtime keyboard-legend overlays, chairs, lamps and clutter excluded. Static artwork and PBR fidelity limits match warehouse world."
+  "scope": "Furniture includes reusable dining chair, dining table and four lounge or mezzanine tables with their legs. Computers contain case, screen, keyboard, individual keys, vents, cable, and Sun mouse/accent. Static artwork and PBR fidelity limits match warehouse world."
 }

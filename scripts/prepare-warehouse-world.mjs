@@ -122,10 +122,11 @@ await writeFile(resolve(output,'provenance.json'),JSON.stringify({source:'ElseMe
 console.log(`Prepared ${objects.length} editable components, ${assets.length} shared assets, ${(Buffer.byteLength(data)/1024/1024).toFixed(2)} MiB project.`);
 
 // Reusable prefabs retain one named child node per recipe component, plus
-// distinct source material slots. They intentionally exclude room furnishings.
+// distinct source material slots. Furniture is shared by the editor and world exports.
 const prefabOutput=resolve(root,'public/assets/elsemesh/warehouse');
 await mkdir(prefabOutput,{recursive:true});
 const firstChair=recipe.objects.findIndex(object=>object.name==='dining chair seat');
+const recipeMembers=(...indices)=>indices.map(index=>{const member=objects[index];if(member?.id!==`warehouse:object:${String(index).padStart(4,'0')}`)throw new Error('Warehouse component indices changed.');return member;});
 const firstPlant=recipe.objects.findIndex(object=>object.name==='tall black houseplant pot');
 const computerMembers=id=>objects.filter(object=>{
  const name=object.name.toLowerCase();
@@ -134,6 +135,11 @@ const computerMembers=id=>objects.filter(object=>{
 });
 const prefabs=[
  {id:'dining-chair',name:'Dining chair',members:objects.slice(firstChair,firstChair+6),expected:6},
+ {id:'dining-table',name:'Dining table',members:recipeMembers(727,728,729,730,731),expected:5},
+ {id:'large-nesting-table',name:'Large nesting table',members:recipeMembers(555,557,558,559),expected:4},
+ {id:'small-nesting-table',name:'Small nesting table',members:recipeMembers(556,560,561),expected:3},
+ {id:'side-table',name:'Side table',members:recipeMembers(565,566),expected:2},
+ {id:'mezzanine-side-table',name:'Mezzanine side table',members:recipeMembers(1497,1498),expected:2},
  {id:'potted-plant',name:'Potted plant',members:objects.slice(firstPlant,firstPlant+10),expected:10},
  ...[['c64-computer','C64 computer','c64',84],['bbc-computer','BBC computer','bbc',84],['sun-workstation','Sun workstation','sun',89]].map(([id,name,computer,expected])=>({id,name,members:computerMembers(computer),expected})),
 ];
@@ -141,6 +147,7 @@ const prefabManifest=[];
 for(const prefab of prefabs){
  if(prefab.members.length!==prefab.expected)throw new Error(`${prefab.id}: expected ${prefab.expected} source components, found ${prefab.members.length}; review changed recipe membership before preparing assets.`);
  if(prefab.id==='dining-chair'&&prefab.members.map(member=>member.name).join('|')!=='dining chair seat|dining chair back|chair leg|chair leg|chair leg|chair leg')throw new Error('Dining chair source component membership changed.');
+ if(prefab.id==='dining-table'&&prefab.members.map(member=>member.name).join('|')!=='dining tabletop|table leg|table leg|table leg|table leg')throw new Error('Dining table source component membership changed.');
  if(prefab.id==='potted-plant'&&(prefab.members[0].name!=='tall black houseplant pot'||prefab.members.slice(1).some(member=>member.name!=='broad houseplant leaf')))throw new Error('Potted plant source component membership changed.');
 }
 for(const prefab of prefabs){
@@ -191,5 +198,5 @@ for(const prefab of prefabs){
  prefabManifest.push({id:prefab.id,name:prefab.name,bytes:packed.length,components:prefab.members.length,materials:json.materials.length,pivot:'bottom centre of exact transformed source geometry',sourcePivot:pivot,members:prefab.members.map(member=>({id:member.id,name:member.name}))});
 }
 await writeFile(resolve(prefabOutput,'LICENSE'),await readFile(resolve(source,'LICENSE')));
-await writeFile(resolve(prefabOutput,'provenance.json'),JSON.stringify({source:'ElseMesh / src/world/PortalInteriorRecipe.js',sourceSha,recipeSha256,license:'MIT; Copyright (c) 2026 DRG Software Solutions LLC',prefabs:prefabManifest,scope:'Computers contain case, screen, keyboard, individual keys, vents, cable, and Sun mouse/accent. Desks, desk-mounted nameplates, runtime keyboard-legend overlays, chairs, lamps and clutter excluded. Static artwork and PBR fidelity limits match warehouse world.'},null,2)+'\n');
+await writeFile(resolve(prefabOutput,'provenance.json'),JSON.stringify({source:'ElseMesh / src/world/PortalInteriorRecipe.js',sourceSha,recipeSha256,license:'MIT; Copyright (c) 2026 DRG Software Solutions LLC',prefabs:prefabManifest,scope:'Furniture includes reusable dining chair, dining table and four lounge or mezzanine tables with their legs. Computers contain case, screen, keyboard, individual keys, vents, cable, and Sun mouse/accent. Static artwork and PBR fidelity limits match warehouse world.'},null,2)+'\n');
 console.log(`Prepared ${prefabManifest.map(prefab=>`${prefab.name} (${prefab.components} components, ${prefab.materials} materials)`).join(', ')}.`);
