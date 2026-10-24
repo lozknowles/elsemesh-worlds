@@ -49,3 +49,5 @@ export * from '../domain/native-island';
 export * from '../domain/media-screen';
 
 export * from '../domain/surface-exclusions';
+
+export * from '../domain/splat-scene';
