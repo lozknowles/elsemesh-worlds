@@ -34,3 +34,43 @@ This allows a valid tiny component to load when compression adds wire overhead.
 A non-colliding GLB object may declare `ambientBehaviour` with schema `elsemesh.ambient-behaviour/1`, one of `bird-flight`, `crab-walk` or `fish-swim`, and bounded `speed`, `radius` and `seed`. The authored transform is the home anchor; the installed engine evaluates a client-local visual route. This is not a world script, AI agent, shared multiplayer position or ownership grant. Unsupported descriptors fail repository validation. Fish movement needs a global water surface; unsuitable habitat leaves the model at its authored transform. The GLB's geometry remains static, so wings, legs and fins do not articulate.
 
 Clouds, mist, rain, lightning, thunder and wind remain engine effects. Each repository's authored `environment` selects weather mode and values. `weather: 'clear'`, `cloudCoverage: 0`, `mistDensity: 0` and `windSpeed: 0` are explicit world choices. Weather data never includes executable effect code or engine credentials. The editor's ElseMesh graphics view uses the same authored settings; the standalone player reads them on world activation.
+## Private splat scene resource contract
+
+An optional `project.splatScene` uses `elsemesh.splat-scene/1` and requires the
+`splat-scene/1` capability. It is stored in the digest-bound `connections`
+component. The descriptor and its provenance hashes therefore participate in the
+world content digest; resource bytes are independently checked against their
+exact declared hash and length on every read.
+
+The descriptor has exactly `schema`, `asset`, `physics`, `transform`,
+`scaleStatus`, and `provenance`. `asset` has `path`, `sha256`, `bytes`, `count`;
+`physics` has `path`, `sha256`, `bytes`. The only resource paths are
+`splat-scenes/<64 lowercase hexadecimal SHA-256>.sog` (at most 16 MiB) and
+`splat-scenes/<hash>.json` (at most 8 MiB). Declared count is an integer from 1 to
+1,000,000. The installed SOG decoder must also check the actual decoded count
+against that declaration and cap before renderer admission.
+
+`transform` contains three-element finite `position` (components within +/-2000),
+three-element `rotation` (radians within +/-2 pi), and uniform `scale` from
+0.000001 to 1000. `scaleStatus` is exactly `assumed-gameplay`; these values do not
+claim measured physical scale. `provenance` contains exactly `videoSha256`,
+`plySha256`, `reviewSha256`, and `qualificationSha256`, each a lowercase SHA-256.
+Unknown nested fields, traversal, URLs, unsupported versions, and invalid bounds
+are rejected.
+
+`createSplatSceneResourceReader(project, read)` returns `read(path, maxBytes)`,
+`readSog()`, and `readPhysicsBytes()`. Its capability is limited to the two
+admitted paths, snapshots the validated descriptor, checks exact bytes, and
+returns owned byte copies. It never creates a URL, changes authorization, or
+falls back to a public fetch. `loadWorldSource` returns this dedicated
+`splatSceneRead` capability without eagerly reading either resource. The host
+must supply its existing VIEW-authorized repository reader. Physics bytes are
+opaque here; a separate physics compiler/admission stage owns their JSON schema.
+
+`packWorldRepository(project, { splatSceneRead })` copies both verified resources
+at their exact hash paths. Forked sources retain their supplied reader in pack
+options. Standalone packages cannot preserve the resource closure and fail
+closed; save a repository snapshot/copy instead. The dedicated 16+8 MiB resource
+budget does not increase generic 25 MiB project/GLB budgets or change native
+island limits. Installed exports alone do not activate rendering, physics,
+controller logic, or host capability advertisement.

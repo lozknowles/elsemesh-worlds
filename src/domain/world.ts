@@ -1,3 +1,5 @@
+import {validateSplatScene,assertSplatSceneStandaloneExport} from './splat-scene';
+import type {SplatScene} from './splat-scene';
 import {validateMediaScreen} from './media-screen';
 import {validateAmbientBehaviour} from './ambient-behaviour';
 import type {AmbientBehaviour} from './ambient-behaviour';
@@ -104,6 +106,7 @@ export type WorldProject = {
   terrain: Terrain;
   landscape?: Landscape;
   nativeIsland?: NativeIsland;
+  splatScene?: SplatScene;
   geography?: GeoReference;
   terrainImagery?: TerrainImagery;
   objects: EditorObject[];
@@ -282,6 +285,8 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   errors.push(...validateWorldConnections(p));
   if(Object.prototype.hasOwnProperty.call(p,'nativeIsland')&&p.nativeIsland===undefined)errors.push('Invalid native island field.');
   errors.push(...validateNativeIsland(p.nativeIsland));
+  if(Object.hasOwn(p,'splatScene')&&p.splatScene===undefined)errors.push('Invalid splat scene field.');
+  errors.push(...validateSplatScene(p.splatScene));
   errors.push(...validateObjectAccess(p));
   if(Object.prototype.hasOwnProperty.call(p,'welcome')){
     const greeting=p.welcome as unknown;
@@ -459,6 +464,7 @@ export function validatePlayerWorldPackage(value:unknown):ReturnType<typeof vali
  if(Object.keys(p).some(k=>!['schema','capabilities','units','axes','project'].includes(k))||p.units!=='metres'||p.axes!=='right-handed-y-up-minus-z-forward')return invalid('Unsupported player world package fields, units or axes.');
  if(p.schema!==PLAYER_WORLD_SCHEMA&&p.schema!==LANDSCAPE_PLAYER_WORLD_SCHEMA)return invalid('Unsupported player world package schema.');
  const result=validateWorld(p.project);if(!result.valid||!result.project)return result;
+ if(result.project.splatScene)return invalid('Splat scene resources require an authorized repository source.');
  if((p.schema===LANDSCAPE_PLAYER_WORLD_SCHEMA)!==!!result.project.landscape)return invalid('Landscape requires player-world/3 capabilities.');
  const required=playerWorldCapabilities(result.project).filter(c=>c!=='object-access/1'||result.project!.objectAccess!==undefined||(Array.isArray(p.capabilities)&&p.capabilities.includes(c)));
  if(required.length){if(!Array.isArray(p.capabilities)||p.capabilities.length!==required.length||new Set(p.capabilities).size!==required.length||!required.every(c=>(p.capabilities as unknown[]).includes(c)))return invalid('Unsupported or missing player world capabilities.');}
@@ -471,6 +477,7 @@ export function createPlayerWorldPackage(value: unknown): PlayerWorldPackage {
   const result = admitLandscapeProject(value);
   if (!result.valid || !result.project) throw new Error(result.errors[0] ?? 'Project is invalid.');
   assertNativeIslandStandaloneExport(result.project);
+  assertSplatSceneStandaloneExport(result.project);
   const packageFile: PlayerWorldPackage = {
     schema: result.project.landscape ? LANDSCAPE_PLAYER_WORLD_SCHEMA : PLAYER_WORLD_SCHEMA,
     ...(playerWorldCapabilities(result.project).length?{capabilities:playerWorldCapabilities(result.project)}:{}),
