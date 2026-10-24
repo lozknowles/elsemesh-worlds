@@ -437,7 +437,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
 
 /** Minimal explicit requirements for standalone package admission. */
 function playerWorldCapabilities(project:WorldProject):string[]{
- return ['object-access/1',...(project.objects.some(o=>o.kind==='media-screen')?['media-screen/1']:[]),...(project.nativeIsland?['native-island/1']:[]),...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
+ return ['object-access/1',...(project.nativeIsland?.sea.surfaceExclusions!==undefined?['water-exclusion/1']:[]),...(project.objects.some(o=>o.kind==='media-screen')?['media-screen/1']:[]),...(project.nativeIsland?['native-island/1']:[]),...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
   ...(project.traffic?['port-traffic/1']:[]),
   ...(project.objects.some(o=>o.collisionOnly)?['collision-volumes/1']:[])];
 }

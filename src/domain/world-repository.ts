@@ -8,7 +8,7 @@ export const PREVIOUS_WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/2';
 export const CONNECTION_WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/3';
 export const WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/4';
 export const WORLD_ENGINE_CONTRACT = 'elsemesh.worlds.runtime/1';
-export const WORLD_CAPABILITIES = ['media-screen/1', 'native-island/1', 'welcome/1', 'object-access/1', 'project/2', 'project/3', 'landscape/1', 'terrain', 'objects', 'hierarchy', 'features', 'neon-sign', 'computer', 'geography', 'terrain-imagery', 'weather', 'portal/1', 'water/1', 'retro-terminal/1', 'port-traffic/1', 'collision-volumes/1'] as const;
+export const WORLD_CAPABILITIES = ['water-exclusion/1', 'media-screen/1', 'native-island/1', 'welcome/1', 'object-access/1', 'project/2', 'project/3', 'landscape/1', 'terrain', 'objects', 'hierarchy', 'features', 'neon-sign', 'computer', 'geography', 'terrain-imagery', 'weather', 'portal/1', 'water/1', 'retro-terminal/1', 'port-traffic/1', 'collision-volumes/1'] as const;
 export type WorldProvenance = { sourceWorldId?: string; sourceLocation?: string; sourceCommit?: string; sourceDigest?: string };
 export type WorldPackOptions = { nativeIslandRead?: RepositoryReader; attribution?: { license?: string; authors: string[]; source?: string }; provenance?: WorldProvenance };
 export type WorldRepositoryManifest = { schema: string; version: number; projectSchema: string; engine: { commit: string; compatibility?: string; contract?: string; requires?: string[] }; snapshot: string; components: Record<LegacyRole, FileReference> & Partial<Record<'connections'|'landscape', FileReference>>; world?: WorldProject['metadata']; regions?: { regionId: string; name: string; scene: { snapshot: string } }[]; attribution?: WorldPackOptions['attribution']; provenance?: WorldProvenance };
@@ -226,6 +226,7 @@ export function requiredWorldCapabilities(project: WorldProject): string[] {
   if(project.landscape)capabilities.add('landscape/1');
   if(project.welcome)capabilities.add('welcome/1');
   if(project.objects.some(o=>o.kind==='media-screen'))capabilities.add('media-screen/1');
+  if(project.nativeIsland?.sea.surfaceExclusions!==undefined)capabilities.add('water-exclusion/1');
   if(project.nativeIsland)capabilities.add('native-island/1');
   if (project.objects.some(o => o.kind === 'group' || o.parentId)) capabilities.add('hierarchy');
   for (const kind of ['neon-sign', 'computer']) if (project.objects.some(o => o.kind === kind)) capabilities.add(kind);

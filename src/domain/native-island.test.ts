@@ -53,3 +53,10 @@ describe('portable native island contract',()=>{
   await expect(unpackWorldRepository(async path=>files.get(path)!)).rejects.toThrow(/capability/);
  },30000);
 });
+
+it('water surface exclusions roundtrip with mandatory fail-closed capability',async()=>{
+ const {project,blobs}=await fixture();project.nativeIsland!.sea.surfaceExclusions=[{id:'warehouse:surface:interior-01',min:[-14.5,3.1,-90.5],max:[14.5,8.5,-63.5]}];expect(validateNativeIsland(project.nativeIsland)).toEqual([]);expect(requiredWorldCapabilities(project)).toContain('water-exclusion/1');
+ const files=await packWorldRepository(project,{nativeIslandRead:async path=>blobs.get(path)!}),read=async(path:string)=>files.get(path)!;
+ const loaded=await loadWorldSource({kind:'local',read,label:'surface-exclusions'});expect(loaded.project.nativeIsland?.sea.surfaceExclusions).toEqual(project.nativeIsland!.sea.surfaceExclusions);
+ const manifest=JSON.parse(new TextDecoder().decode(files.get('world.json')!));manifest.engine.requires=manifest.engine.requires.filter((v:string)=>v!=='water-exclusion/1');files.set('world.json',new TextEncoder().encode(JSON.stringify(manifest)));await expect(unpackWorldRepository(read)).rejects.toThrow(/capability/);
+},30000);
