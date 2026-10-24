@@ -7,7 +7,7 @@ export const PREVIOUS_WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/2';
 export const CONNECTION_WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/3';
 export const WORLD_REPOSITORY_SCHEMA = 'elsemesh.world-repository/4';
 export const WORLD_ENGINE_CONTRACT = 'elsemesh.worlds.runtime/1';
-export const WORLD_CAPABILITIES = ['project/2', 'project/3', 'landscape/1', 'terrain', 'objects', 'hierarchy', 'features', 'neon-sign', 'computer', 'geography', 'terrain-imagery', 'weather', 'portal/1', 'water/1', 'retro-terminal/1', 'port-traffic/1', 'collision-volumes/1'] as const;
+export const WORLD_CAPABILITIES = ['welcome/1', 'object-access/1', 'project/2', 'project/3', 'landscape/1', 'terrain', 'objects', 'hierarchy', 'features', 'neon-sign', 'computer', 'geography', 'terrain-imagery', 'weather', 'portal/1', 'water/1', 'retro-terminal/1', 'port-traffic/1', 'collision-volumes/1'] as const;
 export type WorldProvenance = { sourceWorldId?: string; sourceLocation?: string; sourceCommit?: string; sourceDigest?: string };
 export type WorldPackOptions = { attribution?: { license?: string; authors: string[]; source?: string }; provenance?: WorldProvenance };
 export type WorldRepositoryManifest = { schema: string; version: number; projectSchema: string; engine: { commit: string; compatibility?: string; contract?: string; requires?: string[] }; snapshot: string; components: Record<LegacyRole, FileReference> & Partial<Record<'connections'|'landscape', FileReference>>; world?: WorldProject['metadata']; regions?: { regionId: string; name: string; scene: { snapshot: string } }[]; attribution?: WorldPackOptions['attribution']; provenance?: WorldProvenance };
@@ -91,9 +91,9 @@ export async function packWorldRepository(project: WorldProject, options: WorldP
     terrainImagery: imagery ? { ...imagery, dataUrl: undefined, file: await binary(imagery.dataUrl, 'imagery', imagery.dataUrl.startsWith('data:image/png;') ? 'png' : 'jpg') } : null,
   };
   const landscape=project.landscape?{...project.landscape,images:await Promise.all(project.landscape.images.map(async image=>{const {dataUrl,...metadata}=image;return {...metadata,file:await binary(dataUrl,'landscape-images',image.mediaType==='image/png'?'png':'jpg')};}))}:undefined;
-  const extended = project.portals !== undefined || project.water !== undefined || project.terminals !== undefined || project.traffic !== undefined;
+  const extended = project.portals !== undefined || project.water !== undefined || project.terminals !== undefined || project.traffic !== undefined || project.objectAccess !== undefined || project.welcome !== undefined;
   const activeRoles = landscape ? roles : extended ? connectionRoles : legacyRoles;
-  const values: Record<Role, unknown> = { landscape, metadata: project.metadata, terrain: project.terrain, objects: project.objects, features: project.features ?? [], environment: project.environment, spawn: project.spawn, geography, assets, connections: { ...(project.traffic !== undefined ? { traffic: project.traffic } : {}), ...(project.portals !== undefined ? { portals: project.portals } : {}), ...(project.water !== undefined ? { water: project.water } : {}), ...(project.terminals !== undefined ? { terminals: project.terminals } : {}) } };
+  const values: Record<Role, unknown> = { landscape, metadata: project.metadata, terrain: project.terrain, objects: project.objects, features: project.features ?? [], environment: project.environment, spawn: project.spawn, geography, assets, connections: { ...(project.welcome !== undefined ? { welcome: project.welcome } : {}), ...(project.objectAccess !== undefined ? { objectAccess: project.objectAccess } : {}), ...(project.traffic !== undefined ? { traffic: project.traffic } : {}), ...(project.portals !== undefined ? { portals: project.portals } : {}), ...(project.water !== undefined ? { water: project.water } : {}), ...(project.terminals !== undefined ? { terminals: project.terminals } : {}) } };
   const components = {} as Record<Role, FileReference>;
   const contents = new Map<Role, Uint8Array>();
   for (const role of activeRoles) {
@@ -161,7 +161,7 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
     imageryPlan = { metadata, ref, mediaType: ref.path.endsWith('.png') ? 'image/png' : 'image/jpeg' };
   }
   const connections = manifest.version >= 3 ? values.connections : {};
-  if (!object(connections) || Object.keys(connections).some(key => !['portals','water','terminals','traffic'].includes(key))) throw new Error('Invalid repository connections component.');
+  if (!object(connections) || Object.keys(connections).some(key => !['portals','water','terminals','traffic','objectAccess','welcome'].includes(key))) throw new Error('Invalid repository connections component.');
   const rawLandscape=manifest.version===4?values.landscape:undefined;
   const imagePlans:{metadata:Record<string,unknown>;ref:FileReference;mediaType:string}[]=[];
   if(rawLandscape!==undefined){
@@ -200,15 +200,16 @@ export async function unpackWorldRepository(read: RepositoryReader): Promise<Wor
   const project = validateProject(candidate);
   if (manifest.version >= 2) {
     if (Object.keys(project.metadata).some(key => manifest.world?.[key as keyof WorldProject['metadata']] !== project.metadata[key as keyof WorldProject['metadata']]) || manifest.regions![0]!.regionId !== project.metadata.regionId) throw new Error('Manifest identity does not match scene metadata.');
-    if (requiredWorldCapabilities(project).some(capability => !manifest.engine.requires!.includes(capability))) throw new Error('Manifest omits a capability required by scene content.');
+    if (requiredWorldCapabilities(project).some(capability => (capability!=='object-access/1'||project.objectAccess!==undefined) && !manifest.engine.requires!.includes(capability))) throw new Error('Manifest omits a capability required by scene content.');
   }
   return project;
 }
 
 
 export function requiredWorldCapabilities(project: WorldProject): string[] {
-  const capabilities = new Set<string>([project.landscape?'project/3':'project/2', 'terrain', 'objects']);
+  const capabilities = new Set<string>(['object-access/1', project.landscape?'project/3':'project/2', 'terrain', 'objects']);
   if(project.landscape)capabilities.add('landscape/1');
+  if(project.welcome)capabilities.add('welcome/1');
   if (project.objects.some(o => o.kind === 'group' || o.parentId)) capabilities.add('hierarchy');
   for (const kind of ['neon-sign', 'computer']) if (project.objects.some(o => o.kind === kind)) capabilities.add(kind);
   if (project.portals?.length) capabilities.add('portal/1');

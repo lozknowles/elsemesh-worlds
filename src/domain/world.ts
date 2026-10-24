@@ -1,3 +1,5 @@
+import { validateObjectAccess } from './object-access';
+import type { ObjectAccessPolicy } from './object-access';
 import {validateRoadTraffic} from './road-traffic';
 import type {RoadTraffic} from './road-traffic';
 import {validateLandscape,admitLandscapeProject} from './landscape';
@@ -101,6 +103,8 @@ export type WorldProject = {
   portals?: WorldPortal[];
   water?: WorldWater;
   terminals?: RetroTerminal[];
+  objectAccess?: ObjectAccessPolicy;
+  welcome?: { schema: 'elsemesh.world-welcome/1'; text: string; audio: boolean };
   spawn: { position: Vec3; yaw: number };
   environment: { sunAzimuth: number; sunElevation: number; fog: number; skyColor: string; timeOfDay?: number; cloudCoverage?: number; mistDensity?: number; mistSpeed?: number; mistHeight?: number; weather?: 'clear' | 'rain' | 'storm'; rainIntensity?: number; windSpeed?: number; weatherSeed?: number };
   assets: WorldAsset[];
@@ -267,6 +271,12 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   if (p.geography !== undefined) errors.push(...validateGeography(p.geography, p.terrain));
   if (p.terrainImagery !== undefined) errors.push(...validateTerrainImagery(p.terrainImagery, p.geography));
   errors.push(...validateWorldConnections(p));
+  errors.push(...validateObjectAccess(p));
+  if(Object.prototype.hasOwnProperty.call(p,'welcome')){
+    const greeting=p.welcome as unknown;
+    if(!greeting||typeof greeting!=='object'||Array.isArray(greeting)||Object.keys(greeting).some(k=>!['schema','text','audio'].includes(k)))errors.push('Invalid welcome greeting.');
+    else {const g=greeting as Record<string,unknown>;if(g.schema!=='elsemesh.world-welcome/1'||typeof g.text!=='string'||!g.text.trim()||g.text.length>2000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(g.text)||typeof g.audio!=='boolean')errors.push('Welcome greeting must contain 1–2000 plain text characters and a read aloud choice.');}
+  }
   errors.push(...validateRoadTraffic(p.traffic,Array.isArray(p.assets)?p.assets:[]));
   errors.push(...validateLandscape(p as WorldProject));
   if (!p.landscape && Array.isArray(p.objects) && p.objects.some((o:EditorObject)=>o.landscapeOrigin)) errors.push('Landscape origins require landscape/1.');
@@ -417,7 +427,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
 
 /** Minimal explicit requirements for standalone package admission. */
 function playerWorldCapabilities(project:WorldProject):string[]{
- return [...(project.landscape?['project/3','landscape/1']:[]),
+ return ['object-access/1',...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
   ...(project.traffic?['port-traffic/1']:[]),
   ...(project.objects.some(o=>o.collisionOnly)?['collision-volumes/1']:[])];
 }
@@ -431,7 +441,7 @@ export function validatePlayerWorldPackage(value:unknown):ReturnType<typeof vali
  if(p.schema!==PLAYER_WORLD_SCHEMA&&p.schema!==LANDSCAPE_PLAYER_WORLD_SCHEMA)return invalid('Unsupported player world package schema.');
  const result=validateWorld(p.project);if(!result.valid||!result.project)return result;
  if((p.schema===LANDSCAPE_PLAYER_WORLD_SCHEMA)!==!!result.project.landscape)return invalid('Landscape requires player-world/3 capabilities.');
- const required=playerWorldCapabilities(result.project);
+ const required=playerWorldCapabilities(result.project).filter(c=>c!=='object-access/1'||result.project!.objectAccess!==undefined||(Array.isArray(p.capabilities)&&p.capabilities.includes(c)));
  if(required.length){if(!Array.isArray(p.capabilities)||p.capabilities.length!==required.length||new Set(p.capabilities).size!==required.length||!required.every(c=>(p.capabilities as unknown[]).includes(c)))return invalid('Unsupported or missing player world capabilities.');}
  else if(p.capabilities!==undefined)return invalid('Unexpected player world capabilities.');
  try{if(new TextEncoder().encode(JSON.stringify(value)).byteLength>MAX_PROJECT_BYTES)return invalid('Player world package exceeds the 25 MiB limit.');}catch{return invalid('Player world package is not serializable.');}

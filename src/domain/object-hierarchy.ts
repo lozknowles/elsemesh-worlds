@@ -72,11 +72,11 @@ export function ungroupObjects(project:WorldProject,ids:string[]):WorldProject{
  let next=project;const groups=pruneSelection(project.objects,ids);editable(project.objects,groups);
  for(const id of groups){const group=next.objects.find(o=>o.id===id);if(group?.kind!=='group')throw new Error('Select a group to ungroup.');const children=next.objects.filter(o=>o.parentId===id).map(o=>o.id);if(children.length)next=reparentObjects(next,children,group.parentId);next=checked(next,next.objects.filter(o=>o.id!==id));}return next;
 }
-export function cloneSubtrees(project:WorldProject,ids:string[]):{objects:EditorObject[];rootIds:string[]}{
+export function cloneSubtrees(project:WorldProject,ids:string[]):{objects:EditorObject[];rootIds:string[];objectAccess?:WorldProject['objectAccess'];terminals?:WorldProject['terminals']}{
  const roots=pruneSelection(project.objects,ids),all=subtreeIds(project.objects,roots),map=new Map([...all].map(id=>[id,crypto.randomUUID()]));
  const worlds=resolveWorldMatrices(project.objects),rootSet=new Set(roots);
  const objects=project.objects.filter(o=>all.has(o.id)).map(o=>{const clone=structuredClone(o);clone.id=map.get(o.id)!;if(clone.computer?.targetSignId&&map.has(clone.computer.targetSignId))clone.computer.targetSignId=map.get(clone.computer.targetSignId)!;if(rootSet.has(o.id))return fromMatrix(clone,worlds.get(o.id)!);clone.parentId=map.get(o.parentId!);return clone;});
- return{objects,rootIds:roots.map(id=>map.get(id)!)};
+ return{objects,rootIds:roots.map(id=>map.get(id)!),...(project.objectAccess?{objectAccess:{...project.objectAccess,rules:project.objectAccess.rules.filter(r=>map.has(r.objectId)).map(r=>({...r,objectId:map.get(r.objectId)!,actions:[...r.actions]}))}}:{}),...(project.terminals?{terminals:project.terminals.filter(t=>map.has(t.objectId)).map(t=>({...t,id:crypto.randomUUID(),objectId:map.get(t.objectId)!,...(t.screenObjectId?{screenObjectId:map.get(t.screenObjectId)??t.screenObjectId}:{}),...(t.screenObjectIds?{screenObjectIds:t.screenObjectIds.map(id=>map.get(id)??id)}:{})}))}:{})};
 }
 const treeBoundsCache=new Map<string,Box3>();
 export function objectLocalBounds(project:WorldProject,o:EditorObject):Box3{
