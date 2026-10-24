@@ -92,7 +92,7 @@ export class SceneRenderer {
 
 	}
 
-	_renderHullMasks( camera ) {
+	_renderHullMasks( camera, view = {} ) {
 
 		let active = 0;
 		_frustum.setFromProjectionMatrix( _vp.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ) );
@@ -112,24 +112,36 @@ export class SceneRenderer {
 		if ( ! active ) return;
 		const rt = this.hullMaskRT;
 		this.meshRenderer.render( this.hullMaskScene, {
-			label: 'hull mask', kind: 'color', camera, colorViews: [ rt.texture.view() ], colorFormats: rt.formats,
+			...view, label: 'hull mask', kind: 'color', camera, colorViews: [ rt.texture.view() ], colorFormats: rt.formats,
 			clearColors: [ [ 0, 0, 0, 0 ] ], depthView: rt.depthTexture.view(), depthFormat: DEPTH_FORMAT, clearDepth: 0, cull: false,
 		} );
 
 	}
 
-	render() {
+	render( view = {} ) {
 
 		const { scene, camera, meshRenderer: mr } = this;
 		const rt = this.sceneRT;
 		const views = rt.textures.map( ( t ) => t.view() );
-		const common = { camera, colorViews: views, colorFormats: rt.formats, depthView: rt.depthTexture.view(), depthFormat: DEPTH_FORMAT, kind: 'main' };
+		const common = { ...view, camera, colorViews: views, colorFormats: rt.formats, depthView: rt.depthTexture.view(), depthFormat: DEPTH_FORMAT, kind: 'main' };
+
+		if ( ! this._depthHalfPass ) this._depthHalfPass = new FullscreenPass( {
+			label: 'opaque depth half', colorFormats: [ 'r16float' ],
+			bindings: { srcDepth: { texture: () => this.opaqueCopy.depthTexture } },
+			code: 'fn fragment( in: FSIn ) -> vec4f { return vec4f( textureLoad( srcDepth, vec2i( in.pos.xy ), 0 ), 0.0, 0.0, 1.0 ); }',
+		} );
+		if ( view.prepare ) {
+			mr.render( scene, { ...common, label:'prepare opaque', layerMask: 1 << LAYERS.OPAQUE } );
+			mr.render( scene, { ...common, label:'prepare water + transparent', late:true, layerMask:(1<<LAYERS.WATER)|(1<<LAYERS.TRANSPARENT) } );
+			this.onBeforeWater?.(view);
+			return;
+		}
 
 		// 1. opaques + background
 		mr.render( scene, {
 			...common, label: 'opaque', layerMask: 1 << LAYERS.OPAQUE,
 			clearColors: [ this.clearColor, [ 0, 0, 0, 0 ], [ 0, 0, 0, 0 ] ], clearDepth: 0,
-			after: this.background ? ( rp ) => this.background.draw( rp ) : null,
+			after: this.background ? ( rp ) => this.background.draw( rp, view.frameBlock, camera ) : null,
 		} );
 
 		// 2. copies for refraction
@@ -137,22 +149,36 @@ export class SceneRenderer {
 		const size = { width: rt.width, height: rt.height };
 		enc.copyTextureToTexture( { texture: rt.texture.getGPU() }, { texture: this.opaqueCopy.texture.getGPU() }, size );
 		enc.copyTextureToTexture( { texture: rt.depthTexture.getGPU() }, { texture: this.opaqueCopy.depthTexture.getGPU() }, size );
-		if ( ! this._depthHalfPass ) this._depthHalfPass = new FullscreenPass( {
-			label: 'opaque depth half', colorFormats: [ 'r16float' ],
-			bindings: { srcDepth: { texture: () => this.opaqueCopy.depthTexture } },
-			code: 'fn fragment( in: FSIn ) -> vec4f { return vec4f( textureLoad( srcDepth, vec2i( in.pos.xy ), 0 ), 0.0, 0.0, 1.0 ); }',
-		} );
+
 		if ( ! this.optimizeWaterDepthCopy || this.waterMaterial?.needsSSRDepth !== false ) {
-			this._depthHalfPass.render( { colorViews: [ this.opaqueDepthHalf.texture ], clear: [ 0, 0, 0, 0 ] } );
+			this._depthHalfPass.render( { colorViews: [ this.opaqueDepthHalf.texture ], clear: [ 0, 0, 0, 0 ], frameBlock: view.frameBlock } );
 		}
 
 		// 3. hull interiors
-		if ( this.hullMasks.length > 0 ) this._renderHullMasks( camera );
-		if ( this.onBeforeWater ) this.onBeforeWater();
+		if ( this.hullMasks.length > 0 ) this._renderHullMasks( camera, view );
+		if ( this.onBeforeWater ) this.onBeforeWater(view);
 
 		// 4. water + transparents
 		mr.render( scene, { ...common, label: 'water + transparent', late: true, layerMask: ( 1 << LAYERS.WATER ) | ( 1 << LAYERS.TRANSPARENT ) } );
 
+	}
+
+	dispose() {
+		if ( this._disposed ) return;
+		this._disposed = true;
+		const release = () => {
+			for ( const rt of [ this.sceneRT, this.opaqueCopy, this.opaqueDepthHalf, this.hullMaskRT ] ) {
+				for ( const texture of rt.textures ) texture.destroy();
+				rt.depthTexture?.destroy();
+			}
+			this.hullMaskMaterial.dispose();
+			this.hullMaskMaterial.uniformBlock.buffer?.destroy();
+			this.hullMaskScene.clear();
+			this.hullMasks.length = 0;
+			this._depthHalfPass = null;
+			this.background = null;
+		};
+		if ( GPU.encoder ) GPU.onSubmit( null, release ); else release();
 	}
 
 }

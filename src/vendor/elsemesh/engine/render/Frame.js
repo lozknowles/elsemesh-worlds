@@ -58,10 +58,12 @@ const FRAME_FIELDS = {
 	pad0: [ 'f32', 0 ],
 	// free slots for experiments / debug views
 	debug: [ 'vec4f', new Vector4() ],
+	// Independent destination clipping plane, disabled unless PORTAL_CLIP.
+	portalClipPlane: [ 'vec4f', new Vector4( 0, 0, 0, 0 ) ],
 };
 
 const CAMERA_FIELDS = [ 'view', 'proj', 'viewProj', 'invView', 'invProj', 'invViewProj', 'viewProjNoJitter', 'prevViewProjNoJitter',
-	'cameraPos', 'near', 'prevCameraPos', 'far', 'resolution', 'invResolution', 'jitter', 'prevJitter', 'reversedDepth' ];
+	'cameraPos', 'near', 'prevCameraPos', 'far', 'resolution', 'invResolution', 'jitter', 'prevJitter', 'reversedDepth', 'portalClipPlane' ];
 
 // The main frame block (main camera; also what compute shaders see).
 export const FrameUniforms = new UniformBlock( 'Frame', FRAME_FIELDS, { label: 'frame' } );

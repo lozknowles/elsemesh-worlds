@@ -43,7 +43,7 @@ describe('shared seeded weather geometry', () => {
         expect(p[offset + 3]! - p[offset]!).toBeGreaterThan(0);
       }
     }
-  });
+  }, 15000); // Exhaustive 24-frame fixture performs 410,448 assertions.
 
   it('reproduces seeds and frame times without accumulating frame-rate-dependent state', () => {
     const settings: WeatherSettings = { weather: 'rain', weatherSeed: 1122, rainIntensity: 0.35, windSpeed: 7 };

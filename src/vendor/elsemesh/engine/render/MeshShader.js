@@ -54,7 +54,7 @@ export function buildMeshShader( material, layout, pass ) {
 	defs.INSTANCED = has.has( 'instanceMatrix0' ) ? 1 : 0;
 	defs.INSTANCE_COLOR = has.has( 'instanceColor' ) ? 1 : 0;
 	Object.assign( defs, pass.defines || {} );
-	defs.CLIP_DISTANCES = defs.REFRACTION_CLIP && GPU.features.has( 'clip-distances' ) ? 1 : 0;
+	defs.CLIP_DISTANCES = ( defs.REFRACTION_CLIP || defs.PORTAL_CLIP ) && GPU.features.has( 'clip-distances' ) ? 1 : 0;
 
 	// ---- vertex input
 	let vin = 'struct VertexIn {\n';
@@ -211,7 +211,11 @@ ${ fetch }#if !HAS_POSITION
 	o.prevClip = frame.prevViewProjNoJitter * vec4f( pwp, 1.0 );
 #endif
 #if CLIP_DISTANCES
+	#if PORTAL_CLIP
+	return vsClip( o, dot( frame.portalClipPlane, vec4f( wp, 1.0 ) ) );
+#else
 	return vsClip( o, frame.seaLevel + REFRACTION_CLIP_MARGIN - wp.y );
+#endif
 #else
 	return o;
 #endif
@@ -296,8 +300,11 @@ struct FragOut {
 
 @fragment fn fs( vs: VSOut, @builtin( front_facing ) front: bool ) -> FragOut {
 	let in = fragInput( vs, front );
+#if PORTAL_CLIP && !CLIP_DISTANCES
+	if ( dot( frame.portalClipPlane, vec4f( in.P, 1.0 ) ) < 0.0 ) { discard; }
+#endif
 #if REFRACTION_CLIP
-#if !CLIP_DISTANCES
+#if !CLIP_DISTANCES || PORTAL_CLIP
 	// the water's refraction source only holds what is under the water (pass.defines)
 	if ( in.P.y > frame.seaLevel + REFRACTION_CLIP_MARGIN ) { discard; }
 #endif
@@ -371,7 +378,7 @@ struct FragOut {
 	// modules: lighting (with the installed hooks) for colour passes, or whenever a material module needs it
 	let modules = [ commonModule, surfaceModule, ...material.modules ];
 	const needsLighting = kind !== 'depth' || collectModules( material.modules ).includes( lightingModule );
-	if ( needsLighting ) modules = [ commonModule, surfaceModule, ...hookModules(), lightingModule, ...material.modules ];
+	if ( needsLighting ) modules = [ commonModule, surfaceModule, ...hookModules( !!pass.defines?.PORTAL_VIEW ), lightingModule, ...material.modules ];
 	// custom-shaded materials (the water) that only need sunShadow(): no scene lighting hooks, whose
 	// modules would add their uniform buffers / textures to the pipeline (12 uniform buffers per stage)
 	if ( material.lightingHooks === false && ! collectModules( material.modules ).includes( lightingModule ) ) modules = [ commonModule, surfaceModule, shadowModule, ...material.modules ];

@@ -1,0 +1,750 @@
+{
+  "schema": "elsemesh.native-island-runtime-provenance/1",
+  "source": "rebroad/ElseMesh",
+  "sourceGitCommit": "5f98498c59921310a8da3ef4d506737da270dfdf",
+  "prototypeDirty": false,
+  "license": "MIT (retained LICENSE and CREDITS.md; dependency source headers retained)",
+  "entryPoints": [
+    "src/world-runtime/RepositoryScene.js",
+    "src/world-runtime/NativeIslandSource.js"
+  ],
+  "method": "esbuild metafile dependency closure; copied original modules, no opaque runtime bundle",
+  "files": [
+    {
+      "path": "core/CDLOD.js",
+      "bytes": 10096,
+      "sha256": "822037eff293345745144ff1cfb2f605bb10b198f7233b849105dcbae0382f52"
+    },
+    {
+      "path": "core/Globals.js",
+      "bytes": 154,
+      "sha256": "959979ae1d2ec1ebc661b25e2ce2fce14c052375122b7639204aab41e7e055f6"
+    },
+    {
+      "path": "core/SceneRenderer.js",
+      "bytes": 75,
+      "sha256": "ea52401378ad334a79e23ed574153fb3910b74fed06e2fe6bb8d4abd848a3aad"
+    },
+    {
+      "path": "engine/Engine.js",
+      "bytes": 3920,
+      "sha256": "de12a4253f313e0bf5402d62b20828bbd64a1b632d6eb337f30a6d28697ba52a"
+    },
+    {
+      "path": "engine/FrameTiming.js",
+      "bytes": 1442,
+      "sha256": "3f435e62ea59deb731699dcb49e26ecc47afb38e1c0a77ae13981ca637a5ca43"
+    },
+    {
+      "path": "engine/constants.js",
+      "bytes": 516,
+      "sha256": "4610679066f55da362c10a896fea17058ee646affff3981d6e2aede118f2947f"
+    },
+    {
+      "path": "engine/core/EventDispatcher.js",
+      "bytes": 966,
+      "sha256": "3225f116d0407a8b603917ab8bbe8656f1cbfe97fc1165028bf7420093ae70f3"
+    },
+    {
+      "path": "engine/geometry/BufferAttribute.js",
+      "bytes": 8854,
+      "sha256": "48cc710ca8029bc15b3c03533b13c478ae55cf52a453543e10d7ffc933580a41"
+    },
+    {
+      "path": "engine/geometry/BufferGeometry.js",
+      "bytes": 11772,
+      "sha256": "ef3e8470f6cc0745bc50e354c3145da8e470ea1de0e056d33f3f0501901e7376"
+    },
+    {
+      "path": "engine/geometry/BufferGeometryUtils.js",
+      "bytes": 4796,
+      "sha256": "c7ab418b86ddd4b623eb7fa6b037c800c141f9f444772d604658961d2d623d4c"
+    },
+    {
+      "path": "engine/geometry/PolyhedronGeometry.js",
+      "bytes": 4274,
+      "sha256": "6b5e756688f3ea962c012d7e06c595d1fd5730fba9e44b1cccc5455013b45473"
+    },
+    {
+      "path": "engine/geometry/PrimitiveGeometries.js",
+      "bytes": 14019,
+      "sha256": "cbde738b33b5e0c67d729825c7d8620b2d819c7aa70bf680b15d94d265732ceb"
+    },
+    {
+      "path": "engine/geometry/RoundedBoxGeometry.js",
+      "bytes": 3919,
+      "sha256": "f4c05c55362ff68a2fe2eeae21e9d783344243265e1e18567154fe95b3971413"
+    },
+    {
+      "path": "engine/geometry/TubeGeometry.js",
+      "bytes": 2137,
+      "sha256": "f493cb4de35444a9adfedf2b7a57994f59cba823e9768b5102080b750b9ef5a2"
+    },
+    {
+      "path": "engine/geometry/index.js",
+      "bytes": 965,
+      "sha256": "7aa336e8ff7d01675b375fbb499ae9820952595f9bac9b169df22d6b1de5538c"
+    },
+    {
+      "path": "engine/gpu/Compute.js",
+      "bytes": 2900,
+      "sha256": "0236b58d82a1dfd66965eef73d06ba0ab997e9995d9c0c65fd985be3fb40a043"
+    },
+    {
+      "path": "engine/gpu/GPU.js",
+      "bytes": 9380,
+      "sha256": "e38830b06abae4bd1ad517a4e6458e1c795a18353e425c5a3d642bf412177dca"
+    },
+    {
+      "path": "engine/gpu/Mipmaps.js",
+      "bytes": 3101,
+      "sha256": "c3262f6f22cb30275847666ab6f7ed543f0c77b5d06f1d9aa84611cadc7070c6"
+    },
+    {
+      "path": "engine/gpu/Readback.js",
+      "bytes": 3692,
+      "sha256": "d16b3a3ecc588e5743534cfb10129428666d4114fb7e3372af51cb068529148d"
+    },
+    {
+      "path": "engine/gpu/Shader.js",
+      "bytes": 21580,
+      "sha256": "b45b50583a6525aa4aa9a26ae5be699032e5c5ae57780daf99ed2a6402860bd6"
+    },
+    {
+      "path": "engine/gpu/Texture.js",
+      "bytes": 8905,
+      "sha256": "54135704fe77cf806348350f20da6dece66f6dcfc973713acc6042c6e5ec1f42"
+    },
+    {
+      "path": "engine/gpu/Uniforms.js",
+      "bytes": 8296,
+      "sha256": "51bf60e5da6bbab612cc1405cce5dcb7a759a3732bd0fd7cdfe5e1df73105940"
+    },
+    {
+      "path": "engine/index.js",
+      "bytes": 456,
+      "sha256": "239f0f1370717789618b0094b983717ca501ad957eaa02bdf3e2b872a66dc454"
+    },
+    {
+      "path": "engine/loaders/GLTF.js",
+      "bytes": 8746,
+      "sha256": "b8a2c3666fa27ea504e62d315ed9c125e178007a27d151eb59c9d1ea5ac210d1"
+    },
+    {
+      "path": "engine/math/Box3.js",
+      "bytes": 5392,
+      "sha256": "170c606467f859c5a3f6dae1b32256711f61b927aaec42fe3cbcfb4a51c16356"
+    },
+    {
+      "path": "engine/math/CatmullRomCurve3.js",
+      "bytes": 7532,
+      "sha256": "b21bae1708947c35819fce3dbe97f90f893c36d7db42392fbd5b63de05991f5f"
+    },
+    {
+      "path": "engine/math/Color.js",
+      "bytes": 7124,
+      "sha256": "ad9a0110fd607695522c17dce08aa5eacee017e1160fce3aa5ba37704b893d25"
+    },
+    {
+      "path": "engine/math/DataUtils.js",
+      "bytes": 1241,
+      "sha256": "f94e4a385baae53868d2e334b31d04c5ac42ca7d382b5f9effcc6ada9060db38"
+    },
+    {
+      "path": "engine/math/Euler.js",
+      "bytes": 4035,
+      "sha256": "5bf51c4b93fffc1cb9c24d4ba75af7b00bc1520880e18353d4f69cddea7e37c7"
+    },
+    {
+      "path": "engine/math/Frustum.js",
+      "bytes": 3381,
+      "sha256": "cd6eba21f91122150afc973be49a215a0620c4ae1aea7f3ef0ff65d34d1b3bd9"
+    },
+    {
+      "path": "engine/math/MathUtils.js",
+      "bytes": 4078,
+      "sha256": "8adcc4743bf966b097bd25057abeb50b313ec9b9030e457825a5da209e1f9534"
+    },
+    {
+      "path": "engine/math/Matrix3.js",
+      "bytes": 4466,
+      "sha256": "32fa721dfd326e1c0a53695b68938d4f2a5e85903c9b56c7b5f69e80456382da"
+    },
+    {
+      "path": "engine/math/Matrix4.js",
+      "bytes": 14183,
+      "sha256": "c5c1dc971d61cbd21efcb083fdbdfb1e9fb0c6a56c9422266cfdc8b8353d57cc"
+    },
+    {
+      "path": "engine/math/Plane.js",
+      "bytes": 2231,
+      "sha256": "523139ba4761b0f89cb4154e55b90ef6cf79f8c684fa5c50a67dffc4ad8a3d0d"
+    },
+    {
+      "path": "engine/math/Quaternion.js",
+      "bytes": 8153,
+      "sha256": "040b4dd121db6effed1fbb8f2c5a6fb8d96d9523cf91ddde5105dc48c41fb3ce"
+    },
+    {
+      "path": "engine/math/Ray.js",
+      "bytes": 4086,
+      "sha256": "88e40df102d8ca15bf36395883937d1d903541a932d2293cca0690d72373cdcd"
+    },
+    {
+      "path": "engine/math/ShapeUtils.js",
+      "bytes": 5934,
+      "sha256": "f560e483842a6ba7e9c73dc6e66614099faf6f4a342c23a83ced82de7cc39976"
+    },
+    {
+      "path": "engine/math/Sphere.js",
+      "bytes": 2901,
+      "sha256": "9bf98f3c0ff69bd68a0fa1dedd8a19a6abdb37dc2c2979a27ab89def1f94f71c"
+    },
+    {
+      "path": "engine/math/Spherical.js",
+      "bytes": 938,
+      "sha256": "b0388ee43a1feea9c31d184af0f3b4746261667bfe3d5a3a548cb257862a7772"
+    },
+    {
+      "path": "engine/math/Timer.js",
+      "bytes": 1803,
+      "sha256": "065eccbebb840beed5481ccf60f09bd50969d5965aac394f8858d136a4d1ec31"
+    },
+    {
+      "path": "engine/math/Vector2.js",
+      "bytes": 4482,
+      "sha256": "195d0d4cc60dca87b7386464dca3fcfc6c76c852a3ef3dab95e3556ce7947b54"
+    },
+    {
+      "path": "engine/math/Vector3.js",
+      "bytes": 8772,
+      "sha256": "af1252233ab373aeb9bb8f3514c8fdc3f00e8d2d9d71cdf16536f475a54bcb54"
+    },
+    {
+      "path": "engine/math/Vector4.js",
+      "bytes": 5340,
+      "sha256": "84deef94dbf6a335ed53aeaa2d6e65cd1f2d90687fb0fd37d18c4fdbf5e25710"
+    },
+    {
+      "path": "engine/math/index.js",
+      "bytes": 983,
+      "sha256": "96a474ebaf2666dc51217e3d8224254794a5576db3d0acb2ce4a56e00911a2cf"
+    },
+    {
+      "path": "engine/render/DrawListPool.js",
+      "bytes": 740,
+      "sha256": "e51cbddac377836b124e23f3aff55b91be73209ec3872676ee0d0e7f86bfc4f3"
+    },
+    {
+      "path": "engine/render/Frame.js",
+      "bytes": 6219,
+      "sha256": "c1411fd15b19d9c6c05c492b5ce919490ca1229f2c75a92e7e084815c7b1a7fb"
+    },
+    {
+      "path": "engine/render/FullscreenPass.js",
+      "bytes": 4041,
+      "sha256": "21c7d6014158f76ce8d0b7c4674a1a76c6750d6934db3e327adc5dca1c0bd552"
+    },
+    {
+      "path": "engine/render/Material.js",
+      "bytes": 10644,
+      "sha256": "a84b1a3363c954ca4e3c7a5e0bfa0995a3f1e385506f3b05de2dea6b50713d22"
+    },
+    {
+      "path": "engine/render/MeshRenderer.js",
+      "bytes": 33982,
+      "sha256": "a6aeb9320f5411f3af1328738f1f214e31bb98e36d7e5135365d818dc6b7f40d"
+    },
+    {
+      "path": "engine/render/MeshShader.js",
+      "bytes": 13671,
+      "sha256": "275644b8dc0cb8d611902ce57084ebadefec6b41ff29dad984a31552b4b85029"
+    },
+    {
+      "path": "engine/render/SceneRenderer.js",
+      "bytes": 7898,
+      "sha256": "98e482fa55e95b635f1b7391ffe37a33d69496b2ece48ebe5f1f48e8983b72e3"
+    },
+    {
+      "path": "engine/render/Shadows.js",
+      "bytes": 6812,
+      "sha256": "3d70ceacbb25505533ce4f47779ba5d97bc5834e2b1e01d0eb659a26c7b8dc91"
+    },
+    {
+      "path": "engine/render/SkinBounds.js",
+      "bytes": 2049,
+      "sha256": "2792e5f89f37374ef616dec001335d81300f571336bef94bd8ff1e3a4e0c7ce3"
+    },
+    {
+      "path": "engine/render/Skinning.js",
+      "bytes": 18701,
+      "sha256": "67125402c889fd07ac9d720d50e844280260a2eb48a3cc680b8ba55936396d3c"
+    },
+    {
+      "path": "engine/render/wgsl/common.js",
+      "bytes": 11858,
+      "sha256": "502580bf3c7d684833f2ce622f0f1d34425b0aa3842aedb2106816f5fbbd91c5"
+    },
+    {
+      "path": "engine/render/wgsl/lighting.js",
+      "bytes": 21624,
+      "sha256": "5bbba570a9c415539a7e7feb16ffd58262961e847297f87d764cdc4db0e51f3c"
+    },
+    {
+      "path": "engine/scene/Camera.js",
+      "bytes": 7446,
+      "sha256": "041f492248dc5425e89c6e207009a6d8ae19264e68cc8638027fd3de4466a160"
+    },
+    {
+      "path": "engine/scene/Group.js",
+      "bytes": 209,
+      "sha256": "c9837f1c2dd612cf94e1a7b7aac46c1f0fe84573b40ddfc21e75cca333dee2a1"
+    },
+    {
+      "path": "engine/scene/Layers.js",
+      "bytes": 523,
+      "sha256": "b4f9be617a8ebf912561da0414681b06f9dd4179af60bdce16cfa8de49717977"
+    },
+    {
+      "path": "engine/scene/Mesh.js",
+      "bytes": 3539,
+      "sha256": "2ca60839273eca616fb98582aa78f75205ae922a2aafc22bd14c27faad75c2c0"
+    },
+    {
+      "path": "engine/scene/Object3D.js",
+      "bytes": 11233,
+      "sha256": "6bf8eb3d3ddc95c3e919cfaf91d62e2761b1dcd97b1c769383dab74a94cc34e0"
+    },
+    {
+      "path": "engine/scene/Scene.js",
+      "bytes": 1212,
+      "sha256": "45b6080a68d116088ee45c024216f9d4c7eaa0b33cdd83cadb80ce196d3cb7c3"
+    },
+    {
+      "path": "engine/scene/index.js",
+      "bytes": 321,
+      "sha256": "80fa84e958bb59d407f080aaa0c43ad6a9b6432fe948733b25707467e02b4ee1"
+    },
+    {
+      "path": "engine/webgpu.js",
+      "bytes": 1312,
+      "sha256": "f5bef1ce79dababfe5e838d77042293102dad18737b144c872867f36e7fdd461"
+    },
+    {
+      "path": "materials/LODFade.js",
+      "bytes": 2329,
+      "sha256": "de38c6a21eca7b9e159205904492577ff08e9558ac3ca54b1e75f1fe9fe78352"
+    },
+    {
+      "path": "materials/Materials.js",
+      "bytes": 5217,
+      "sha256": "b730faeb06d578e4f505ed29f0baa493d32cd250111e8209cbaed0efcbf8a58d"
+    },
+    {
+      "path": "ocean/FoamTexture.js",
+      "bytes": 4044,
+      "sha256": "12cf8284119111704ad70267110c7906a7ceaa2514864ab96e9f4be6183fbab7"
+    },
+    {
+      "path": "ocean/OceanFFT.js",
+      "bytes": 23469,
+      "sha256": "0b49481bdd7aaad20d0cadf4ae5a079f6fca71d712f46b281bde44ab0d03f208"
+    },
+    {
+      "path": "ocean/RefractionPass.js",
+      "bytes": 8540,
+      "sha256": "2b015913ce6fbdb72c35010da1a9fc0aa2b609fddc34812246eed4a445b12f59"
+    },
+    {
+      "path": "ocean/SeaDetail.js",
+      "bytes": 6400,
+      "sha256": "d74b20d223a7b7d6964d872f6ee680543aa812676212d6c925d9db1be5e9f931"
+    },
+    {
+      "path": "ocean/ShoreSim.js",
+      "bytes": 11817,
+      "sha256": "fe121eb60c1929382dbdbf314f0ef2b43b44042ddae6363177711a774ddbe2b0"
+    },
+    {
+      "path": "ocean/ShoreWaves.js",
+      "bytes": 34685,
+      "sha256": "7640238fbf64b44af094da398d430745ec4bff38108305125c1b8ae8f8d94eee"
+    },
+    {
+      "path": "ocean/SurfFoam.js",
+      "bytes": 22959,
+      "sha256": "98b687a84224cce1f21007d3e6073bcb95cab9a8e7c4c285371f3686e9954fbc"
+    },
+    {
+      "path": "ocean/WaterMaterial.js",
+      "bytes": 40321,
+      "sha256": "782414a9d75b563247136fd22a2d217437a984dbb35cd141417286eda78f3b55"
+    },
+    {
+      "path": "ocean/WaterOpticalLOD.js",
+      "bytes": 2162,
+      "sha256": "5e336c6787d23a92ea3be2055e2e0dd6c4e38b0828e523b91bdbabeb98d3735d"
+    },
+    {
+      "path": "ocean/WaterQuery.js",
+      "bytes": 7896,
+      "sha256": "6d00c2638c137bf763782c1930477b7a09c94ef4dac08f980200eabb9f46bf76"
+    },
+    {
+      "path": "ocean/WaterSurface.js",
+      "bytes": 16980,
+      "sha256": "ca52b7c33a90f1539a6f613ebf1d73f3b90b56cffcea0a87bf953d109b690487"
+    },
+    {
+      "path": "ocean/WaterSurfaceExclusions.js",
+      "bytes": 1588,
+      "sha256": "afd9583f0042248aa54a8756636f9d5edcab3c9c45f7f4abff00b4a4d064c522"
+    },
+    {
+      "path": "ocean/WhaleWater.js",
+      "bytes": 6157,
+      "sha256": "4a71d51a1e41c6d45cb3e6a0e8fe819fddbc141b86d91907347e462d6974d06e"
+    },
+    {
+      "path": "util/Noise.js",
+      "bytes": 2727,
+      "sha256": "3f12e6968b085bdb4674481480b279b5110848c70999141d6116a3f22626b0b0"
+    },
+    {
+      "path": "vendor/basic-m6502/config.js",
+      "bytes": 2031,
+      "sha256": "79fae18c43333710171762150b02204d384d69c748d130f123942d369647b8e7"
+    },
+    {
+      "path": "vendor/basic-m6502/errors/errors.js",
+      "bytes": 2450,
+      "sha256": "48375ad619ee9b156bb86ce404f32fe57888ea16415f69b4fd8baa2e2ddb83de"
+    },
+    {
+      "path": "vendor/basic-m6502/errors/index.js",
+      "bytes": 114,
+      "sha256": "b13e912012848626e5cb838833910200eb5bab50b17c677ed929d940351c7937"
+    },
+    {
+      "path": "vendor/basic-m6502/interpreter.js",
+      "bytes": 55404,
+      "sha256": "1fa3fe5f23659f0f7f29389e24456c0261acf6363718640c77e24f2de595d723"
+    },
+    {
+      "path": "vendor/basic-m6502/lexer/index.js",
+      "bytes": 167,
+      "sha256": "53ba682e6129bc02fb66cc259b8152179bc740884c660fbbff13f094c4f8fe28"
+    },
+    {
+      "path": "vendor/basic-m6502/lexer/tokenizer.js",
+      "bytes": 10754,
+      "sha256": "af9b54410fcefd663f3b1ac3b14403d73ac8a1b14e1799c3c8f43595749c0c17"
+    },
+    {
+      "path": "vendor/basic-m6502/lexer/tokens.js",
+      "bytes": 8078,
+      "sha256": "bbcf9af219b006e5bdaa1cf814468e193289672e84f148e193fc58151e34b898"
+    },
+    {
+      "path": "vendor/basic-m6502/math/float.js",
+      "bytes": 3209,
+      "sha256": "ba578e330f8a583a4d0a8d5e140733b1b0ba028e8e4c3cc69b5d8e437a0f0a36"
+    },
+    {
+      "path": "vendor/basic-m6502/parser/expression.js",
+      "bytes": 20393,
+      "sha256": "f11fa154c44f442d039223d37fd5ad6b0770aff2a34d495d16fc8b7909870e82"
+    },
+    {
+      "path": "vendor/basic-m6502/parser/index.js",
+      "bytes": 95,
+      "sha256": "995cf50d355480cde5f9addd3823a82d1172689fdf81bc35978e9d6f9caba25b"
+    },
+    {
+      "path": "vendor/basic-m6502/parser/values.js",
+      "bytes": 1630,
+      "sha256": "5155cb0f75db56eacac17ea0dbb4d26f241ca4d633a1a5bac8bc2962d0c0aa28"
+    },
+    {
+      "path": "vendor/basic-m6502/runtime/index.js",
+      "bytes": 243,
+      "sha256": "f699d5d428c791b979852770f5f0aa80f28c132ff59c0be4fb2f862d113aea50"
+    },
+    {
+      "path": "vendor/basic-m6502/runtime/memory-map.js",
+      "bytes": 3378,
+      "sha256": "47738f31ae27eba15202dfb8af87f2961bba0bfa1060cdad4e9e302d9093faad"
+    },
+    {
+      "path": "vendor/basic-m6502/runtime/memory.js",
+      "bytes": 6376,
+      "sha256": "1f93c7b32efb4d85a1fbf42f274b1bf774ae576586502d236eeb700f75a1a722"
+    },
+    {
+      "path": "vendor/basic-m6502/runtime/program.js",
+      "bytes": 3392,
+      "sha256": "8cceb398a80aad1a4b23781686b0b700e15c7443289cce769e6d8fbfdcb4fc5b"
+    },
+    {
+      "path": "vendor/basic-m6502/runtime/stack.js",
+      "bytes": 3349,
+      "sha256": "b7ba058d57e026354f3c31fe93ff6e0549938bce619f31791e6d9ecd2e8144e1"
+    },
+    {
+      "path": "world-runtime/MediaScreen.js",
+      "bytes": 25892,
+      "sha256": "54a210616b00c5b8a1f1b387a2e9ddec7d24cfea4e8ed4ea0a271114af84757f"
+    },
+    {
+      "path": "world-runtime/NativeAssets.js",
+      "bytes": 7178,
+      "sha256": "51e8071f8053779ec2d3405610ae2aafff0e22f860590e41c7591d62f0002b5b"
+    },
+    {
+      "path": "world-runtime/NativeFeatures.js",
+      "bytes": 2715,
+      "sha256": "c93d61db34d610124ba804476fbcb58e57ea79efc3f54f6e3bd4c849b31bd7cb"
+    },
+    {
+      "path": "world-runtime/NativeForest.js",
+      "bytes": 8608,
+      "sha256": "24912d5ac325851c714c887c715a22ea5860c5ccec2e01630085dd827a7b8a3b"
+    },
+    {
+      "path": "world-runtime/NativeIsland.js",
+      "bytes": 5737,
+      "sha256": "5a52bfd68ca8f881310f773532093445a98a30438579a5f8ec8b7248850244ca"
+    },
+    {
+      "path": "world-runtime/NativeIslandBark.js",
+      "bytes": 1817,
+      "sha256": "585813ef0af44f73ab7cbf8f3b4f0bedc1befc6fa67bffdab4e723a413c5ffec"
+    },
+    {
+      "path": "world-runtime/NativeIslandSource.js",
+      "bytes": 4846,
+      "sha256": "4461dde03ca8fdecd5ec963809af7ac92392a06c15fac6d267794b5474c34d4f"
+    },
+    {
+      "path": "world-runtime/NativeIslandTerrain.js",
+      "bytes": 2150,
+      "sha256": "b6a80445e23e18baef72a22450dcdddb75ef9cc89677cb8611e47e30be560405"
+    },
+    {
+      "path": "world-runtime/NativeIslandTiles.js",
+      "bytes": 4695,
+      "sha256": "6ceebfc144de70f63bce9ed58cdb08c0deac418af5fe3dd268fcecc6e877f943"
+    },
+    {
+      "path": "world-runtime/NativeIslandWater.js",
+      "bytes": 6296,
+      "sha256": "1602acf67ec65469483e2cc7013e3deb1021b4f15c680997cad9d372e5aad4aa"
+    },
+    {
+      "path": "world-runtime/NativeNeon.js",
+      "bytes": 2180,
+      "sha256": "eb0e9302b2bfea5bc3f824229999f7ebbbc08571e25f27fba388d8062726519f"
+    },
+    {
+      "path": "world-runtime/NativeTerrain.js",
+      "bytes": 3175,
+      "sha256": "7c4688a806bce26cf90f962b9b2c85d8b94576212d5ec5933c5810d68426c4a8"
+    },
+    {
+      "path": "world-runtime/RepositoryAssetBatches.js",
+      "bytes": 3103,
+      "sha256": "9c04b2fa295807d8f3815be69fdec78c0f86491d9e851110265de536e6a393ea"
+    },
+    {
+      "path": "world-runtime/RepositoryLandscape.js",
+      "bytes": 4422,
+      "sha256": "c02ea4db6ea25cb4695abfe8b3a653c29adceeafcacc37b1b0b5e50b6947696e"
+    },
+    {
+      "path": "world-runtime/RepositoryLandscapeSurface.js",
+      "bytes": 2083,
+      "sha256": "32571639d01ec359eb1434bd697a24b0006f2120a81e536983aba13110ae1d0e"
+    },
+    {
+      "path": "world-runtime/RepositoryRetro.js",
+      "bytes": 1677,
+      "sha256": "c3a939b2c9c00ce828a7c39a081105d1e0df318d0bd01e201e68de128e72c0b9"
+    },
+    {
+      "path": "world-runtime/RepositoryScene.js",
+      "bytes": 6759,
+      "sha256": "5ea605f3b05a225a40a2f8c9e9c4d57d52d33102092412d4a72952e9731ed5bb"
+    },
+    {
+      "path": "world-runtime/RepositoryTraffic.js",
+      "bytes": 2469,
+      "sha256": "4ee51dad70d65c239b4700b83f66c8c9a4dfcc1d65da9abfc1dbe01bbed48d44"
+    },
+    {
+      "path": "world-runtime/RepositoryWater.js",
+      "bytes": 2597,
+      "sha256": "7e7ac948e717ffbaa8e827453c86f92eadda813d41e7b44d7fe41d4d50c1851d"
+    },
+    {
+      "path": "world-runtime/vendor/world-engine-contract.js",
+      "bytes": 2175533,
+      "sha256": "f6d29ce2c682e141434159d5553e61043b5ffc55077e18df08cade0d5e534a54"
+    },
+    {
+      "path": "world/C64Computer.js",
+      "bytes": 7066,
+      "sha256": "5d1fd6dd78bdb68e5edb67dbb85aa7fb8fc41a20bbb81f934b5cfd5253f80744"
+    },
+    {
+      "path": "world/ColliderGrid.js",
+      "bytes": 3524,
+      "sha256": "80c23e833cb409e6af7d6dd6e33bccc2e99eec8beb4e49a6062b97f694f317cb"
+    },
+    {
+      "path": "world/Colliders.js",
+      "bytes": 12503,
+      "sha256": "93b7b95c60de001c6dd09c300537be3582e97ca6c47e1a54084b1fc2587ae895"
+    },
+    {
+      "path": "world/IslandFiveLayout.js",
+      "bytes": 1990,
+      "sha256": "0fd75385a4417db4258d1502987e38f55c30612970f044fbc32fe1cc0cc3484c"
+    },
+    {
+      "path": "world/IslandFiveSystem.js",
+      "bytes": 2821,
+      "sha256": "6a19f11616ebae421767a3691b14beb45957a8fc0a2c822f52429e1d8b6169b7"
+    },
+    {
+      "path": "world/PortRoadGraph.js",
+      "bytes": 10273,
+      "sha256": "37045771f932bb30a653d3d9ca90a023546c2834e3aa2abeddee44c5a757a26e"
+    },
+    {
+      "path": "world/PortRoadJunction.js",
+      "bytes": 3752,
+      "sha256": "cc3b2051c9e2815f856cf572c8a0ccf0d1f73f7aceb3fdab9cf8ae8cf5db6471"
+    },
+    {
+      "path": "world/PortTraffic.js",
+      "bytes": 11435,
+      "sha256": "20be585dfa3f037c3dc8b12a437d58a14b9004134157bcb166b1382ce604257b"
+    },
+    {
+      "path": "world/PortalInteriorRecipe.js",
+      "bytes": 34641,
+      "sha256": "e21bc0b34fc390cceb0f894e9ecedce58517289f0bd47cc231556b7b53e884cd"
+    },
+    {
+      "path": "world/PortalRetroScreens.js",
+      "bytes": 9090,
+      "sha256": "79d7c338b9e676f296a2241a8454a0f002ae75e81133ab20dc7dd93f435ba22e"
+    },
+    {
+      "path": "world/Terrain.js",
+      "bytes": 38627,
+      "sha256": "ce0373b8f56ac8effa2590bfb3789c6f379593a8f552ecb2697fdaf448639b1e"
+    },
+    {
+      "path": "world/TerrainGPU.js",
+      "bytes": 14174,
+      "sha256": "e7d3cff881eb5425ef3e3dd523da622a8ace71c706bb1a2312de35bd40e28d22"
+    },
+    {
+      "path": "world/Vegetation.js",
+      "bytes": 16445,
+      "sha256": "3be3a3af344cce2af39eb796e8f3421b3e92f6824c2c25025c641211b7fa330a"
+    },
+    {
+      "path": "world/WorldLayout.js",
+      "bytes": 1372,
+      "sha256": "1b25b7df2fe82a66c9656d185ba5871322d6dfa3507ab9034c1c2133f8b97230"
+    },
+    {
+      "path": "world/terrain/DetailTextures.js",
+      "bytes": 8120,
+      "sha256": "e16bbcdb75b3e3333a1e8d46a0f48a48d0ae557014338a67fee15a9f3492c796"
+    },
+    {
+      "path": "world/terrain/SimpleTerrainSurface.js",
+      "bytes": 2606,
+      "sha256": "e67b7c8cfa091caa8b79849eddd6ac60fa0502ad6639446106ec2bba04a1b4b8"
+    },
+    {
+      "path": "world/terrain/TerrainBake.js",
+      "bytes": 6989,
+      "sha256": "0c20bd2ee326e9d23495247f2d8ad62f7ec5c7348f8250ad461a16ff5dbdd325"
+    },
+    {
+      "path": "world/terrain/TerrainNoise.js",
+      "bytes": 6479,
+      "sha256": "bbc9e37ab0167ef2444678da359f6ed00a90ef5f839200e9a8817eeb3a1da2f7"
+    },
+    {
+      "path": "world/terrain/TerrainShading.js",
+      "bytes": 13213,
+      "sha256": "2989bd66aa5fb6a63e79724de3e4831561aa3fb5fdfca2cb4ee3c7985f61f049"
+    },
+    {
+      "path": "world/vegetation/GeoBuilder.js",
+      "bytes": 2820,
+      "sha256": "e531df08b5685b139ed15c6fdad948c3e881bc539ce49d8d117bb8388af45e76"
+    },
+    {
+      "path": "world/vegetation/GrassField.js",
+      "bytes": 33373,
+      "sha256": "6050411e26b1b842a042743ab6470ab7cabd6a7df69c02daee9e1d532cabee24"
+    },
+    {
+      "path": "world/vegetation/Impostors.js",
+      "bytes": 14701,
+      "sha256": "94b4a1c86ea0330fb481f2bbf4d4d55c9db5352256ec26590b64a17d0d4d288b"
+    },
+    {
+      "path": "world/vegetation/InstanceLOD.js",
+      "bytes": 12084,
+      "sha256": "d503e66c034ffd328cd2afee99ad972d3e80a8507d68a2b013c07ca42c57e564"
+    },
+    {
+      "path": "world/vegetation/LeafTextures.js",
+      "bytes": 6124,
+      "sha256": "cc23dc48cb2140aeb0ae78d4c6c4842897cef55e3191abc5091586d979b47264"
+    },
+    {
+      "path": "world/vegetation/PlantGeometry.js",
+      "bytes": 52248,
+      "sha256": "65e63f2cd9db7e66cd576236a40414ba7dc8b71d2561c4f23e2a6c14b332ba04"
+    },
+    {
+      "path": "world/vegetation/ScannedBark.js",
+      "bytes": 2127,
+      "sha256": "87e1e680aa6ca371daa3a1e3d063146b8fc568c642b433156d6c14835ea80894"
+    },
+    {
+      "path": "world/vegetation/Scatter.js",
+      "bytes": 29908,
+      "sha256": "91a4454609ef298698fdc48a1f8f31bc1a1032df55afe9fe18fa22d728b69017"
+    },
+    {
+      "path": "world/vegetation/VegMaterials.js",
+      "bytes": 41996,
+      "sha256": "3e744b28bf6a19c3af284babc265ca65826455b993b5240df37c0ff259c2b5d4"
+    },
+    {
+      "path": "world/vegetation/VegNodes.js",
+      "bytes": 13049,
+      "sha256": "1e5f15bff2ed8d0d4c0f7faceb922e1db937780701edd5e6b0a9a526edc89aaf"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1083,
+      "sha256": "413204504456b6b29e99d565629023e9aeee5916907e41fe8ffe8549219348ec"
+    },
+    {
+      "path": "CREDITS.md",
+      "bytes": 9716,
+      "sha256": "08463184a1b0a49976423593994704adb708c5fb5159e43745ef1cc78c788d0d"
+    }
+  ],
+  "overlay": "For listed files this manifest supersedes the historical elsemesh-provenance.json import record; hashes describe exact current bytes."
+}

@@ -283,7 +283,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   if(Object.prototype.hasOwnProperty.call(p,'welcome')){
     const greeting=p.welcome as unknown;
     if(!greeting||typeof greeting!=='object'||Array.isArray(greeting)||Object.keys(greeting).some(k=>!['schema','text','audio'].includes(k)))errors.push('Invalid welcome greeting.');
-    else {const g=greeting as Record<string,unknown>;if(g.schema!=='elsemesh.world-welcome/1'||typeof g.text!=='string'||!g.text.trim()||g.text.length>2000||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(g.text)||typeof g.audio!=='boolean')errors.push('Welcome greeting must contain 1–2000 plain text characters and a read aloud choice.');}
+    else {const g=greeting as Record<string,unknown>;if(g.schema!=='elsemesh.world-welcome/1'||typeof g.text!=='string'||!g.text.trim()||g.text.length>2000||g.text.split('').some(character=>{const code=character.charCodeAt(0);return code===127||(code<32&&![9,10,13].includes(code));})||typeof g.audio!=='boolean')errors.push('Welcome greeting must contain 1–2000 plain text characters and a read aloud choice.');}
   }
   errors.push(...validateRoadTraffic(p.traffic,Array.isArray(p.assets)?p.assets:[]));
   errors.push(...validateLandscape(p as WorldProject));

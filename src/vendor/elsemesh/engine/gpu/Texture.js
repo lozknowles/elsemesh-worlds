@@ -191,9 +191,18 @@ export class Texture {
 
 	destroy() {
 
-		if ( this.gpu ) this.gpu.destroy();
+		// Cancelled avatar loads can already have mipmap commands in this encoder.
+		// Invalidate the wrapper now, but keep that exact texture alive until submit.
+		const old = this.gpu;
 		this.gpu = null;
+		this._views.clear();
 		this.version ++;
+		if ( old ) {
+
+			if ( GPU.encoder ) GPU.onSubmit( null, () => old.destroy() );
+			else old.destroy();
+
+		}
 
 	}
 

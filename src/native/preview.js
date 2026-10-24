@@ -1,3 +1,5 @@
+import {buildMediaScreenGeometry,disposeMediaScreenGeometry} from '../domain/media-screen.ts';
+import {NativeIslandParentReader,buildNativeIslandPreview} from './NativeIslandPreview.js';
 import {buildNativeLandscape} from './NativeLandscape.js';
 import * as T from 'three';
 import { resolveWorldMatrices, effectiveObjectState } from '../domain/object-hierarchy.ts';
@@ -5,6 +7,7 @@ import * as N from '../vendor/elsemesh/engine/index.js';
 import { Engine } from '../vendor/elsemesh/engine/Engine.js';
 import { GPU } from '../vendor/elsemesh/engine/gpu/GPU.js';
 import { G } from '../vendor/elsemesh/engine/render/Frame.js';
+import {RefractionPass} from '../vendor/elsemesh/ocean/RefractionPass.js';
 import { SceneRenderer } from '../vendor/elsemesh/engine/render/SceneRenderer.js';
 import { Material } from '../vendor/elsemesh/engine/render/Material.js';
 import { SunShadows } from '../vendor/elsemesh/engine/render/Shadows.js';
@@ -25,7 +28,8 @@ import { createNativeTerrainMaterial } from './NativeTerrain.js';
 import { NativeNavigation } from './NativeNavigation.js';
 
 const status = document.querySelector('#status');
-let project, engine, atmosphere, sky, clouds, environment, post, sr, medium, world, shadows, weather, forest;
+let project, engine, atmosphere, sky, clouds, environment, post, sr, refraction, medium, world, shadows, weather, forest;
+let nativeCandidate=null,pendingNativeReader=null;
 let revision = 0, navigation, nextNavigationReport = 0;
 let neonRuntime={},serverOffsetMs=0;
 let assetDiagnostics=[];
@@ -57,6 +61,19 @@ function disposeWorld(group) {
 }
 async function rebuild(value) {
   const token=++revision;
+  pendingNativeReader?.dispose();pendingNativeReader=null;
+  if(value.nativeIsland){
+    const reader=new NativeIslandParentReader(value);pendingNativeReader=reader;
+    const candidate=await buildNativeIslandPreview(value,engine.camera,{renderer:engine.meshRenderer,sky,sceneCopy:sr.opaqueCopy,sceneDepthHalf:sr.opaqueDepthHalf.texture,clouds,refraction},reader);
+    if(token!==revision){candidate.dispose();return;}
+    pendingNativeReader=null;
+    if(world){engine.scene.remove(world);if(nativeCandidate)nativeCandidate.dispose();else disposeWorld(world);}
+    nativeCandidate=candidate;world=candidate.root;forest=null;engine.scene.add(world);assetDiagnostics=candidate.assets??[];
+    terrainDiagnostics={nativeIsland:true,navigation:'editable coarse proxy only; visual native fields stream independently'};medium.uniforms.fields.base.value=terrainMistBase(value.terrain);post.taau?.resetHistory();
+    send('elsemesh-native-quality',{nativeIsland:candidate.nativeIsland.stats(),renderPixels:engine.width*engine.height});
+    report('ElseMesh native captured island · original terrain, vegetation and ocean renderer · navigation uses editable coarse proxy');
+    return;
+  }
   const group = new N.Group();
   const { width,depth,resolution,heights,materials }=value.terrain;
   const positions=[], colors=[], indices=[];
@@ -80,7 +97,9 @@ async function rebuild(value) {
     if(object.kind==='tree'||object.kind==='group'||object.collisionOnly)continue;
     const item=new N.Group(); item.userData.editorObjectId=object.id; item.matrixAutoUpdate=false; item.matrix.fromArray(objectMatrices.get(object.id).elements);
     const c=object.color;
-    if(object.kind==='computer') {
+    if(object.kind==='media-screen') {
+      const television=buildMediaScreenGeometry(object.mediaScreen);try{for(const part of television.parts)item.add(new N.Mesh(nativeGeometry(part.geometry),new Material({color:part.color,roughness:.45,metalness:.25})));}finally{disposeMediaScreenGeometry(television);}
+    } else if(object.kind==='computer') {
       const computer=buildComputerGeometry();item.userData.computerParts=[];
       for(const part of computer.parts){const color=part.emissive?object.computer.screenColor:part.color;const material=new Material({name:'computer-'+part.name,color,emissive:part.emissive?color:'#000000',roughness:.45,side:'double'});if(part.emissive)material.emissive.multiplyScalar(.15);item.add(new N.Mesh(nativeGeometry(part.geometry),material));item.userData.computerParts.push({name:part.name,vertices:part.geometry.getAttribute('position').count,emissive:material.emissive.toArray()});}
       disposeComputerGeometry(computer);
@@ -114,7 +133,7 @@ async function rebuild(value) {
   group.add(buildNativeFeatures(value,nativeGeometry));
   let landscape;try{landscape=await buildNativeLandscape(value,nativeGeometry);}catch(error){disposeWorld(group);throw error;}group.add(landscape);group.userData.landscapeStats=landscape.userData.landscapeStats;
   if(token!==revision) { disposeWorld(group); return; }
-  if(world) { engine.scene.remove(world);disposeWorld(world); }
+  if(world) { engine.scene.remove(world);if(nativeCandidate){nativeCandidate.dispose();nativeCandidate=null;}else disposeWorld(world); }
   world=group;forest=nextForest;engine.scene.add(world);
   send('elsemesh-native-quality',{trees:forest.userData.treePreviewStats(),renderPixels:engine.width*engine.height});
   assetDiagnostics=nextAssetDiagnostics;
@@ -144,6 +163,7 @@ async function init() {
   shadows=new SunShadows({size:1024});
   weather=new NativeWeather();engine.scene.add(weather.group);
   sr=new SceneRenderer(engine.meshRenderer,engine.scene,engine.camera); sr.background=sky.background; sr.waterMaterial={needsSSRDepth:false};
+  refraction=new RefractionPass({meshRenderer:engine.meshRenderer,scene:engine.scene,camera:engine.camera,sceneRenderer:sr,scale:.5});sr.onBeforeWater=view=>{if(nativeCandidate)refraction.render(G.seaLevel.value,view);};
   medium=createDryWorldMedium(sr.sceneRT.depthTexture);
   post=new PostFX(engine,{sceneRenderer:sr,camera:engine.camera,underwater:medium,clouds});
   if (post.motionBlur.strength) post.motionBlur.strength.value=0;
@@ -151,9 +171,10 @@ async function init() {
   engine.start((dt,time)=>{
     if(!project) return;
     try {
-      GPU.beginFrame(); G.time.value=time; G.dt.value=dt; G.exposure.value=0.55; // pristine App.js default
+      GPU.beginFrame(); G.seaLevel.value=nativeCandidate?.nativeIsland.water.seaLevel??project.water?.level??0; G.time.value=time; G.dt.value=dt; G.exposure.value=0.55; // pristine App.js default
       const navigationState = navigation.update(dt);
       if (time >= nextNavigationReport) { send('elsemesh-native-navigation-state', { navigation: navigationState }); nextNavigationReport = time + 0.25; }
+      nativeCandidate?.nativeIsland.update(dt,engine.camera);nativeCandidate?.query.setTime(time);
       world?.traverse(node=>node.userData.updateLandscape?.(time));
       const previousTreeStats=forest?.userData.treePreviewStats();
       forest?.userData.updateTreeLOD(time,engine.camera.position);
@@ -170,11 +191,12 @@ async function init() {
       }
       clouds.update(dt,engine.camera); environment.update(dt); post.beginFrame();
       shadows.render(engine.scene,engine.meshRenderer,shadows.update(engine.camera,G.sunDir.value));
+      nativeCandidate?.nativeIsland.bindView(engine.camera);sr.waterMaterial=nativeCandidate?.nativeIsland.waterMaterial??{needsSSRDepth:false};
       sr.render(); post.render(); post.endFrame(); GPU.submit();
       const computers=[];world?.traverse(node=>{if(node.userData.computerParts)computers.push({id:node.userData.editorObjectId,parts:node.userData.computerParts});});
       const neons=[];world?.traverse(node=>{if(node.userData.neonState)neons.push(node.userData.neonState);});
       const hierarchyMatrices={};world?.traverse(node=>{if(node.userData.editorObjectId)hierarchyMatrices[node.userData.editorObjectId]=Array.from(node.matrixWorld.elements);});
-      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,landscape:world?.userData.landscapeStats,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
+      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,nativeIsland:nativeCandidate?{backend:'webgpu',backendQualification:'native-render-path-awaiting-browser-qualification',...nativeCandidate.nativeIsland.stats()}:null,landscape:world?.userData.landscapeStats,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
       if(engine.frame===2) send('elsemesh-native-rendered');
     } catch(error) { engine.stop(); report(`Native preview failed: ${error.message}`); console.error(error); send('elsemesh-native-error',{message:error.message}); }
   });
@@ -186,9 +208,9 @@ window.addEventListener('message',e=>{
   if(e.data?.type==='elsemesh-native-navigation') { navigation?.command(e.data); if(['overview','spawn','recenter'].includes(e.data.action)) engine?.canvas.focus(); return; }
   if(e.data?.type!=='elsemesh-native-project') return;
   const next=e.data.project;
-  const changed=!project || JSON.stringify([project.terrain,project.objects,project.assets,project.features,project.geography,project.terrainImagery,project.landscape])!==JSON.stringify([next.terrain,next.objects,next.assets,next.features,next.geography,next.terrainImagery,next.landscape]);
+  const changed=!project || JSON.stringify([project.terrain,project.objects,project.assets,project.features,project.geography,project.terrainImagery,project.landscape,project.nativeIsland])!==JSON.stringify([next.terrain,next.objects,next.assets,next.features,next.geography,next.terrainImagery,next.landscape,next.nativeIsland]);
   navigation?.setProject(next);
-  project=next; if(changed) void rebuild(project).catch(error=>report(`Scene import failed: ${error.message}`));
+  project=next; if(changed){const expectedRevision=revision+1;void rebuild(project).catch(error=>{if(expectedRevision!==revision)return;report('Scene import failed: '+error.message);send('elsemesh-native-error',{message:error.message});});}
 });
-window.addEventListener('pagehide',()=>{navigation?.dispose();engine?.stop();GPU.device?.destroy();});
+window.addEventListener('pagehide',()=>{pendingNativeReader?.dispose();nativeCandidate?.dispose();navigation?.dispose();refraction?.dispose();engine?.stop();GPU.device?.destroy();});
 init().catch(error=>{report(error.message);send('elsemesh-native-error',{message:error.message});console.error(error);});

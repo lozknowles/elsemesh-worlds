@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import type { WorldProject } from '../domain/world';
 import type { WorkspaceBase } from '../domain/persistence';
-import { checkWorldSourceUpdate, forkWorldSource, loadWorldSource, parseGitHubWorldLocation, resolveGitHubWorldSource } from '../domain/world-source';
+import { checkWorldSourceUpdate, forkWorldSource, loadWorldSource, parseGitHubWorldLocation, resolveGitHubWorldSource, sameOriginWorldSource } from '../domain/world-source';
 import type { LoadedWorldSource } from '../domain/world-source';
 import type { WorldPackOptions } from '../domain/world-repository';
 import { openWorldRepositoryFolder, saveWorldRepositoryFolder } from './repository-files';
@@ -15,7 +15,7 @@ export default function RepositoryPanel({getProject,getGeneration,getRepositoryO
  const binding=useRef<{value:RepositoryBinding;generation:number}|null>(null);
  const source=useRef<{loaded:LoadedWorldSource;generation:number;options:WorldPackOptions}|null>(null);
  const packOptions=useRef<{generation:number;options:WorldPackOptions}|null>(null);
- const [busy,setBusy]=useState(false),[status,setStatus]=useState('Local drafts are saved separately from repository snapshots, commits and pushes.'),[url,setUrl]=useState(''),[candidate,setCandidate]=useState<LoadedWorldSource|null>(null),[sourceLabel,setSourceLabel]=useState('');
+ const [busy,setBusy]=useState(false),[status,setStatus]=useState('Local drafts are saved separately from repository snapshots, commits and pushes.'),[url,setUrl]=useState(''),[hostedUrl,setHostedUrl]=useState(''),[candidate,setCandidate]=useState<LoadedWorldSource|null>(null),[sourceLabel,setSourceLabel]=useState('');
  const candidateGuard=useRef<{project:WorldProject;generation:number}|null>(null);
  const supported=typeof window!=='undefined'&&'showDirectoryPicker' in window;
  function base(loaded:LoadedWorldSource):WorkspaceBase{return {location:loaded.identity.location,revision:loaded.identity.resolvedCommit??loaded.identity.contentDigest,repositoryOptions:options(loaded)};}
@@ -29,7 +29,7 @@ export default function RepositoryPanel({getProject,getGeneration,getRepositoryO
   setSourceLabel(next.identity.location+' @ '+(next.identity.resolvedCommit??next.identity.contentDigest));
   setCandidate(null);return true;
  }
- async function run(mode:'open'|'remote'|'save'|'copy'|'check'|'fork'){
+ async function run(mode:'open'|'remote'|'hosted'|'save'|'copy'|'check'|'fork'){
   if(busy)return;const generation=getGeneration(),before=getProject();setBusy(true);
   try{
    if(mode==='open'){
@@ -39,6 +39,9 @@ export default function RepositoryPanel({getProject,getGeneration,getRepositoryO
     const pinned=await resolveGitHubWorldSource(parseGitHubWorldLocation(url));
     const next=await loadWorldSource(pinned);
     if(await replace(next,generation,before)){binding.current=null;setStatus('Public repository opened at a pinned commit. No GitHub credential was requested.');}
+   }else if(mode==='hosted'){
+    const next=await loadWorldSource(sameOriginWorldSource(hostedUrl));
+    if(await replace(next,generation,before)){binding.current=null;setStatus('Same-origin repository snapshot opened through the validated world loader.');}
    }else if(mode==='check'){
     const active=source.current;if(!active||active.generation!==generation)throw new Error('Open a repository before checking for updates.');
     const next=active.loaded.source.kind==='local'?await loadWorldSource(active.loaded.source):await checkWorldSourceUpdate(active.loaded);
@@ -75,6 +78,8 @@ export default function RepositoryPanel({getProject,getGeneration,getRepositoryO
    <button disabled={busy||!supported} onClick={()=>void run('open')}>Open repository folder</button>
    <label>Public GitHub repository or tree URL<input aria-label="GitHub world repository URL" value={url} onChange={event=>setUrl(event.target.value)} placeholder="https://github.com/owner/world"/></label>
    <button disabled={busy||!url.trim()} onClick={()=>void run('remote')}>Open public GitHub world</button>
+   <label>Repository folder URL on this editor server<input aria-label="Same-origin world repository URL" value={hostedUrl} onChange={event=>setHostedUrl(event.target.value)} placeholder="/acceptance/native-loz/"/></label>
+   <button disabled={busy||!hostedUrl.trim()} onClick={()=>void run('hosted')}>Open same-origin world</button>
    <button disabled={busy} onClick={()=>void run('check')}>Check repository updates</button>
    {candidate&&<><p>Available revision: {candidate.identity.resolvedCommit??candidate.identity.contentDigest}</p><button disabled={busy} onClick={()=>void apply()}>Apply checked update…</button></>}
    <button disabled={busy||!supported} onClick={()=>void run('save')}>Save repository snapshot</button>

@@ -50,12 +50,12 @@ const HOOK_DEFAULTS = {
 };
 
 // stub modules for hooks nobody installed
-export function hookModules() {
+export function hookModules( isolated = false ) {
 
 	const out = [];
 	for ( const k in HOOK_DEFAULTS ) {
 
-		const m = SceneLighting.hooks[ k ];
+		const m = isolated ? null : SceneLighting.hooks[ k ];
 		if ( m ) out.push( m );
 		else out.push( stub( k ) );
 
@@ -206,6 +206,9 @@ fn sunShadowPCF( P: vec3f, N: vec3f, pixel: vec2f ) -> f32 {
 }
 
 fn _sunShadow( P: vec3f, N: vec3f, pixel: vec2f, pcss: bool ) -> f32 {
+#if PORTAL_VIEW
+	return 1.0;
+#else
 	if ( shadowParams.enabled < 0.5 ) { return 1.0; }
 	let dist = dot( P - frame.cameraPos, - vec3f( frame.view[ 0 ][ 2 ], frame.view[ 1 ][ 2 ], frame.view[ 2 ][ 2 ] ) );
 	let noise = interleavedGradientNoise( pixel + f32( frame.frameIndex % 64u ) * 5.588238 );
@@ -231,6 +234,7 @@ fn _sunShadow( P: vec3f, N: vec3f, pixel: vec2f, pcss: bool ) -> f32 {
 		}
 	}
 	return max( ret, 0.0 );
+#endif
 }
 
 // one depth comparison in cascade c (1 = lit; outside the map: lit). For volumetric marches (haze shafts,
@@ -243,11 +247,15 @@ fn sunShadowCascadeHard( P: vec3f, c: i32 ) -> f32 {
 }
 // same in the cascade covering P (by view distance), 1 beyond the last one or with shadows off
 fn sunShadowHard( P: vec3f ) -> f32 {
+#if PORTAL_VIEW
+	return 1.0;
+#else
 	if ( shadowParams.enabled < 0.5 ) { return 1.0; }
 	let dist = dot( P - frame.cameraPos, - vec3f( frame.view[ 0 ][ 2 ], frame.view[ 1 ][ 2 ], frame.view[ 2 ][ 2 ] ) );
 	let c = shadowCascadeOf( dist );
 	if ( c < 0 ) { return 1.0; }
 	return sunShadowCascadeHard( P, c );
+#endif
 }
 `,
 } );

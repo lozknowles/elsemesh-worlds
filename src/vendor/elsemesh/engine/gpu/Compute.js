@@ -1,5 +1,5 @@
 import { GPU } from './GPU.js';
-import { composeShader, createShaderModule } from './Shader.js';
+import { composeShader, createShaderModule, group0ForBlock } from './Shader.js';
 
 // A compute pipeline built from modules + a main WGSL body.
 //
@@ -54,7 +54,7 @@ export class ComputeKernel {
 		const run = ( p ) => {
 
 			p.setPipeline( GPU.ready( this.handle ) );
-			p.setBindGroup( 0, this.group0.getBindGroup() );
+			p.setBindGroup( 0, (this.frameBlock ? group0ForBlock(this.frameBlock,'compute') : this.group0).getBindGroup() );
 			p.setBindGroup( 1, this.bindings.getBindGroup() );
 			if ( indirect ) p.dispatchWorkgroupsIndirect( indirect.buffer.getGPU ? indirect.buffer.getGPU() : indirect.buffer, indirect.offset || 0 );
 			else p.dispatchWorkgroups( x, y, z );

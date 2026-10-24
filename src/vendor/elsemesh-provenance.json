@@ -2,7 +2,7 @@
   "source": "rebroad/ElseMesh",
   "commit": "95719848d5ffa4428b57c75c272483e1c2113a72",
   "license": "MIT",
-  "note": "Pristine copies. Builder adaptation is src/native and src/ui/NativePreview.tsx. No game checkout is edited.",
+  "note": "Historical upstream import record. Hashes describe original CRLF source bytes; Git checkout line endings may differ. Files listed in native-island-runtime-provenance.json are superseded by that clean engine overlay and its exact current-byte hashes. Builder adaptations remain in src/native and src/ui/NativePreview.tsx. No game checkout is edited.",
   "files": [
     {
       "path": "src/vendor/elsemesh/CREDITS.md",
@@ -429,5 +429,6 @@
       "sha256": "ed78de3f26231dbeb73a780b31f3b95b2196bbe2c85ee5fce9f3a609968ccff8",
       "bytes": 1146
     }
-  ]
+  ],
+  "supersededBy": "native-island-runtime-provenance.json (for its listed files only)"
 }

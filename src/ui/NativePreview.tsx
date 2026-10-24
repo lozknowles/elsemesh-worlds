@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { createNativeIslandResourceReader } from '../domain/native-island';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { NeonRuntimeState } from './NeonRuntime';
 import type { WorldProject } from '../domain/world';
 import { createThunderAudio } from './thunderAudio';
@@ -14,7 +14,8 @@ export default function NativePreview({ project, onChange, onClose, neonRuntime,
   onClose: () => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const projectRef=useRef(project);projectRef.current=project;
+  const projectRef=useRef(project);
+  useLayoutEffect(()=>{projectRef.current=project;},[project]);
   const nativeReader=useRef<{island:WorldProject['nativeIsland'];read:ReturnType<typeof createNativeIslandResourceReader>}|null>(null);
   const [ready, setReady] = useState(false);
   const [status, setStatus] = useState('Loading native WebGPU engine…');
