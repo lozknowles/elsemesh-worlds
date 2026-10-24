@@ -1,3 +1,5 @@
+import {validateMediaScreen} from './media-screen';
+import type {MediaScreenConfig} from './media-screen';
 import { validateNativeIsland, assertNativeIslandStandaloneExport } from './native-island';
 import type { NativeIsland } from './native-island';
 import { validateObjectAccess } from './object-access';
@@ -63,8 +65,9 @@ export type WorldAsset = {
 export type EditorObject = {
   id: string;
   name: string;
-  kind: PrimitiveKind | 'glb' | 'group' | 'neon-sign' | 'computer';
+  kind: PrimitiveKind | 'glb' | 'group' | 'neon-sign' | 'computer' | 'media-screen';
   computer?: ComputerConfig;
+  mediaScreen?: MediaScreenConfig;
   neon?: NeonSignConfig;
   parentId?: string;
   locked?: boolean;
@@ -310,7 +313,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
       errors.push(`Object ${index + 1} has invalid properties or transforms.`);
     if (!object || typeof object.visible !== 'boolean')
       errors.push(`Object ${index + 1} must declare boolean visibility.`);
-    if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb', 'group', 'neon-sign', 'computer'].includes(object.kind))
+    if (!object || !['box', 'sphere', 'cylinder', 'cone', 'tree', 'building', 'glb', 'group', 'neon-sign', 'computer', 'media-screen'].includes(object.kind))
       errors.push(`Object ${index + 1} uses an unsupported type.`);
     if (object?.kind === 'glb' && (typeof object.assetId !== 'string' || !assetIds.has(object.assetId)))
       errors.push(`Object ${index + 1} references an asset that is missing from the project.`);
@@ -331,6 +334,8 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   }
   if (Array.isArray(p.objects)) {
     errors.push(...validateHierarchy(p.objects));
+    if(p.objects.filter(o=>o?.kind==='media-screen').length>16)errors.push('Worlds may contain at most 16 media screens.');
+    for(const o of p.objects){if(o?.kind==='media-screen'){errors.push(...validateMediaScreen(o.mediaScreen));if(o.assetId!==undefined)errors.push('Media screens cannot reference arbitrary assets.');}else if(o?.mediaScreen!==undefined)errors.push('Media screen configuration requires a media-screen object.');}
     if(p.objects.filter(o=>o?.kind==='computer').length>MAX_COMPUTERS)errors.push('Worlds may contain at most 32 computers.');
     for(const o of p.objects){if(o?.kind==='computer'){errors.push(...validateComputer(o.computer));if(o.assetId!==undefined)errors.push('Computers cannot reference assets.');}else if(o?.computer!==undefined)errors.push('Computer configuration requires a computer object.');}
     if(p.objects.filter(o=>o?.kind==='neon-sign').length>50)errors.push('Worlds may contain at most 50 neon signs.');
@@ -432,7 +437,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
 
 /** Minimal explicit requirements for standalone package admission. */
 function playerWorldCapabilities(project:WorldProject):string[]{
- return ['object-access/1',...(project.nativeIsland?['native-island/1']:[]),...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
+ return ['object-access/1',...(project.objects.some(o=>o.kind==='media-screen')?['media-screen/1']:[]),...(project.nativeIsland?['native-island/1']:[]),...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
   ...(project.traffic?['port-traffic/1']:[]),
   ...(project.objects.some(o=>o.collisionOnly)?['collision-volumes/1']:[])];
 }

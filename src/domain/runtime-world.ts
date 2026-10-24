@@ -22,7 +22,7 @@ export function describeRuntimeWorld(input: unknown) {
     project, spawn: structuredClone(project.spawn), boxes,
     terrain: { heightAt: (x: number, z: number) => sampleTerrain(project.terrain, x, z) },
     // Interaction identifiers travel as authored data; authority remains external.
-    interactions: project.objects.filter(object => object.kind === 'neon-sign' || object.kind === 'computer')
+    interactions: project.objects.filter(object => object.kind === 'neon-sign' || object.kind === 'computer' || object.kind === 'media-screen')
       .map(object => ({ id: object.id, kind: object.kind, targetSignId: object.computer?.targetSignId })),
   };
 }

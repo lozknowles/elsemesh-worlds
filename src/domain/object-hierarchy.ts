@@ -1,3 +1,4 @@
+import {mediaScreenLayout} from './media-screen';
 import { COMPUTER_BOUNDS } from './computer';
 import { Box3, Euler, Matrix4, Quaternion, Vector3 } from 'three';
 import { getNeonBounds } from './neon-geometry';
@@ -80,6 +81,7 @@ export function cloneSubtrees(project:WorldProject,ids:string[]):{objects:Editor
 }
 const treeBoundsCache=new Map<string,Box3>();
 export function objectLocalBounds(project:WorldProject,o:EditorObject):Box3{
+ if(o.kind==='media-screen'){if(!o.mediaScreen)throw Error('Missing media screen config.');const bounds=mediaScreenLayout(o.mediaScreen).bounds;return new Box3(new Vector3(...bounds.min),new Vector3(...bounds.max));}
  if(o.kind==='computer')return new Box3(new Vector3(...COMPUTER_BOUNDS.min),new Vector3(...COMPUTER_BOUNDS.max));
  if(o.kind==='neon-sign'){if(!o.neon)throw new Error('Missing neon config.');const bounds=getNeonBounds(o.neon);return new Box3(new Vector3(...bounds.min),new Vector3(...bounds.max));}
  if(o.kind==='glb'){const asset=project.assets.find(a=>a.id===o.assetId);if(!asset)throw new Error('Asset bounds are unavailable.');let b=asset.bounds;if(!b){const binary=atob(asset.dataUrl.slice(asset.dataUrl.indexOf(',')+1));b=inspectGlbJson(Uint8Array.from(binary,c=>c.charCodeAt(0)).buffer).bounds;}return new Box3(new Vector3(...b.min),new Vector3(...b.max));}

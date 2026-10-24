@@ -45,3 +45,5 @@ export * from '../domain/road-traffic';
 export * from '../domain/object-access';
 
 export * from '../domain/native-island';
+
+export * from '../domain/media-screen';

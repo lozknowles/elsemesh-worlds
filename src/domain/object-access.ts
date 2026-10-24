@@ -1,10 +1,11 @@
 import type { WorldProject } from './world';
 export const OBJECT_ACCESS_SCHEMA = 'elsemesh.object-access/1' as const;
-export type ObjectAccessAction = 'computer.use' | 'neon.power' | 'neon.configure';
+export type ObjectAccessAction = 'computer.use' | 'neon.power' | 'neon.configure' | 'media.play';
 export type ObjectAccessPolicy = { schema: typeof OBJECT_ACCESS_SCHEMA; rules: { objectId: string; actions: ObjectAccessAction[] }[] };
 export function supportedObjectAccessActions(project: Pick<WorldProject,'objects'|'terminals'>, objectId: string): ObjectAccessAction[] {
  const object=project.objects.find(o=>o&&o.id===objectId);
  if(!object)return [];
+ if(object.kind==='media-screen')return ['media.play'];
  const actions:ObjectAccessAction[]=object.kind==='neon-sign'?['neon.power','neon.configure']:[];
  if(object.kind==='computer'||project.terminals?.some(t=>t&&t.objectId===objectId))actions.push('computer.use');
  return actions;
