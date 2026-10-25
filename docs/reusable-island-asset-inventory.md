@@ -29,7 +29,7 @@ Checks: valid GLB header/length, <=15MiB, finite extracted positions, embedded r
 
 Open **Assets**, search for a model and click its card. Each click creates one editable world object with its own ID and transform. Huts start beside the existing beach huts on the shoreline; the whale and static lobster boat start over sufficiently deep water; birds start above terrain and crabs beside the spawn shore. The model bytes are embedded once per distinct asset and referenced by subsequent placements. Move, rotate or resize individual instances in the object properties. The whale, birds and crabs are non-solid scenery; huts, pier, boardwalk and boat retain solid collision bounds.
 
-These catalogue objects are static model assets. The existing game engine owns weather, wind, rain, thunder and lightning. Animated wildlife or drivable boat capabilities need separate explicit engine behaviours and permissions. The editor's coarse terrain view does not display the native ocean; use **ElseMesh graphics** to preview placements with the island sea.
+These catalogue objects remain static model geometry. New bird and crab placements receive an optional, editable, bounded ambient route evaluated in the player's browser; there is no wing or leg rig, flocking, burrow logic, shared AI state or moving collision. Imported fish GLBs can use the fish-swim route over a suitable global water surface. The whale and drivable boat remain static here pending dedicated engine behaviours. Weather, wind, rain, thunder and lightning remain engine effects selected by each world's environment data. The editor's coarse terrain view does not display the native ocean; use **ElseMesh graphics** to preview placements with the island sea.
 
 ## Extraction details
 

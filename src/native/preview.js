@@ -23,6 +23,8 @@ import { buildNativeNeon } from './NativeNeon.js';
 import { buildNativeFeatures } from './NativeFeatures.js';
 import { buildNativeForest } from './NativeForest.js';
 import { buildNativeAsset } from './NativeAssets.js';
+import {createNativeAmbientInstances} from './NativeAmbientInstances.js';
+import {createNativeAmbientObjects} from './NativeAmbientObjects.js';
 import { inspectAndLoadAsset, disposeAssetScene } from '../ui/asset-admission.ts';
 import { createNativeTerrainMaterial } from './NativeTerrain.js';
 import { NativeNavigation } from './NativeNavigation.js';
@@ -33,6 +35,8 @@ let nativeCandidate=null,pendingNativeReader=null;
 let revision = 0, navigation, nextNavigationReport = 0;
 let neonRuntime={},serverOffsetMs=0;
 let assetDiagnostics=[];
+let ambientObjects=null;
+let nativeAmbient=null;
 let terrainDiagnostics={imagery:false};
 const report = (value) => { status.textContent = value; };
 const send = (type, extra = {}) => parent.postMessage({ type, ...extra }, location.origin);
@@ -68,13 +72,14 @@ async function rebuild(value) {
     if(token!==revision){candidate.dispose();return;}
     pendingNativeReader=null;
     if(world){engine.scene.remove(world);if(nativeCandidate)nativeCandidate.dispose();else disposeWorld(world);}
-    nativeCandidate=candidate;world=candidate.root;forest=null;engine.scene.add(world);assetDiagnostics=candidate.assets??[];
+    nativeCandidate=candidate;world=candidate.root;forest=null;ambientObjects=null;nativeAmbient=createNativeAmbientInstances(value,world,candidate.matrices,candidate.terrain);engine.scene.add(world);assetDiagnostics=candidate.assets??[];
     terrainDiagnostics={nativeIsland:true,navigation:'editable coarse proxy only; visual native fields stream independently'};medium.uniforms.fields.base.value=terrainMistBase(value.terrain);post.taau?.resetHistory();
     send('elsemesh-native-quality',{nativeIsland:candidate.nativeIsland.stats(),renderPixels:engine.width*engine.height});
     report('ElseMesh native captured island · original terrain, vegetation and ocean renderer · navigation uses editable coarse proxy');
     return;
   }
   const group = new N.Group();
+  const nextAmbient=createNativeAmbientObjects(value);
   const { width,depth,resolution,heights,materials }=value.terrain;
   const positions=[], colors=[], indices=[];
   const palette=[[.38,.49,.32],[.54,.39,.27],[.48,.5,.48],[.7,.63,.43]];
@@ -128,13 +133,14 @@ async function rebuild(value) {
       addPart(item,geo,c);
     }
     group.add(item);
+    if(object.ambientBehaviour)nextAmbient.add(item,object,objectMatrices.get(object.id));
   }
   const nextForest=buildNativeForest(value.objects,engine.camera.position);group.add(nextForest);
   group.add(buildNativeFeatures(value,nativeGeometry));
   let landscape;try{landscape=await buildNativeLandscape(value,nativeGeometry);}catch(error){disposeWorld(group);throw error;}group.add(landscape);group.userData.landscapeStats=landscape.userData.landscapeStats;
   if(token!==revision) { disposeWorld(group); return; }
   if(world) { engine.scene.remove(world);if(nativeCandidate){nativeCandidate.dispose();nativeCandidate=null;}else disposeWorld(world); }
-  world=group;forest=nextForest;engine.scene.add(world);
+  world=group;forest=nextForest;ambientObjects=nextAmbient;nativeAmbient=null;engine.scene.add(world);
   send('elsemesh-native-quality',{trees:forest.userData.treePreviewStats(),renderPixels:engine.width*engine.height});
   assetDiagnostics=nextAssetDiagnostics;
   terrainDiagnostics=surface.diagnostics;
@@ -176,6 +182,9 @@ async function init() {
       if (time >= nextNavigationReport) { send('elsemesh-native-navigation-state', { navigation: navigationState }); nextNavigationReport = time + 0.25; }
       nativeCandidate?.nativeIsland.update(dt,engine.camera);nativeCandidate?.query.setTime(time);
       world?.traverse(node=>node.userData.updateLandscape?.(time));
+      nativeAmbient?.update(time);
+      ambientObjects?.update(time);
+
       const previousTreeStats=forest?.userData.treePreviewStats();
       forest?.userData.updateTreeLOD(time,engine.camera.position);
       if(forest && forest.userData.treePreviewStats()!==previousTreeStats)send('elsemesh-native-quality',{trees:forest.userData.treePreviewStats(),renderPixels:engine.width*engine.height});
@@ -196,7 +205,7 @@ async function init() {
       const computers=[];world?.traverse(node=>{if(node.userData.computerParts)computers.push({id:node.userData.editorObjectId,parts:node.userData.computerParts});});
       const neons=[];world?.traverse(node=>{if(node.userData.neonState)neons.push(node.userData.neonState);});
       const hierarchyMatrices={};world?.traverse(node=>{if(node.userData.editorObjectId)hierarchyMatrices[node.userData.editorObjectId]=Array.from(node.matrixWorld.elements);});
-      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,nativeIsland:nativeCandidate?{backend:'webgpu',backendQualification:'native-render-path-awaiting-browser-qualification',...nativeCandidate.nativeIsland.stats()}:null,landscape:world?.userData.landscapeStats,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),renderPixels:engine.width*engine.height};
+      window.__nativePreview={computers,neons,hierarchyMatrices,frames:engine.frame,time,objects:project.objects.length,features:project.features?.length??0,settings:project.environment,effectUniforms:{cloudCoverage:clouds.coverage.value,mistBase:medium.uniforms.fields.base.value,mistDensity:medium.uniforms.fields.density.value,mistHeight:medium.uniforms.fields.height.value,mistSpeed:medium.uniforms.fields.speed.value},weather:weatherState,assets:assetDiagnostics,terrain:terrainDiagnostics,nativeIsland:nativeCandidate?{backend:'webgpu',backendQualification:'native-render-path-awaiting-browser-qualification',...nativeCandidate.nativeIsland.stats()}:null,landscape:world?.userData.landscapeStats,camera:engine.camera.position.toArray(),navigation:navigationState,trees:forest?.userData.treePreviewStats(),ambient:ambientObjects?.poses()??[],nativeAmbient:nativeAmbient?.objectCount??0,renderPixels:engine.width*engine.height};
       if(engine.frame===2) send('elsemesh-native-rendered');
     } catch(error) { engine.stop(); report(`Native preview failed: ${error.message}`); console.error(error); send('elsemesh-native-error',{message:error.message}); }
   });
@@ -208,7 +217,7 @@ window.addEventListener('message',e=>{
   if(e.data?.type==='elsemesh-native-navigation') { navigation?.command(e.data); if(['overview','spawn','recenter'].includes(e.data.action)) engine?.canvas.focus(); return; }
   if(e.data?.type!=='elsemesh-native-project') return;
   const next=e.data.project;
-  const changed=!project || JSON.stringify([project.terrain,project.objects,project.assets,project.features,project.geography,project.terrainImagery,project.landscape,project.nativeIsland])!==JSON.stringify([next.terrain,next.objects,next.assets,next.features,next.geography,next.terrainImagery,next.landscape,next.nativeIsland]);
+  const changed=!project || JSON.stringify([project.terrain,project.objects,project.assets,project.features,project.geography,project.terrainImagery,project.landscape,project.nativeIsland,project.water])!==JSON.stringify([next.terrain,next.objects,next.assets,next.features,next.geography,next.terrainImagery,next.landscape,next.nativeIsland,next.water]);
   navigation?.setProject(next);
   project=next; if(changed){const expectedRevision=revision+1;void rebuild(project).catch(error=>{if(expectedRevision!==revision)return;report('Scene import failed: '+error.message);send('elsemesh-native-error',{message:error.message});});}
 });

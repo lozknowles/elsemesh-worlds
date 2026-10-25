@@ -14,6 +14,7 @@ export * from '../domain/neon-geometry';
 export * from '../domain/computer';
 export * from '../domain/geography';
 export * from '../domain/weather';
+export * from '../domain/ambient-behaviour';
 export * from '../domain/private-neon-client';
 export * from '../ui/asset-admission';
 export const WORLD_SOFTWARE_BUNDLE_SCHEMA = 'elsemesh.world-software/1';

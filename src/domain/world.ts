@@ -1,4 +1,6 @@
 import {validateMediaScreen} from './media-screen';
+import {validateAmbientBehaviour} from './ambient-behaviour';
+import type {AmbientBehaviour} from './ambient-behaviour';
 import type {MediaScreenConfig} from './media-screen';
 import { validateNativeIsland, assertNativeIslandStandaloneExport } from './native-island';
 import type { NativeIsland } from './native-island';
@@ -85,6 +87,7 @@ export type EditorObject = {
   materialOverrides?: MaterialOverride[];
   treeSpecies?: 'broadleaf' | 'palm' | 'pine';
   treeSeed?: number;
+  ambientBehaviour?: AmbientBehaviour;
   landscapeOrigin?: LandscapeOrigin;
 };
 export type Terrain = {
@@ -322,6 +325,10 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
     if (object?.collisionOnly !== undefined && (typeof object.collisionOnly !== 'boolean' || (object.collisionOnly && (object.kind !== 'box' || object.collision === 'none')))) errors.push(`Object ${index + 1} has invalid collision-only volume settings.`);
     if (object?.treeSpecies !== undefined && !['broadleaf', 'palm', 'pine'].includes(object.treeSpecies)) errors.push(`Object ${index + 1} has an unsupported tree species.`);
     if (object?.treeSeed !== undefined && (!Number.isInteger(object.treeSeed) || object.treeSeed < 0 || object.treeSeed > 0xffffffff)) errors.push(`Object ${index + 1} has an invalid tree seed.`);
+    if (object?.ambientBehaviour !== undefined) {
+      if (object.kind !== 'glb' || object.collision !== 'none') errors.push(`Object ${index + 1} ambient behaviour requires a non-colliding GLB.`);
+      errors.push(...validateAmbientBehaviour(object.ambientBehaviour).map(error => `Object ${index + 1}: ${error}`));
+    }
     if (object?.materialOverrides !== undefined) {
       const seen = new Set<number>();
       if (!Array.isArray(object.materialOverrides) || object.materialOverrides.length > 256 || object.materialOverrides.some((entry) => {
@@ -334,6 +341,7 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
   }
   if (Array.isArray(p.objects)) {
     errors.push(...validateHierarchy(p.objects));
+    if (p.objects.filter(o => o?.ambientBehaviour).length > 256) errors.push('Worlds may contain at most 256 ambient wildlife objects.');
     if(p.objects.filter(o=>o?.kind==='media-screen').length>16)errors.push('Worlds may contain at most 16 media screens.');
     for(const o of p.objects){if(o?.kind==='media-screen'){errors.push(...validateMediaScreen(o.mediaScreen));if(o.assetId!==undefined)errors.push('Media screens cannot reference arbitrary assets.');}else if(o?.mediaScreen!==undefined)errors.push('Media screen configuration requires a media-screen object.');}
     if(p.objects.filter(o=>o?.kind==='computer').length>MAX_COMPUTERS)errors.push('Worlds may contain at most 32 computers.');
@@ -439,7 +447,8 @@ export function validateWorld(value: unknown): { valid: boolean; errors: string[
 function playerWorldCapabilities(project:WorldProject):string[]{
  return ['object-access/1',...(project.nativeIsland?.sea.surfaceExclusions!==undefined?['water-exclusion/1']:[]),...(project.objects.some(o=>o.kind==='media-screen')?['media-screen/1']:[]),...(project.nativeIsland?['native-island/1']:[]),...(project.welcome?['welcome/1']:[]),...(project.landscape?['project/3','landscape/1']:[]),
   ...(project.traffic?['port-traffic/1']:[]),
-  ...(project.objects.some(o=>o.collisionOnly)?['collision-volumes/1']:[])];
+  ...(project.objects.some(o=>o.collisionOnly)?['collision-volumes/1']:[]),
+  ...(project.objects.some(o=>o.ambientBehaviour)?['ambient-behaviour/1']:[])];
 }
 
 /** Strict standalone package admission; never downgrades landscape to an older package schema. */

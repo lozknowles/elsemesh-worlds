@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {AMBIENT_BEHAVIOUR_SCHEMA} from './ambient-behaviour';
+import type {AmbientBehaviour} from './ambient-behaviour';
 import { sampleTerrain } from './world';
 import type { EditorObject, PrimitiveKind, Terrain, Vec3, WorldAsset, WorldProject } from './world';
 
@@ -20,6 +22,7 @@ export type LibraryAsset = {
   treeSpecies?: EditorObject['treeSpecies'];
   placement?: 'ground' | 'shore' | 'water' | 'air';
   collision?: EditorObject['collision'];
+  ambientBehaviour?: Omit<AmbientBehaviour, 'seed'>;
 };
 
 export const assetLibrary: LibraryAsset[] = [
@@ -58,21 +61,21 @@ export const assetLibrary: LibraryAsset[] = [
     ['magnificent-frigatebird','Magnificent frigatebird','magnificent-frigatebird.glb'],
     ['sanderling','Sanderling','sanderling.glb'],
   ] as const).map(([id,name,file]): LibraryAsset => ({
-    id: 'wildlife-'+id, name, category: 'Wildlife', description: 'Original game bird geometry in a fixed pose; place above terrain and adjust the transform.', kind: 'glb',
+    id: 'wildlife-'+id, name, category: 'Wildlife', description: 'Original game bird geometry with a bounded browser-side flight route; place above terrain.', kind: 'glb',
     preview: '⌁', source: 'ElseMesh src/world/wildlife/BirdShapes.js and BirdBatch.js · source commit 6fdb63c5; details in docs/reusable-island-asset-inventory.md',
     license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
-    readiness: 'Static source-derived pose and simplified PBR palette. Flight, perching, flocking and calls remain engine behaviours.',
-    assetUrl: '/assets/elsemesh/wildlife/'+file, scale: [1,1,1], placement: 'air', collision: 'none',
+    readiness: 'Client-side ambient flight route with a static source-derived pose and simplified PBR palette. Wing rig, perching, flocking and calls remain unavailable.',
+    assetUrl: '/assets/elsemesh/wildlife/'+file, scale: [1,1,1], placement: 'air', collision: 'none', ambientBehaviour: {schema:AMBIENT_BEHAVIOUR_SCHEMA,kind:'bird-flight',speed:3,radius:8},
   })),
   ...([
     ['ghost-crab','Ghost crab','ghost-crab.glb'],
     ['hermit-crab','Hermit crab','hermit-crab.glb'],
   ] as const).map(([id,name,file]): LibraryAsset => ({
-    id: 'wildlife-'+id, name, category: 'Wildlife', description: 'Original game beach-crab geometry in a stationary pose.', kind: 'glb',
+    id: 'wildlife-'+id, name, category: 'Wildlife', description: 'Original game beach-crab geometry with a bounded browser-side scuttling route.', kind: 'glb',
     preview: '❖', source: 'ElseMesh src/world/wildlife/CritterShapes.js and CritterBatch.js · source commit 6fdb63c5; details in docs/reusable-island-asset-inventory.md',
     license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
-    readiness: 'Static source-derived pose and simplified PBR palette. Scuttling and burrow behaviour remain engine behaviours.',
-    assetUrl: '/assets/elsemesh/wildlife/'+file, scale: [1,1,1], placement: 'shore', collision: 'none',
+    readiness: 'Client-side ambient scuttling with static source-derived pose and simplified PBR palette. Leg rig and burrows remain unavailable.',
+    assetUrl: '/assets/elsemesh/wildlife/'+file, scale: [1,1,1], placement: 'shore', collision: 'none', ambientBehaviour: {schema:AMBIENT_BEHAVIOUR_SCHEMA,kind:'crab-walk',speed:0.25,radius:2},
   })),
   ...([
     ['dining-chair', 'Dining chair', 'Furniture', 'Seat, back and four steel legs. Human scale: 0.51 m wide, 0.48 m seat height.', '♧'],
@@ -120,6 +123,7 @@ export function createLibraryObject(asset: LibraryAsset, position: Vec3, id: str
     collision: asset.collision ?? 'solid',
     ...(asset.treeSpecies ? { treeSpecies: asset.treeSpecies, treeSeed: Math.floor(Math.random() * 0xffffffff) } : {}),
     ...(asset.assetUrl ? { assetId: asset.id } : {}),
+    ...(asset.ambientBehaviour ? { ambientBehaviour: {...asset.ambientBehaviour,seed:Math.floor(Math.random()*0x100000000)} } : {}),
   };
 }
 

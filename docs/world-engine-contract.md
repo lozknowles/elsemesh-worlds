@@ -28,3 +28,9 @@ Content-Encoding header does not establish identity encoding: CORS may hide it.
 The reader bounds each decoded stream chunk before storing it, cancels overflow,
 and retains request deadlines and repository expected-size/hash verification.
 This allows a valid tiny component to load when compression adds wire overhead.
+
+## Ambient wildlife and world weather
+
+A non-colliding GLB object may declare `ambientBehaviour` with schema `elsemesh.ambient-behaviour/1`, one of `bird-flight`, `crab-walk` or `fish-swim`, and bounded `speed`, `radius` and `seed`. The authored transform is the home anchor; the installed engine evaluates a client-local visual route. This is not a world script, AI agent, shared multiplayer position or ownership grant. Unsupported descriptors fail repository validation. Fish movement needs a global water surface; unsuitable habitat leaves the model at its authored transform. The GLB's geometry remains static, so wings, legs and fins do not articulate.
+
+Clouds, mist, rain, lightning, thunder and wind remain engine effects. Each repository's authored `environment` selects weather mode and values. `weather: 'clear'`, `cloudCoverage: 0`, `mistDensity: 0` and `windSpeed: 0` are explicit world choices. Weather data never includes executable effect code or engine credentials. The editor's ElseMesh graphics view uses the same authored settings; the standalone player reads them on world activation.
