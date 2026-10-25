@@ -65,7 +65,7 @@ import FeaturePanel from './FeaturePanel';
 import Weather from './Weather';
 import ImportedAsset from './ImportedAsset';
 import { admitGlb } from './asset-admission';
-import { assetLibrary, createLibraryObject, groundObject } from '../domain/asset-library';
+import { assetLibrary, createLibraryObject, groundObject, placeLibraryObject } from '../domain/asset-library';
 import type { LibraryAsset } from '../domain/asset-library';
 import AssetMaterialEditor from './AssetMaterialEditor';
 import GeoPanel from './GeoPanel';
@@ -1289,12 +1289,12 @@ export default function App() {
     setProject(() => next); setDraftFeature(null); setPlacingTree(false); message('Geographic terrain applied');
     return true;
   }
-  function commitEmbeddedAsset(candidate: WorldAsset, object: EditorObject, generation: number) {
+  function commitEmbeddedAsset(candidate: WorldAsset, object: EditorObject, generation: number, entry?: LibraryAsset) {
     if (generation !== worldGeneration.current) return false;
     const latest = projectRef.current;
     const existing = latest.assets.find((asset) => asset.dataUrl === candidate.dataUrl);
     const asset = existing ?? candidate;
-    const placed = groundObject({ ...object, assetId: asset.id }, asset, latest.terrain);
+    const placed = entry ? placeLibraryObject(entry, { ...object, assetId: asset.id }, asset, latest) : groundObject({ ...object, assetId: asset.id }, asset, latest.terrain);
     const next = { ...latest, assets: existing ? latest.assets : [...latest.assets, asset], objects: [...latest.objects, placed] };
     if (next.objects.length > 2000 || next.assets.length > 128 || next.assets.reduce((total, item) => total + item.bytes, 0) > 15 * 1024 * 1024) throw new Error('The object, asset or 15 MiB asset budget would be exceeded.');
     if (new TextEncoder().encode(JSON.stringify(next)).byteLength > MAX_PROJECT_BYTES) throw new Error('The project would exceed the 25 MiB file limit.');
@@ -1317,12 +1317,12 @@ export default function App() {
     const generation = worldGeneration.current, operation = ++assetOperation.current;
     pendingAssetOperation.current = operation; setAssetBusy(true);
     try {
-      const response = await fetch(entry.assetUrl);
+      const response = await fetch(new URL(entry.assetUrl.replace(/^\//, ''), document.baseURI));
       if (!response.ok) throw new Error(`Model download failed (${response.status})`);
       const bytes = await response.arrayBuffer();
       if (generation !== worldGeneration.current) return;
       const asset = await admitGlb(bytes, { id: newId(), name: entry.name, source: entry.source, license: entry.license, prepared: true });
-      if (commitEmbeddedAsset(asset, createLibraryObject(entry, [0, 0, 0], newId()), generation)) message(`${entry.name} added with embedded textures`);
+      if (commitEmbeddedAsset(asset, createLibraryObject(entry, [0, 0, 0], newId()), generation, entry)) message(`${entry.name} added as a reusable world object`);
     } catch (error) {
       if (generation === worldGeneration.current) message(`Model not added: ${error instanceof Error ? error.message : 'invalid model'}`);
     } finally {
@@ -1521,7 +1521,7 @@ export default function App() {
                         className={`asset-thumb thumb-${entry.kind}`}
                         style={{ '--tint': palettes[i % palettes.length] } as React.CSSProperties}
                       >
-                        {entry.thumbnailUrl ? <img src={entry.thumbnailUrl} alt={`${entry.name} schematic preview`} /> : entry.preview}
+                        {entry.thumbnailUrl ? <img src={new URL(entry.thumbnailUrl.replace(/^\//, ''), document.baseURI).href} alt={`${entry.name} schematic preview`} /> : entry.preview}
                       </span>
                       <span>{entry.name}</span><small>{entry.kind === 'glb' ? `Prepared model · ${entry.license.split(' · ')[0]}` : entry.kind === 'tree' ? 'Procedural tree' : 'Editor blockout'}</small>
                     </button>

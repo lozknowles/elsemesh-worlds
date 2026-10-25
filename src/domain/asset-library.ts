@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { sampleTerrain } from './world';
-import type { EditorObject, PrimitiveKind, Terrain, Vec3, WorldAsset } from './world';
+import type { EditorObject, PrimitiveKind, Terrain, Vec3, WorldAsset, WorldProject } from './world';
 
-export type LibraryCategory = 'Nature' | 'Coastal' | 'Building' | 'Primitive' | 'Furniture' | 'Computer';
+export type LibraryCategory = 'Nature' | 'Coastal' | 'Building' | 'Wildlife' | 'Primitive' | 'Furniture' | 'Computer';
 export type LibraryAsset = {
   id: string;
   name: string;
@@ -18,9 +18,62 @@ export type LibraryAsset = {
   scale: Vec3;
   materialColor?: string;
   treeSpecies?: EditorObject['treeSpecies'];
+  placement?: 'ground' | 'shore' | 'water' | 'air';
+  collision?: EditorObject['collision'];
 };
 
 export const assetLibrary: LibraryAsset[] = [
+  ...([
+    ['beach-hut-s1', 'Original beach hut S1', 'beach-hut-s1.glb'],
+    ['beach-hut-s2', 'Original beach hut S2', 'beach-hut-s2.glb'],
+    ['beach-hut-s3', 'Original beach hut S3', 'beach-hut-s3.glb'],
+  ] as const).map(([id,name,file]): LibraryAsset => ({
+    id: 'island-'+id, name, category: 'Building', description: 'Original Island beach hut with porch and stairs; static reusable scenery.', kind: 'glb',
+    preview: '⌂', source: 'Original Island world repository snapshot 22f071c2 · trusted Village/buildHouse geometry extraction; details in docs/reusable-island-asset-inventory.md',
+    license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
+    readiness: 'Static model with original geometry and vertex colours. Weathering shaders and game behaviour are not embedded.',
+    assetUrl: '/assets/elsemesh/original-island/'+file, scale: [1,1,1], placement: 'shore', collision: 'solid',
+  })),
+  ...([
+    ['timber-pier', 'Original timber pier', 'timber-pier.glb', 'shore'],
+    ['boardwalk', 'Original boardwalk', 'boardwalk.glb', 'shore'],
+    ['lobster-boat', 'Original lobster boat', 'lobster-boat.glb', 'water'],
+  ] as const).map(([id,name,file,placement]): LibraryAsset => ({
+    id: 'island-'+id, name, category: 'Coastal', description: placement==='water' ? 'Original Island lobster boat; static moored scenery, not a drivable vehicle.' : 'Original Island coastal structure; static reusable scenery.',
+    kind: 'glb', preview: placement==='water'?'⛵':'▤',
+    source: 'Original Island world repository snapshot 22f071c2 · trusted Village/BoatModel geometry extraction; details in docs/reusable-island-asset-inventory.md',
+    license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
+    readiness: 'Static geometry with vertex colours. Boat controls, buoyancy and procedural shader effects require game runtime behaviour and are not included.',
+    assetUrl: '/assets/elsemesh/original-island/'+file, scale: [1,1,1], placement, collision: 'solid',
+  })),
+  { id: 'wildlife-humpback-whale', name: 'Humpback whale', category: 'Wildlife', description: '14.5 m humpback from the original game geometry; place on a world water surface.', kind: 'glb', preview: '◕',
+    source: 'ElseMesh src/world/marine/Whale.js · public/models/whale/humpback.bin lod0 and albedo · source commit 6fdb63c5; details in docs/reusable-island-asset-inventory.md',
+    license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
+    readiness: 'Static rest pose. Swimming, surfacing, blow, rig motion and ocean interaction remain engine behaviours, not embedded in this model.',
+    assetUrl: '/assets/elsemesh/wildlife/humpback-whale.glb', scale: [1,1,1], placement: 'water', collision: 'none' },
+  ...([
+    ['laughing-gull','Laughing gull','laughing-gull.glb'],
+    ['royal-tern','Royal tern','royal-tern.glb'],
+    ['brown-pelican','Brown pelican','brown-pelican.glb'],
+    ['magnificent-frigatebird','Magnificent frigatebird','magnificent-frigatebird.glb'],
+    ['sanderling','Sanderling','sanderling.glb'],
+  ] as const).map(([id,name,file]): LibraryAsset => ({
+    id: 'wildlife-'+id, name, category: 'Wildlife', description: 'Original game bird geometry in a fixed pose; place above terrain and adjust the transform.', kind: 'glb',
+    preview: '⌁', source: 'ElseMesh src/world/wildlife/BirdShapes.js and BirdBatch.js · source commit 6fdb63c5; details in docs/reusable-island-asset-inventory.md',
+    license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
+    readiness: 'Static source-derived pose and simplified PBR palette. Flight, perching, flocking and calls remain engine behaviours.',
+    assetUrl: '/assets/elsemesh/wildlife/'+file, scale: [1,1,1], placement: 'air', collision: 'none',
+  })),
+  ...([
+    ['ghost-crab','Ghost crab','ghost-crab.glb'],
+    ['hermit-crab','Hermit crab','hermit-crab.glb'],
+  ] as const).map(([id,name,file]): LibraryAsset => ({
+    id: 'wildlife-'+id, name, category: 'Wildlife', description: 'Original game beach-crab geometry in a stationary pose.', kind: 'glb',
+    preview: '❖', source: 'ElseMesh src/world/wildlife/CritterShapes.js and CritterBatch.js · source commit 6fdb63c5; details in docs/reusable-island-asset-inventory.md',
+    license: 'MIT · Copyright (c) 2026 DRG Software Solutions LLC and ElseMesh contributors',
+    readiness: 'Static source-derived pose and simplified PBR palette. Scuttling and burrow behaviour remain engine behaviours.',
+    assetUrl: '/assets/elsemesh/wildlife/'+file, scale: [1,1,1], placement: 'shore', collision: 'none',
+  })),
   ...([
     ['dining-chair', 'Dining chair', 'Furniture', 'Seat, back and four steel legs. Human scale: 0.51 m wide, 0.48 m seat height.', '♧'],
     ['dining-table', 'Dining table', 'Furniture', 'Tabletop and four steel legs. Human scale: 3.25 × 1.30 m, 0.82 m high.', '▤'],
@@ -64,7 +117,7 @@ export function createLibraryObject(asset: LibraryAsset, position: Vec3, id: str
     scale: [...asset.scale],
     color: asset.materialColor ?? (asset.kind === 'tree' ? '#577854' : asset.kind === 'building' ? '#d3c2a0' : '#a8b87b'),
     visible: true,
-    collision: 'solid',
+    collision: asset.collision ?? 'solid',
     ...(asset.treeSpecies ? { treeSpecies: asset.treeSpecies, treeSeed: Math.floor(Math.random() * 0xffffffff) } : {}),
     ...(asset.assetUrl ? { assetId: asset.id } : {}),
   };
@@ -77,4 +130,40 @@ export function groundObject(object: EditorObject, asset: WorldAsset | undefined
   let bottom = Infinity;
   for (const x of [bounds.min[0], bounds.max[0]]) for (const y of [bounds.min[1], bounds.max[1]]) for (const z of [bounds.min[2], bounds.max[2]]) bottom = Math.min(bottom, new THREE.Vector3(x, y, z).applyMatrix4(transform).y);
   return { ...object, position: [object.position[0], sampleTerrain(terrain, object.position[0], object.position[2]) - bottom, object.position[2]] };
+}
+
+/** Choose an authored starting transform; subsequent edits remain explicit world-object data. */
+export function placeLibraryObject(entry: LibraryAsset, object: EditorObject, asset: WorldAsset | undefined, project: WorldProject): EditorObject {
+  const mode = entry.placement ?? 'ground';
+  if (mode === 'ground') return groundObject(object, asset, project.terrain);
+  const terrain = project.terrain, spawn = project.spawn.position;
+  const within = (x: number, z: number) => Math.abs(x) < terrain.width / 2 - 8 && Math.abs(z) < terrain.depth / 2 - 8;
+  if (mode === 'water') {
+    const level = project.nativeIsland?.sea.level ?? project.water?.level;
+    if (level === undefined || !Number.isFinite(level)) throw new Error('Add a sea or world water surface before placing this model.');
+    const previous = project.objects.filter(item => item.name === entry.name).length;
+    const boat = project.objects.find(item => !item.parentId && /boat/i.test(item.name));
+    const anchors: Array<[number, number]> = boat ? [[boat.position[0] + 32 + previous * 18, boat.position[2] + 12]] : [];
+    for (let radius = 24; radius < Math.min(terrain.width, terrain.depth) * .46; radius += 24)
+      for (let step = 0; step < 16; step++) {
+        const angle = step * Math.PI / 8;
+        anchors.push([spawn[0] + Math.cos(angle) * radius, spawn[2] + Math.sin(angle) * radius]);
+      }
+    const point = anchors.find(([x,z]) => within(x,z) && sampleTerrain(terrain,x,z) <= level - (entry.id.includes('whale') ? 3 : 1));
+    if (!point) throw new Error('No suitable water location was found. Add water or move to a deeper shoreline.');
+    return { ...object, position: [point[0], level, point[1]] };
+  }
+  if (mode === 'air') {
+    const count = project.objects.filter(item => item.name === entry.name).length;
+    const x = Math.max(-terrain.width / 2 + 8, Math.min(terrain.width / 2 - 8, spawn[0] + 8 + count * 3));
+    const z = Math.max(-terrain.depth / 2 + 8, Math.min(terrain.depth / 2 - 8, spawn[2] - 6));
+    return { ...object, position: [x, sampleTerrain(terrain,x,z) + 7, z] };
+  }
+  const isHut = entry.id.startsWith('island-beach-hut');
+  const huts = project.objects.filter(item => !item.parentId && /beach hut/i.test(item.name));
+  const count = project.objects.filter(item => item.name === entry.name).length;
+  const x = isHut && huts.length ? Math.max(...huts.map(item => item.position[0])) + 11 : spawn[0] + (isHut ? 9 : 2 + count * .8);
+  const z = isHut && huts.length ? huts[huts.length - 1]!.position[2] : spawn[2] + (isHut ? 1 : 2);
+  if (!within(x,z)) throw new Error('No shoreline placement fits inside this world; move an existing object or use the transform controls.');
+  return groundObject({ ...object, position: [x,0,z] }, asset, terrain);
 }

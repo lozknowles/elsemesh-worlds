@@ -1,0 +1,590 @@
+{
+  "sourceCommit": "6fdb63c5fa281065b03388079fa1b2b64e986bd8",
+  "license": "MIT; Copyright (c) 2026 DRG Software Solutions LLC; ElseMesh contributors",
+  "inputs": {
+    "LICENSE": "413204504456b6b29e99d565629023e9aeee5916907e41fe8ffe8549219348ec",
+    "CREDITS.md": "08463184a1b0a49976423593994704adb708c5fb5159e43745ef1cc78c788d0d",
+    "src/world/wildlife/BirdShapes.js": "634709586d1ea086b899f6530116b34af8da5f708c321e0fadd9228f72274433",
+    "src/world/wildlife/BirdPose.js": "da867d016ce2a9a535fa570c0e0eaee15f67b042ccf7982f4721725722d33095",
+    "src/world/wildlife/Kit.js": "56dc35ed00c6ca0ed5a9f8bd569e4835b5f59b2d15c799f572a7ce8af99f6524",
+    "src/world/wildlife/BirdBatch.js": "d093904890df5eb620ecd5979f6435ff70347e21da6e504c38b696e38d8996d4",
+    "src/world/wildlife/CritterShapes.js": "dae648e11e8d6600f9722c70c9be4acf13e2c9f0279889958d2021c300d3b895",
+    "src/world/wildlife/CritterBatch.js": "715bcfe4f8cba4ccc6980ea018e454e3ee5402ae0fb7e6e91b0ff9d6410a331a",
+    "src/world/marine/Whale.js": "8f5da57d20cc0e679cc5d560595c13ff00c930d59c6c13d2804e29b53e161e1b",
+    "src/engine/Backend.js": "c2fedad063e78d584f819b7963a5dead0dbe5dc70edc9ac72dcae4b907b60736",
+    "src/engine/Engine.js": "de12a4253f313e0bf5402d62b20828bbd64a1b632d6eb337f30a6d28697ba52a",
+    "src/engine/FrameTiming.js": "3f435e62ea59deb731699dcb49e26ecc47afb38e1c0a77ae13981ca637a5ca43",
+    "src/engine/constants.js": "4610679066f55da362c10a896fea17058ee646affff3981d6e2aede118f2947f",
+    "src/engine/core/EventDispatcher.js": "3225f116d0407a8b603917ab8bbe8656f1cbfe97fc1165028bf7420093ae70f3",
+    "src/engine/geometry/BufferAttribute.js": "48cc710ca8029bc15b3c03533b13c478ae55cf52a453543e10d7ffc933580a41",
+    "src/engine/geometry/BufferGeometry.js": "ef3e8470f6cc0745bc50e354c3145da8e470ea1de0e056d33f3f0501901e7376",
+    "src/engine/geometry/BufferGeometryUtils.js": "c7ab418b86ddd4b623eb7fa6b037c800c141f9f444772d604658961d2d623d4c",
+    "src/engine/geometry/PolyhedronGeometry.js": "6b5e756688f3ea962c012d7e06c595d1fd5730fba9e44b1cccc5455013b45473",
+    "src/engine/geometry/PrimitiveGeometries.js": "cbde738b33b5e0c67d729825c7d8620b2d819c7aa70bf680b15d94d265732ceb",
+    "src/engine/geometry/RoundedBoxGeometry.js": "f4c05c55362ff68a2fe2eeae21e9d783344243265e1e18567154fe95b3971413",
+    "src/engine/geometry/TubeGeometry.js": "f493cb4de35444a9adfedf2b7a57994f59cba823e9768b5102080b750b9ef5a2",
+    "src/engine/geometry/index.js": "7aa336e8ff7d01675b375fbb499ae9820952595f9bac9b169df22d6b1de5538c",
+    "src/engine/gpu/Compute.js": "bd64385e6d5de7e9a1a7986eb71c7a032d5ed7763568f47285437c9f185a9aa8",
+    "src/engine/gpu/GPU.js": "e38830b06abae4bd1ad517a4e6458e1c795a18353e425c5a3d642bf412177dca",
+    "src/engine/gpu/Mipmaps.js": "c3262f6f22cb30275847666ab6f7ed543f0c77b5d06f1d9aa84611cadc7070c6",
+    "src/engine/gpu/Readback.js": "d16b3a3ecc588e5743534cfb10129428666d4114fb7e3372af51cb068529148d",
+    "src/engine/gpu/Shader.js": "b45b50583a6525aa4aa9a26ae5be699032e5c5ae57780daf99ed2a6402860bd6",
+    "src/engine/gpu/Texture.js": "54135704fe77cf806348350f20da6dece66f6dcfc973713acc6042c6e5ec1f42",
+    "src/engine/gpu/Uniforms.js": "51bf60e5da6bbab612cc1405cce5dcb7a759a3732bd0fd7cdfe5e1df73105940",
+    "src/engine/index.js": "239f0f1370717789618b0094b983717ca501ad957eaa02bdf3e2b872a66dc454",
+    "src/engine/loaders/GLTF.js": "b8a2c3666fa27ea504e62d315ed9c125e178007a27d151eb59c9d1ea5ac210d1",
+    "src/engine/math/Box3.js": "170c606467f859c5a3f6dae1b32256711f61b927aaec42fe3cbcfb4a51c16356",
+    "src/engine/math/CatmullRomCurve3.js": "b21bae1708947c35819fce3dbe97f90f893c36d7db42392fbd5b63de05991f5f",
+    "src/engine/math/Color.js": "ad9a0110fd607695522c17dce08aa5eacee017e1160fce3aa5ba37704b893d25",
+    "src/engine/math/DataUtils.js": "f94e4a385baae53868d2e334b31d04c5ac42ca7d382b5f9effcc6ada9060db38",
+    "src/engine/math/Euler.js": "5bf51c4b93fffc1cb9c24d4ba75af7b00bc1520880e18353d4f69cddea7e37c7",
+    "src/engine/math/Frustum.js": "cd6eba21f91122150afc973be49a215a0620c4ae1aea7f3ef0ff65d34d1b3bd9",
+    "src/engine/math/MathUtils.js": "8adcc4743bf966b097bd25057abeb50b313ec9b9030e457825a5da209e1f9534",
+    "src/engine/math/Matrix3.js": "32fa721dfd326e1c0a53695b68938d4f2a5e85903c9b56c7b5f69e80456382da",
+    "src/engine/math/Matrix4.js": "c5c1dc971d61cbd21efcb083fdbdfb1e9fb0c6a56c9422266cfdc8b8353d57cc",
+    "src/engine/math/Plane.js": "523139ba4761b0f89cb4154e55b90ef6cf79f8c684fa5c50a67dffc4ad8a3d0d",
+    "src/engine/math/Quaternion.js": "040b4dd121db6effed1fbb8f2c5a6fb8d96d9523cf91ddde5105dc48c41fb3ce",
+    "src/engine/math/Ray.js": "88e40df102d8ca15bf36395883937d1d903541a932d2293cca0690d72373cdcd",
+    "src/engine/math/ShapeUtils.js": "f560e483842a6ba7e9c73dc6e66614099faf6f4a342c23a83ced82de7cc39976",
+    "src/engine/math/Sphere.js": "9bf98f3c0ff69bd68a0fa1dedd8a19a6abdb37dc2c2979a27ab89def1f94f71c",
+    "src/engine/math/Spherical.js": "b0388ee43a1feea9c31d184af0f3b4746261667bfe3d5a3a548cb257862a7772",
+    "src/engine/math/Timer.js": "065eccbebb840beed5481ccf60f09bd50969d5965aac394f8858d136a4d1ec31",
+    "src/engine/math/Vector2.js": "195d0d4cc60dca87b7386464dca3fcfc6c76c852a3ef3dab95e3556ce7947b54",
+    "src/engine/math/Vector3.js": "af1252233ab373aeb9bb8f3514c8fdc3f00e8d2d9d71cdf16536f475a54bcb54",
+    "src/engine/math/Vector4.js": "84deef94dbf6a335ed53aeaa2d6e65cd1f2d90687fb0fd37d18c4fdbf5e25710",
+    "src/engine/math/index.js": "96a474ebaf2666dc51217e3d8224254794a5576db3d0acb2ce4a56e00911a2cf",
+    "src/engine/render/DrawListPool.js": "e51cbddac377836b124e23f3aff55b91be73209ec3872676ee0d0e7f86bfc4f3",
+    "src/engine/render/Frame.js": "c1411fd15b19d9c6c05c492b5ce919490ca1229f2c75a92e7e084815c7b1a7fb",
+    "src/engine/render/FullscreenPass.js": "21c7d6014158f76ce8d0b7c4674a1a76c6750d6934db3e327adc5dca1c0bd552",
+    "src/engine/render/Material.js": "a84b1a3363c954ca4e3c7a5e0bfa0995a3f1e385506f3b05de2dea6b50713d22",
+    "src/engine/render/MeshRenderer.js": "ac813357ef452309638276d8ca4d261c0882a49a45c6ab88a1c8c932fe249b44",
+    "src/engine/render/MeshShader.js": "88bf6783c50ecd1f95d4be0764bb3528f2f2468eff2d4ad4b597758cab81f37d",
+    "src/engine/render/SceneRenderer.js": "856d4446487ca4566245d241cbe315d1e49d1e943ebc1d5f1d60d8067256cede",
+    "src/engine/render/Shadows.js": "3d70ceacbb25505533ce4f47779ba5d97bc5834e2b1e01d0eb659a26c7b8dc91",
+    "src/engine/render/SkinBounds.js": "2792e5f89f37374ef616dec001335d81300f571336bef94bd8ff1e3a4e0c7ce3",
+    "src/engine/render/Skinning.js": "67125402c889fd07ac9d720d50e844280260a2eb48a3cc680b8ba55936396d3c",
+    "src/engine/render/wgsl/common.js": "502580bf3c7d684833f2ce622f0f1d34425b0aa3842aedb2106816f5fbbd91c5",
+    "src/engine/render/wgsl/lighting.js": "6f8ed6fa5198ace6c5131429ea356acc8eb2c3de2dbf8761b7954e4c9795f38b",
+    "src/engine/scene/Camera.js": "041f492248dc5425e89c6e207009a6d8ae19264e68cc8638027fd3de4466a160",
+    "src/engine/scene/Group.js": "c9837f1c2dd612cf94e1a7b7aac46c1f0fe84573b40ddfc21e75cca333dee2a1",
+    "src/engine/scene/Layers.js": "b4f9be617a8ebf912561da0414681b06f9dd4179af60bdce16cfa8de49717977",
+    "src/engine/scene/Mesh.js": "2ca60839273eca616fb98582aa78f75205ae922a2aafc22bd14c27faad75c2c0",
+    "src/engine/scene/Object3D.js": "6bf8eb3d3ddc95c3e919cfaf91d62e2761b1dcd97b1c769383dab74a94cc34e0",
+    "src/engine/scene/Scene.js": "45b6080a68d116088ee45c024216f9d4c7eaa0b33cdd83cadb80ce196d3cb7c3",
+    "src/engine/scene/index.js": "80fa84e958bb59d407f080aaa0c43ad6a9b6432fe948733b25707467e02b4ee1",
+    "src/engine/webgpu.js": "f5bef1ce79dababfe5e838d77042293102dad18737b144c872867f36e7fdd461",
+    "public/models/whale/humpback.json": "c47390c365da1c8c6fa73bea4996bf51073a973770c1942e8993f545e283a354",
+    "public/models/whale/humpback.bin": "b3a31801a393489331bc3dd4fd5be64cbad32ac4e159f5180e0eb028d489a92d",
+    "public/models/whale/humpback_albedo.png": "5daaa6727f5304aaa3b6f6ef86cedcebc7cf922376a5c0e7caad66c4f4a5efe1"
+  },
+  "originalIslandSnapshot": "22f071c2b1557aac81b277ff331c3cbbcb8467c06df8eeb617945877becc9dd7",
+  "originalIslandManifestSHA256": "b105a2c31597d47b95c122a1af089a79a5e7e2ecd517067fad62cae5bd06e493",
+  "records": [
+    {
+      "file": "public/assets/elsemesh/original-island/beach-hut-s1.glb",
+      "name": "Original beach hut S1",
+      "bytes": 219288,
+      "sha256": "85aee505096199b644d6790fe144b342a151130f1514c0591425e1a4d4442269",
+      "bounds": {
+        "min": [
+          -2.492594003677368,
+          -2.6917226314544678,
+          -2.4200000762939453
+        ],
+        "max": [
+          2.492594003677368,
+          4.031560897827148,
+          6.893417835235596
+        ]
+      },
+      "dimensions": [
+        4.985188007354736,
+        6.723283529281616,
+        9.313417911529541
+      ],
+      "notes": "Trusted CPU extraction from original ElseMesh Village/buildHouse; source closure hashes in provenance; byte-identical source GLB",
+      "vertexCount": 4126,
+      "triangleCount": 2647,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 6,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/original-island/beach-hut-s2.glb",
+      "name": "Original beach hut S2",
+      "bytes": 222220,
+      "sha256": "b819d48535f13209d150590d923c08504f158c78bddf901f2eb75b216a85fbf7",
+      "bounds": {
+        "min": [
+          -2.8499999046325684,
+          -2.3209116458892822,
+          -2.450000047683716
+        ],
+        "max": [
+          2.8499999046325684,
+          4.989055156707764,
+          6.231590747833252
+        ]
+      },
+      "dimensions": [
+        5.699999809265137,
+        7.309966802597046,
+        8.681590795516968
+      ],
+      "notes": "Trusted CPU extraction from original ElseMesh Village/buildHouse; source closure hashes in provenance; byte-identical source GLB",
+      "vertexCount": 4199,
+      "triangleCount": 2705,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 5,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/original-island/beach-hut-s3.glb",
+      "name": "Original beach hut S3",
+      "bytes": 225744,
+      "sha256": "af8cd3ef2632789938e63e22f2c9549b5de096c39a211ee4f65e5016d22169cd",
+      "bounds": {
+        "min": [
+          -2.450000047683716,
+          -2.0265610218048096,
+          -2.6500000953674316
+        ],
+        "max": [
+          2.450000047683716,
+          4.827322959899902,
+          5.673227787017822
+        ]
+      },
+      "dimensions": [
+        4.900000095367432,
+        6.853883981704712,
+        8.323227882385254
+      ],
+      "notes": "Trusted CPU extraction from original ElseMesh Village/buildHouse; source closure hashes in provenance; byte-identical source GLB",
+      "vertexCount": 4225,
+      "triangleCount": 2901,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 5,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/original-island/timber-pier.glb",
+      "name": "Original timber pier",
+      "bytes": 2445872,
+      "sha256": "1d2f08e0276138aaea37e9ba53e38567960bfce9d93131667ce460061bc23444",
+      "bounds": {
+        "min": [
+          -7.079999923706055,
+          -5.86631441116333,
+          -53.263221740722656
+        ],
+        "max": [
+          7.217492580413818,
+          5.460000038146973,
+          52.70336151123047
+        ]
+      },
+      "dimensions": [
+        14.297492504119873,
+        11.326314449310303,
+        105.96658325195312
+      ],
+      "notes": "Trusted original Village generator capture; byte-identical source GLB",
+      "vertexCount": 46579,
+      "triangleCount": 32686,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 4,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/original-island/boardwalk.glb",
+      "name": "Boardwalk to pier",
+      "bytes": 484256,
+      "sha256": "c3dd5dea8a0b683ebaadc0ab36081fc890c3a345873edf73d980165777949320",
+      "bounds": {
+        "min": [
+          -8.283517837524414,
+          1.3251440525054932,
+          -22.56130027770996
+        ],
+        "max": [
+          5.932333946228027,
+          4.570558071136475,
+          19.942623138427734
+        ]
+      },
+      "dimensions": [
+        14.215851783752441,
+        3.2454140186309814,
+        42.503923416137695
+      ],
+      "notes": "Trusted original Village generator capture; byte-identical source GLB",
+      "vertexCount": 9598,
+      "triangleCount": 4898,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 3,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/original-island/lobster-boat.glb",
+      "name": "Original lobster boat",
+      "bytes": 2564524,
+      "sha256": "7c740567333bea7edbfe5678b3e67eb89d6b590c669a241d030b65840f36b7dc",
+      "bounds": {
+        "min": [
+          -1.9284954071044922,
+          -0.7699999809265137,
+          -4.260000228881836
+        ],
+        "max": [
+          1.553660273551941,
+          4.860019683837891,
+          4.479175090789795
+        ]
+      },
+      "dimensions": [
+        3.482155680656433,
+        5.630019664764404,
+        8.73917531967163
+      ],
+      "notes": "Trusted original BoatModel geometry capture; procedural shader details approximated in GLB; byte-identical source GLB",
+      "vertexCount": 45207,
+      "triangleCount": 46965,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 12,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/laughing-gull.glb",
+      "name": "laughing gull (static spread wings)",
+      "bytes": 21232,
+      "sha256": "03fd6424179478b6e9db3eb805b3c0eea3216e876ad351e9a4e38e3b9d9f0264",
+      "bounds": {
+        "min": [
+          -0.5149999856948853,
+          -0.0011786376126110554,
+          -0.23039302229881287
+        ],
+        "max": [
+          0.5149999856948853,
+          0.17052499949932098,
+          0.2108873426914215
+        ]
+      },
+      "dimensions": [
+        1.0299999713897705,
+        0.17170363711193204,
+        0.4412803649902344
+      ],
+      "vertices": 349,
+      "triangles": 592,
+      "notes": "Exact buildBird topology/rest body and spread wings. Exact BirdPose stationary ground legs; BirdBatch leg tube CPU port. Simplified shader-derived PBR palette; feather/eye/material shaders omitted.",
+      "vertexCount": 349,
+      "triangleCount": 592,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/royal-tern.glb",
+      "name": "royal tern (static spread wings)",
+      "bytes": 21228,
+      "sha256": "5394478a9bafc9192e316490a701e5286f1466e1ec014d143afa70b2c3179dc7",
+      "bounds": {
+        "min": [
+          -0.6480000019073486,
+          -0.0011347883846610785,
+          -0.27718478441238403
+        ],
+        "max": [
+          0.6480000019073486,
+          0.1327371895313263,
+          0.2276802659034729
+        ]
+      },
+      "dimensions": [
+        1.2960000038146973,
+        0.13387197791598737,
+        0.5048650503158569
+      ],
+      "vertices": 349,
+      "triangles": 592,
+      "notes": "Exact buildBird topology/rest body and spread wings. Exact BirdPose stationary ground legs; BirdBatch leg tube CPU port. Simplified shader-derived PBR palette; feather/eye/material shaders omitted.",
+      "vertexCount": 349,
+      "triangleCount": 592,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/brown-pelican.glb",
+      "name": "brown pelican (static spread wings)",
+      "bytes": 21228,
+      "sha256": "50c9e21f30bfbe781e6107873c913f253d5a25d1c520d9117569a5b21fe50f34",
+      "bounds": {
+        "min": [
+          -1.0499999523162842,
+          -0.003306090133264661,
+          -0.4449999928474426
+        ],
+        "max": [
+          1.0499999523162842,
+          0.40814918279647827,
+          0.6052610278129578
+        ]
+      },
+      "dimensions": [
+        2.0999999046325684,
+        0.41145527292974293,
+        1.0502610206604004
+      ],
+      "vertices": 349,
+      "triangles": 592,
+      "notes": "Exact buildBird topology/rest body and spread wings. Exact BirdPose stationary ground legs; BirdBatch leg tube CPU port. Simplified shader-derived PBR palette; feather/eye/material shaders omitted.",
+      "vertexCount": 349,
+      "triangleCount": 592,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/magnificent-frigatebird.glb",
+      "name": "magnificent frigatebird (static spread wings)",
+      "bytes": 21236,
+      "sha256": "1027b0ff40819f68d68c476f466a2f499b7b6dee748f782bbdb62de03e3689f4",
+      "bounds": {
+        "min": [
+          -1.149999976158142,
+          -0.0019149653380736709,
+          -0.5829017758369446
+        ],
+        "max": [
+          1.149999976158142,
+          0.17082799971103668,
+          0.3499080240726471
+        ]
+      },
+      "dimensions": [
+        2.299999952316284,
+        0.17274296504911035,
+        0.9328097999095917
+      ],
+      "vertices": 349,
+      "triangles": 592,
+      "notes": "Exact buildBird topology/rest body and spread wings. Exact BirdPose stationary ground legs; BirdBatch leg tube CPU port. Simplified shader-derived PBR palette; feather/eye/material shaders omitted.",
+      "vertexCount": 349,
+      "triangleCount": 592,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/sanderling.glb",
+      "name": "sanderling (static spread wings)",
+      "bytes": 21228,
+      "sha256": "7a95c2ea78f74dc66150437e12774914d90ba4878e0539687d64c0268cd9d94f",
+      "bounds": {
+        "min": [
+          -0.1899999976158142,
+          -0.0006301398971118033,
+          -0.1120000034570694
+        ],
+        "max": [
+          0.1899999976158142,
+          0.0936741977930069,
+          0.12495141476392746
+        ]
+      },
+      "dimensions": [
+        0.3799999952316284,
+        0.0943043376901187,
+        0.23695141822099686
+      ],
+      "vertices": 349,
+      "triangles": 592,
+      "notes": "Exact buildBird topology/rest body and spread wings. Exact BirdPose stationary ground legs; BirdBatch leg tube CPU port. Simplified shader-derived PBR palette; feather/eye/material shaders omitted.",
+      "vertexCount": 349,
+      "triangleCount": 592,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/ghost-crab.glb",
+      "name": "Ghost crab (static)",
+      "bytes": 18036,
+      "sha256": "dde99b0a8107835cbdf1678fc6d654bdf85589541b22a3e1a75168fb63eea228",
+      "bounds": {
+        "min": [
+          -0.11507250368595123,
+          -0.0029605261515825987,
+          -0.05921998992562294
+        ],
+        "max": [
+          0.11507250368595123,
+          0.05093873292207718,
+          0.07992062717676163
+        ]
+      },
+      "dimensions": [
+        0.23014500737190247,
+        0.05389925907365978,
+        0.13914061710238457
+      ],
+      "vertices": 290,
+      "triangles": 504,
+      "notes": "Exact buildCritters body/limb topology, CritterBatch joints/vertex CPU port. stride=0 lift=.1 outK=1 eyes=1 claws=0. Simplified colors, shell/granule shaders omitted. Chosen .08m carapace scale.",
+      "vertexCount": 290,
+      "triangleCount": 504,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/hermit-crab.glb",
+      "name": "Hermit crab (static)",
+      "bytes": 17052,
+      "sha256": "2d7178264b8a4962202e475053baf3159dfcff1458b882164188e1217f1f0e1a",
+      "bounds": {
+        "min": [
+          -0.07915198802947998,
+          0,
+          -0.05287943780422211
+        ],
+        "max": [
+          0.07915198802947998,
+          0.1143178939819336,
+          0.08681292831897736
+        ]
+      },
+      "dimensions": [
+        0.15830397605895996,
+        0.1143178939819336,
+        0.13969236612319946
+      ],
+      "vertices": 290,
+      "triangles": 424,
+      "notes": "Exact buildCritters body/limb topology, CritterBatch joints/vertex CPU port. stride=0 lift=.1 outK=1 eyes=1 claws=0. Simplified colors, shell/granule shaders omitted. Chosen .08m carapace scale.",
+      "vertexCount": 290,
+      "triangleCount": 424,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 0
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    },
+    {
+      "file": "public/assets/elsemesh/wildlife/humpback-whale.glb",
+      "name": "Humpback whale (static rest pose)",
+      "bytes": 6536652,
+      "sha256": "fe238cfcab2083140f0c8e8357d0e99a812508ee2e8f9241dffcbbd2082c634c",
+      "bounds": {
+        "min": [
+          -4.368993282318115,
+          -2.6931300163269043,
+          -9.338000297546387
+        ],
+        "max": [
+          4.368993282318115,
+          1.549740195274353,
+          5.800000190734863
+        ]
+      },
+      "dimensions": [
+        8.73798656463623,
+        4.242870211601257,
+        15.13800048828125
+      ],
+      "vertices": 40212,
+      "triangles": 79870,
+      "notes": "Exact lod0 rest positions, normalized int16 normals, uv0, indices; embedded original 4096x2048 albedo. No runtime spine/flipper deformation, swimming, surfacing, blow, height shader, or animation.",
+      "vertexCount": 40212,
+      "triangleCount": 79870,
+      "validation": {
+        "portableAdmission": "inspectGlbJson passed",
+        "selfContained": true,
+        "animations": 0,
+        "meshes": 1,
+        "materials": 1,
+        "embeddedImages": 1
+      },
+      "readiness": "Static GLB prepared; structure/geometry checked; visual acceptance pending"
+    }
+  ]
+}
