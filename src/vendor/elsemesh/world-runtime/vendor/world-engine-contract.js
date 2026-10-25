@@ -45035,7 +45035,7 @@ async function resolveGitHubWorldSource(input, options = {}) {
   const ref = location2.ref ?? "HEAD";
   if (commitPattern.test(ref)) return { ...location2, kind: "github", commit: ref };
   const url = `https://api.github.com/repos/${location2.owner}/${location2.repository}/commits/${encodeURIComponent(ref)}`;
-  const bytes = await boundedFetch(url, 256 * 1024, options, "application/vnd.github+json");
+  const bytes = await boundedFetch(url, 2 * 1024 * 1024, options, "application/vnd.github+json");
   const response = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   if (!response || typeof response !== "object" || !("sha" in response) || typeof response.sha !== "string" || !commitPattern.test(response.sha)) throw new Error("GitHub did not resolve the reference to a full commit.");
   return { ...location2, kind: "github", commit: response.sha };

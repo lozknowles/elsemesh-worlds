@@ -113,6 +113,13 @@ describe('shared local and pinned GitHub loading', () => {
     expect((await resolveGitHubWorldSource({ owner: 'example', repository: 'world', path: '', ref: commit }, { fetch: noFetch })).commit).toBe(commit);
     expect(noFetch).not.toHaveBeenCalled();
   });
+  it('resolves a large GitHub commit response for an asset-rich world without unbounding it', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ sha: commit, files: 'x'.repeat(600_000) }))) as unknown as typeof fetch;
+    const source = await resolveGitHubWorldSource({ owner: 'example', repository: 'large-world', path: '' }, { fetch: fetcher });
+    expect(source.commit).toBe(commit);
+    const tooLarge = vi.fn(async () => new Response(JSON.stringify({ sha: commit, files: 'x'.repeat(2 * 1024 * 1024) }))) as unknown as typeof fetch;
+    await expect(resolveGitHubWorldSource({ owner: 'example', repository: 'large-world', path: '' }, { fetch: tooLarge })).rejects.toThrow(/byte limit/);
+  });
   it.each(['http://github.com/example/world','https://user:secret@github.com/example/world','https://github.com.evil.test/example/world','https://github.com/example/world?token=x','https://github.com/example/world/tree/main/../secrets','https://github.com/example/world/tree/main/%2e%2e/secrets','https://github.com/example/world/blob/main/world.json'])('rejects unsafe source URL %s', input => {
     expect(() => parseGitHubWorldLocation(input)).toThrow();
   });
