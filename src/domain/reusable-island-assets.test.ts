@@ -28,7 +28,13 @@ describe('reusable Original Island objects', () => {
     project.terrain.heights.fill(-8);
     project.water = { level: 0, waveAmplitude: 0.2, waveSpeed: 1, extent: 500 };
     const whaleAsset = { bounds: inspectGlbJson(Uint8Array.from(readFileSync('public' + whale.assetUrl!)).buffer).bounds } as WorldAsset;
+    project.spawn.position = [0, 0, 0];
+    project.water.extent = 20;
+    expect(() => placeLibraryObject(whale, createLibraryObject(whale, [0, 0, 0], 'whale-outside-water'), whaleAsset, project)).toThrow(/water surface/);
+    project.water.extent = 50;
     const placedWhale = placeLibraryObject(whale, createLibraryObject(whale, [0, 0, 0], 'whale-1'), whaleAsset, project);
+    expect(Math.abs(placedWhale.position[0]) + 4.37).toBeLessThanOrEqual(25);
+    expect(Math.abs(placedWhale.position[2]) + 9.34).toBeLessThanOrEqual(25);
     expect(placedWhale.position[1]).toBe(0);
     expect(sampleTerrain(project.terrain, placedWhale.position[0], placedWhale.position[2])).toBeLessThan(-3);
     expect(placedWhale.collision).toBe('none');
@@ -62,4 +68,28 @@ describe('reusable Original Island objects', () => {
     expect(restored.objects).toEqual(project.objects);
     expect(restored.assets).toEqual(project.assets);
   });
+  it('reopens whale and hut models together with independent authored transforms', async () => {
+    const project = createWorld('Combined coast');
+    project.water = { level: 0, waveAmplitude: 0.2, waveSpeed: 1, extent: 500 };
+    for (const [entryId, assetId, objectId, position] of [
+      ['wildlife-humpback-whale', 'whale-asset', 'whale-1', [31, 0, 30]],
+      ['island-beach-hut-s1', 'hut-asset', 'hut-1', [5, 2, -20]],
+    ] as const) {
+      const entry = entries.find(item => item.id === entryId)!;
+      const bytes = readFileSync('public' + entry.assetUrl!);
+      project.assets.push({
+        id: assetId, name: entry.name, mediaType: 'model/gltf-binary',
+        dataUrl: 'data:application/octet-stream;base64,' + bytes.toString('base64'),
+        bytes: bytes.length, source: entry.source, license: entry.license, prepared: true,
+        bounds: inspectGlbJson(Uint8Array.from(bytes).buffer).bounds,
+      });
+      project.objects.push({ ...createLibraryObject(entry, [...position], objectId), assetId });
+    }
+    const files = await packWorldRepository(project);
+    const restored = await unpackWorldRepository(async path => files.get(path)!);
+    expect(restored.objects).toEqual(project.objects);
+    expect(restored.assets).toEqual(project.assets);
+    expect(files.size).toBeGreaterThan(2);
+  }, 20000);
+
 });

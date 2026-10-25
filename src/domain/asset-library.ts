@@ -141,16 +141,23 @@ export function placeLibraryObject(entry: LibraryAsset, object: EditorObject, as
   if (mode === 'water') {
     const level = project.nativeIsland?.sea.level ?? project.water?.level;
     if (level === undefined || !Number.isFinite(level)) throw new Error('Add a sea or world water surface before placing this model.');
+    const horizontalReach = asset?.bounds ? [
+      Math.abs(asset.bounds.min[0] * object.scale[0]), Math.abs(asset.bounds.max[0] * object.scale[0]),
+      Math.abs(asset.bounds.min[2] * object.scale[2]), Math.abs(asset.bounds.max[2] * object.scale[2]),
+    ] : [0, 0, 0, 0];
+    const fitsWater = (x: number, z: number) => project.nativeIsland || (project.water
+      && Math.abs(x) + Math.max(horizontalReach[0]!, horizontalReach[1]!) <= project.water.extent / 2
+      && Math.abs(z) + Math.max(horizontalReach[2]!, horizontalReach[3]!) <= project.water.extent / 2);
     const previous = project.objects.filter(item => item.name === entry.name).length;
     const boat = project.objects.find(item => !item.parentId && /boat/i.test(item.name));
     const anchors: Array<[number, number]> = boat ? [[boat.position[0] + 32 + previous * 18, boat.position[2] + 12]] : [];
-    for (let radius = 24; radius < Math.min(terrain.width, terrain.depth) * .46; radius += 24)
+    for (let radius = 8; radius < Math.min(terrain.width, terrain.depth) * .46; radius += 8)
       for (let step = 0; step < 16; step++) {
         const angle = step * Math.PI / 8;
         anchors.push([spawn[0] + Math.cos(angle) * radius, spawn[2] + Math.sin(angle) * radius]);
       }
-    const point = anchors.find(([x,z]) => within(x,z) && sampleTerrain(terrain,x,z) <= level - (entry.id.includes('whale') ? 3 : 1));
-    if (!point) throw new Error('No suitable water location was found. Add water or move to a deeper shoreline.');
+    const point = anchors.find(([x,z]) => within(x,z) && fitsWater(x,z) && sampleTerrain(terrain,x,z) <= level - (entry.id.includes('whale') ? 3 : 1));
+    if (!point) throw new Error('No sufficiently deep location fits inside this water surface.');
     return { ...object, position: [point[0], level, point[1]] };
   }
   if (mode === 'air') {
