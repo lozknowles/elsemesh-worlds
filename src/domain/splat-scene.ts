@@ -6,7 +6,10 @@ export const MAX_SPLAT_SCENE_BYTES=16*1024*1024;
 export const MAX_SPLAT_PHYSICS_BYTES=8*1024*1024;
 export const MAX_SPLAT_COUNT=1_000_000;
 export type SplatSceneReference={path:string;sha256:string;bytes:number};
-export type SplatScene={schema:typeof SPLAT_SCENE_SCHEMA;asset:SplatSceneReference&{count:number};physics:SplatSceneReference;transform:{position:Vec3;rotation:Vec3;scale:number};scaleStatus:'assumed-gameplay';provenance:{videoSha256:string;plySha256:string;reviewSha256:string;qualificationSha256:string}};
+export type SplatSceneProvenance=
+ | {videoSha256:string;plySha256:string;reviewSha256:string;qualificationSha256:string}
+ | {sourceFormat:'sog';sourceManifestSha256:string;reviewSha256:string;qualificationSha256:string};
+export type SplatScene={schema:typeof SPLAT_SCENE_SCHEMA;asset:SplatSceneReference&{count:number};physics:SplatSceneReference;transform:{position:Vec3;rotation:Vec3;scale:number};scaleStatus:'assumed-gameplay';provenance:SplatSceneProvenance};
 const hash=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const keys=(v:Record<string,unknown>,allowed:string[])=>Object.keys(v).length===allowed.length&&Object.keys(v).every(k=>allowed.includes(k))&&allowed.every(k=>Object.hasOwn(v,k));
@@ -21,7 +24,11 @@ export function validateSplatScene(value:unknown):string[]{
  if(!record(value)||!keys(value,['schema','asset','physics','transform','scaleStatus','provenance'])||value.schema!==SPLAT_SCENE_SCHEMA)return ['Invalid splat scene schema or fields.'];
  if(!reference(value.asset,'sog',MAX_SPLAT_SCENE_BYTES,true)||!reference(value.physics,'json',MAX_SPLAT_PHYSICS_BYTES))return ['Invalid splat scene resource path, hash, byte size or count.'];
  const t=value.transform;if(!record(t)||!keys(t,['position','rotation','scale'])||!vec(t.position,2000)||!vec(t.rotation,Math.PI*2)||!number(t.scale,.000001,1000)||value.scaleStatus!=='assumed-gameplay')return ['Invalid bounded splat scene transform or scale status.'];
- const p=value.provenance;if(!record(p)||!keys(p,['videoSha256','plySha256','reviewSha256','qualificationSha256'])||!Object.values(p).every(hash))return ['Invalid splat scene provenance hashes.'];
+ const p=value.provenance;
+ if(!record(p))return ['Invalid splat scene provenance hashes.'];
+ const legacy=keys(p,['videoSha256','plySha256','reviewSha256','qualificationSha256'])&&Object.values(p).every(hash);
+ const sog=keys(p,['sourceFormat','sourceManifestSha256','reviewSha256','qualificationSha256'])&&p.sourceFormat==='sog'&&[p.sourceManifestSha256,p.reviewSha256,p.qualificationSha256].every(hash);
+ if(!legacy&&!sog)return ['Invalid splat scene provenance hashes.'];
  return [];
 }
 async function digest(bytes:Uint8Array){const value=await crypto.subtle.digest('SHA-256',Uint8Array.from(bytes));return Array.from(new Uint8Array(value),n=>n.toString(16).padStart(2,'0')).join('');}

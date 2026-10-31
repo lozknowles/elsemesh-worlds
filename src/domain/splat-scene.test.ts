@@ -24,6 +24,24 @@ describe('private content-addressed splat scene',()=>{
   const f=await fixture(),files=await packWorldRepository(f.project,{splatSceneRead:f.read}),manifest=JSON.parse(new TextDecoder().decode(files.get('world.json')));manifest.engine.requires=manifest.engine.requires.filter((c:string)=>c!=='splat-scene/1');files.set('world.json',encoder.encode(JSON.stringify(manifest)));await expect(unpackWorldRepository(async path=>files.get(path)!)).rejects.toThrow(/capability/);
   expect(()=>createPlayerWorldPackage(f.project)).toThrow(/Save repository/);expect(validatePlayerWorldPackage({...createPlayerWorldPackage(createWorld()),project:f.project}).valid).toBe(false);
  });
+ it('roundtrips SOG source-manifest provenance without inventing video or PLY hashes',async()=>{
+  const f=await fixture();f.scene.provenance={sourceFormat:'sog',sourceManifestSha256:'b'.repeat(64),reviewSha256:hash,qualificationSha256:hash};
+  expect(validateSplatScene(f.scene)).toEqual([]);expect(validateWorld(f.project).valid).toBe(true);
+  const files=await packWorldRepository(f.project,{splatSceneRead:f.read});
+  const loaded=await loadWorldSource({kind:'local',read:async(path,limit)=>{const bytes=files.get(path);if(!bytes||bytes.length>limit)throw Error('bounded');return bytes;}});
+  expect(loaded.project.splatScene?.provenance).toEqual(f.scene.provenance);expect(await loaded.splatSceneRead!(f.scene.asset.path,f.sog.length)).toEqual(f.sog);
+ });
+ it('admits exactly either provenance variant and rejects mixed, incomplete, extra or malformed fields',async()=>{
+  const {scene}=await fixture(),legacy={videoSha256:hash,plySha256:hash,reviewSha256:hash,qualificationSha256:hash},sog={sourceFormat:'sog' as const,sourceManifestSha256:hash,reviewSha256:hash,qualificationSha256:hash};
+  for(const provenance of [legacy,sog]){
+   expect(validateSplatScene({...scene,provenance})).toEqual([]);
+   for(const field of Object.keys(provenance)){
+    const incomplete:Record<string,unknown>={...provenance};delete incomplete[field];expect(validateSplatScene({...scene,provenance:incomplete})).toEqual(['Invalid splat scene provenance hashes.']);
+   }
+   for(const [field]of Object.entries(provenance).filter(([key])=>key.endsWith('Sha256')))for(const malformed of ['', 'A'.repeat(64),'a'.repeat(63),'a'.repeat(65),'g'.repeat(64),null,42])expect(validateSplatScene({...scene,provenance:{...provenance,[field]:malformed}})).toEqual(['Invalid splat scene provenance hashes.']);
+  }
+  for(const provenance of [{...legacy,...sog},{...legacy,sourceFormat:'sog'},{...legacy,sourceManifestSha256:hash},{...sog,videoSha256:hash},{...sog,plySha256:hash},{...sog,extra:hash},{...sog,sourceFormat:'ply'},{...sog,sourceFormat:'SOG'},{...sog,sourceFormat:undefined},null,[]])expect(validateSplatScene({...scene,provenance})).toEqual(['Invalid splat scene provenance hashes.']);
+ });
  it('rejects unknown fields at each descriptor level, bounded transforms and malformed provenance',async()=>{
   const {scene,project}=await fixture();expect(validateSplatScene(scene)).toEqual([]);
   const invalid=[{...scene,script:'no'},{...scene,asset:{...scene.asset,url:'https://example.invalid/a.sog'}},{...scene,physics:{...scene.physics,count:1}},{...scene,transform:{...scene.transform,extra:0}},{...scene,provenance:{...scene.provenance,extra:hash}},{...scene,scaleStatus:'metric'},{...scene,transform:{...scene.transform,scale:0}},{...scene,transform:{...scene.transform,position:[Infinity,0,0]}},{...scene,transform:{...scene.transform,rotation:[0,100,0]}},{...scene,provenance:{...scene.provenance,plySha256:'not-hash'}}];
